@@ -487,8 +487,8 @@ const COLORS = {
   green:       { hex: 0x237841, en: "green",             sg: "grön",       n: "grönt",       pl: "gröna" },
   white:       { hex: 0xf2f3f2, en: "white",             sg: "vit",        n: "vitt",        pl: "vita" },
   black:       { hex: 0x1d2a33, en: "black",             sg: "svart",      n: "svart",       pl: "svarta" },
-  lightgray:   { hex: 0xa0a5a9, en: "light bluish gray", sg: "ljusgrå",    n: "ljusgrått",   pl: "ljusgrå" },
-  darkgray:    { hex: 0x6c6e68, en: "dark bluish gray",  sg: "mörkgrå",    n: "mörkgrått",   pl: "mörkgrå" },
+  lightgray:   { hex: 0xa0a5a9, en: "light gray (old gray or light bluish gray)", sg: "ljusgrå",    n: "ljusgrått",   pl: "ljusgrå" },
+  darkgray:    { hex: 0x6c6e68, en: "dark gray (old dark gray or dark bluish gray)", sg: "mörkgrå",    n: "mörkgrått",   pl: "mörkgrå" },
   orange:      { hex: 0xfe8a18, en: "orange",            sg: "orange",     n: "orange",      pl: "orange" },
   lime:        { hex: 0xbbe90b, en: "lime",              sg: "limegrön",   n: "limegrönt",   pl: "limegröna" },
   tan:         { hex: 0xe4cd9e, en: "tan",               sg: "sandfärgad", n: "sandfärgat",  pl: "sandfärgade" },
@@ -501,6 +501,7 @@ const COLORS = {
   transparent: { hex: 0xd6ecf5, en: "trans-clear",       sg: "genomskinlig", n: "genomskinligt", pl: "genomskinliga", alpha: 0.45 },
   transred:    { hex: 0xe0263a, en: "trans-red",         sg: "genomskinligt röd", n: "genomskinligt rött", pl: "genomskinligt röda", alpha: 0.65 },
   transyellow: { hex: 0xf5e33b, en: "trans-yellow",      sg: "genomskinligt gul", n: "genomskinligt gult", pl: "genomskinligt gula", alpha: 0.65 },
+  transgreen:  { hex: 0x7fd6b0, en: "trans-green",       sg: "genomskinligt grön", n: "genomskinligt grönt", pl: "genomskinligt gröna", alpha: 0.55 },
   transblue:   { hex: 0x5fa8e8, en: "trans-light-blue",  sg: "genomskinligt blå", n: "genomskinligt blått", pl: "genomskinligt blå", alpha: 0.55 },
 };
 const NOUNS = {
@@ -515,6 +516,26 @@ const NOUNS = {
   rtile:  { name: "Rund slät platta",  sg: "rund slät platta",  pl: "runda släta plattor", g: "en" },
   cone:   { name: "Kon",               sg: "kon",               pl: "koner",               g: "en" },
   flower: { name: "Blomma",            sg: "blomma",            pl: "blommor",             g: "en" },
+  fplate: { name: "Blomplatta",        sg: "blomplatta",        pl: "blomplattor",         g: "en" },
+  stem:   { name: "Blomstjälk",        sg: "blomstjälk",        pl: "blomstjälkar",        g: "en" },
+  pine:   { name: "Gran",              sg: "gran",              pl: "granar",              g: "en" },
+  tree:   { name: "Lövträd",           sg: "lövträd",           pl: "lövträd",             g: "ett" },
+  arch:   { name: "Valv",              sg: "valv",              pl: "valv",                g: "ett" },
+  cbrick: { name: "Hörnkloss",         sg: "hörnkloss",         pl: "hörnklossar",         g: "en" },
+  cplate: { name: "Hörnplatta",        sg: "hörnplatta",        pl: "hörnplattor",         g: "en" },
+  tbrick: { name: "Teknikkloss",       sg: "teknikkloss",       pl: "teknikklossar",       g: "en" },
+  tplate: { name: "Platta med hål",    sg: "platta med hål",    pl: "plattor med hål",     g: "en" },
+  base:   { name: "Basplatta",         sg: "basplatta",         pl: "basplattor",          g: "en" },
+  light:  { name: "Lampkloss",         sg: "lampkloss",         pl: "lampklossar",         g: "en" },
+  grille: { name: "Gallerkloss",       sg: "gallerkloss",       pl: "gallerklossar",       g: "en" },
+  gtile:  { name: "Gallerplatta",      sg: "gallerplatta",      pl: "gallerplattor",       g: "en" },
+  clip:   { name: "Platta med lampa",  sg: "platta med lampa",  pl: "plattor med lampa",   g: "en" },
+  handle: { name: "Platta med handtag", sg: "platta med handtag", pl: "plattor med handtag", g: "en" },
+  antenna:{ name: "Antenn",            sg: "antenn",            pl: "antenner",            g: "en" },
+  turn:   { name: "Vridskiva",         sg: "vridskiva",         pl: "vridskivor",          g: "en" },
+  steer:  { name: "Ratt",              sg: "ratt",              pl: "rattar",              g: "en" },
+  glass:  { name: "Glas",              sg: "glas",              pl: "glas",                g: "ett" },
+  wplate: { name: "Hjulplatta",        sg: "hjulplatta",        pl: "hjulplattor",         g: "en" },
   window: { name: "Fönster",           sg: "fönster",           pl: "fönster",             g: "ett" },
   frame:  { name: "Dörrkarm",          sg: "dörrkarm",          pl: "dörrkarmar",          g: "en" },
   door:   { name: "Dörr",              sg: "dörr",              pl: "dörrar",              g: "en" },
@@ -522,7 +543,7 @@ const NOUNS = {
   holder: { name: "Hjulhållare",       sg: "hjulhållare",       pl: "hjulhållare",         g: "en" },
   wheel:  { name: "Hjul med däck",     sg: "hjul",              pl: "hjul",                g: "ett" },
 };
-const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", special: "Special" };
+const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special" };
 
 /* The catalog: real LEGO design IDs only. w x d is the footprint at r=0 (w along x, d along z), h is height in plates.
    Directional parts face (or slope down toward) +z at r=0. studs/bottom: which cells connect ("all", "none", "back" = row z=0). */
@@ -549,18 +570,75 @@ def("3941",  { en: "Brick Round 2 x 2 with Axle Hole", noun: "rbrick", group: "r
 def("4032",  { en: "Plate Round 2 x 2 with Axle Hole", noun: "rplate", group: "round", shape: "cyl", w: 2, d: 2, h: 1 });
 def("14769", { en: "Tile Round 2 x 2", noun: "rtile", group: "round", shape: "cyl", w: 2, d: 2, h: 1, studs: "none" });
 def("4589",  { en: "Cone 1 x 1", noun: "cone", group: "round", shape: "cone", w: 1, d: 1, h: 3 });
-def("33291", { en: "Plate Round 1 x 1 with Flower Edge", noun: "flower", group: "round", shape: "flower", w: 1, d: 1, h: 1 });
-def("60592", { en: "Window 1 x 2 x 2 with glass", noun: "window", group: "special", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
-def("60593", { en: "Window 1 x 2 x 3 with glass", noun: "window", group: "special", shape: "window", w: 2, d: 1, h: 9, dir: true, size: "1×2×3" });
-def("60594", { en: "Window 1 x 4 x 3 with glass", noun: "window", group: "special", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3" });
-def("60596", { en: "Door Frame 1 x 4 x 6 (comes with door 60616)", noun: "frame", group: "special", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
-  extras: [{ id: "60616", n: 1, color: "c2" }] });
-def("3823",  { en: "Windscreen 2 x 4 x 2", noun: "screen", group: "special", shape: "screen", w: 4, d: 2, h: 6, studs: "back", dir: true, size: "2×4×2" });
-def("4600",  { en: "Plate 2 x 2 with Wheel Holders (comes with 2 wheels 4624 + tires 3641)", noun: "holder", group: "special", shape: "holder", w: 2, d: 2, h: 1, dir: true, wheels: true,
+def("33291", { en: "Plate Round 1 x 1 with Flower Edge", noun: "fplate", group: "nature", shape: "flower", w: 1, d: 1, h: 1 });
+def("60592", { en: "Window 1 x 2 x 2 with glass", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
+def("60593", { en: "Window 1 x 2 x 3 with glass", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 9, dir: true, size: "1×2×3" });
+def("60594", { en: "Window 1 x 4 x 3 with glass", noun: "window", group: "window", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3" });
+def("60596", { en: "Door Frame 1 x 4 x 6 (comes with door 60616)", noun: "frame", group: "window", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
+  door: "60616", extras: [{ id: "60616", n: 1, color: "c2" }] });
+def("3823",  { en: "Windscreen 2 x 4 x 2", noun: "screen", group: "vehicle", shape: "screen", w: 4, d: 2, h: 6, studs: "back", dir: true, size: "2×4×2" });
+def("4600",  { en: "Plate 2 x 2 with Wheel Holders (comes with 2 wheels 4624 + tires 3641)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
+  wheels: { r: 0.94, width: 0.72, off: 0.38, below: 3, above: 2, hub: 0.5 },
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
 // Pieces that only come along with another piece; Claude never places them directly.
-def("60616", { en: "Door 1 x 4 x 6 with Stud Handle", noun: "door", group: "special", shape: "doorpanel", w: 4, d: 1, h: 17, studs: "none", size: "1×4×6", child: true });
-def("4624c01", { en: "Wheel 8mm D. x 6mm with Black Tire 15mm D. x 6mm (4624 / 3641)", noun: "wheel", group: "special", shape: "wheel", w: 1, d: 2, h: 5, studs: "none", size: "", child: true });
+def("60616", { en: "Door 1 x 4 x 6 with Stud Handle", noun: "door", group: "window", shape: "doorpanel", w: 4, d: 1, h: 17, studs: "none", size: "1×4×6", child: true });
+def("4624c01", { en: "Wheel 8mm D. x 6mm with Black Tire 15mm D. x 6mm (4624 / 3641)", noun: "wheel", group: "vehicle", shape: "wheel", w: 1, d: 2, h: 5, studs: "none", size: "", child: true });
+
+/* Classic 1990s parts. */
+for (const [id, w, d] of [["6112",1,12],["2465",1,16]]) def(id, { en: `Brick ${w} x ${d}`, noun: "brick", group: "brick", shape: "box", w, d, h: 3 });
+for (const [id, w, d] of [["2453",1,1],["2454",1,2],["3755",1,3],["3754",1,6]]) def(id, { en: `Brick ${w} x ${d} x 5 (tall pillar)`, noun: "brick", group: "brick", shape: "box", w, d, h: 15, size: `${w}×${d}×5` });
+def("2357", { en: "Brick 2 x 2 Corner (L-shape: at r=0 it covers (0,0),(1,0),(0,1); the front-right cell (1,1) is empty)", noun: "cbrick", group: "brick", shape: "box", w: 2, d: 2, h: 3, mask: [[0, 0], [1, 0], [0, 1]], size: "2×2" });
+def("4070", { en: "Brick 1 x 1 with Headlight (lamp face toward +z)", noun: "light", group: "brick", shape: "box", deco: "headlight", w: 1, d: 1, h: 3, dir: true });
+def("2877", { en: "Brick 1 x 2 with Grille (grille toward +z)", noun: "grille", group: "brick", shape: "box", deco: "grille", w: 2, d: 1, h: 3, dir: true, size: "1×2" });
+for (const [id, n] of [["3700",2],["3701",4],["3894",6],["3702",8],["2730",10],["3895",12],["32018",14],["3703",16]])
+  def(id, { en: `Technic Brick 1 x ${n} with Holes (studs on top like a normal brick)`, noun: "tbrick", group: "brick", shape: "box", deco: "holes", w: 1, d: n, h: 3 });
+for (const [id, w, d] of [["60479",1,12],["2445",2,12],["4282",2,16],["3029",4,12],["3028",6,12],["3456",6,14],["3027",6,16],["3026",6,24]])
+  def(id, { en: `Plate ${w} x ${d}`, noun: "plate", group: "plate", shape: "box", w, d, h: 1 });
+def("2420", { en: "Plate 2 x 2 Corner (L-shape: at r=0 it covers (0,0),(1,0),(0,1); the front-right cell (1,1) is empty)", noun: "cplate", group: "plate", shape: "box", w: 2, d: 2, h: 1, mask: [[0, 0], [1, 0], [0, 1]], size: "2×2" });
+def("3709b", { en: "Technic Plate 2 x 4 with 3 Holes", noun: "tplate", group: "plate", shape: "box", deco: "tholes", w: 2, d: 4, h: 1 });
+def("3738", { en: "Technic Plate 2 x 8 with 7 Holes", noun: "tplate", group: "plate", shape: "box", deco: "tholes", w: 2, d: 8, h: 1 });
+def("2540", { en: "Plate 1 x 2 with Bar Handle on Side (handle toward +z)", noun: "handle", group: "plate", shape: "box", deco: "handle", w: 2, d: 1, h: 1, dir: true, size: "1×2" });
+def("4081b", { en: "Plate 1 x 1 with Clip Light (lamp ring toward +z)", noun: "clip", group: "plate", shape: "box", deco: "clip", w: 1, d: 1, h: 1, dir: true });
+for (const [id, w, d] of [["3867",16,16],["3857",16,32],["3811",32,32]])
+  def(id, { en: `Baseplate ${w} x ${d} (thin ground plate; nothing attaches underneath)`, noun: "base", group: "plate", shape: "baseplate", w, d, h: 1, bottom: "none" });
+def("2412b", { en: "Tile 1 x 2 Grille (smooth, nothing attaches on top)", noun: "gtile", group: "tile", shape: "box", deco: "gtile", w: 1, d: 2, h: 1, studs: "none" });
+def("4162", { en: "Tile 1 x 8 (smooth, no studs)", noun: "tile", group: "tile", shape: "box", w: 1, d: 8, h: 1, studs: "none" });
+def("4286", { en: "Slope 33 3 x 1", noun: "slope", group: "slope", shape: "slope", w: 1, d: 3, h: 3, studs: "back", dir: true, size: "1×3" });
+def("3298", { en: "Slope 33 3 x 2", noun: "slope", group: "slope", shape: "slope", w: 2, d: 3, h: 3, studs: "back", dir: true, size: "2×3" });
+def("4161", { en: "Slope 33 3 x 3", noun: "slope", group: "slope", shape: "slope", w: 3, d: 3, h: 3, studs: "back", dir: true, size: "3×3" });
+def("3297", { en: "Slope 33 3 x 4", noun: "slope", group: "slope", shape: "slope", w: 4, d: 3, h: 3, studs: "back", dir: true, size: "4×3" });
+def("4460", { en: "Slope 75 2 x 1 x 3 (steep)", noun: "slope", group: "slope", shape: "slope", w: 1, d: 2, h: 9, studs: "back", dir: true, size: "1×2×3" });
+def("3684", { en: "Slope 75 2 x 2 x 3 (steep)", noun: "slope", group: "slope", shape: "slope", w: 2, d: 2, h: 9, studs: "back", dir: true, size: "2×2×3" });
+def("4287", { en: "Slope 33 3 x 1 Inverted", noun: "inv", group: "slope", shape: "inv", w: 1, d: 3, h: 3, bottom: "back", dir: true, size: "1×3" });
+def("3747b", { en: "Slope 33 3 x 2 Inverted", noun: "inv", group: "slope", shape: "inv", w: 2, d: 3, h: 3, bottom: "back", dir: true, size: "2×3" });
+def("3659", { en: "Arch 1 x 4 (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 4, d: 1, h: 3, bottom: "ends", size: "1×4" });
+def("3455", { en: "Arch 1 x 6 (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 6, d: 1, h: 3, bottom: "ends", size: "1×6" });
+def("3307", { en: "Arch 1 x 6 x 2 (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 6, d: 1, h: 6, bottom: "ends", size: "1×6×2" });
+def("3942c", { en: "Cone 2 x 2 x 2 (nose cone; nothing attaches on top)", noun: "cone", group: "round", shape: "cone2", w: 2, d: 2, h: 6, studs: "none", size: "2×2×2" });
+def("3957", { en: "Antenna 1 x 4 (thin rod; nothing attaches on top)", noun: "antenna", group: "round", shape: "antenna", w: 1, d: 1, h: 12, studs: "none", size: "1×4" });
+def("3471", { en: "Plant Tree Pine Large 4 x 4 x 6 2/3 (attaches with the 2x2 center underneath)", noun: "pine", group: "nature", shape: "pine", w: 4, d: 4, h: 20, studs: "none", bottom: "center", size: "4×4×6" });
+def("3470", { en: "Plant Tree Fruit 4 x 4 x 4 2/3 (attaches with the 2x2 center underneath)", noun: "tree", group: "nature", shape: "fruit", w: 4, d: 4, h: 14, studs: "none", bottom: "center", size: "4×4×4" });
+def("3741", { en: "Plant Flower Stem with 3 Stems (comes with 3 flowers 3742, flower color c2)", noun: "stem", group: "nature", shape: "stem", w: 1, d: 1, h: 6, studs: "none", size: "",
+  extras: [{ id: "3742", n: 3, color: "c2", def: "red" }] });
+def("2377", { en: "Window 1 x 2 x 2 Plane (glass built in)", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
+def("3853", { en: "Window 1 x 4 x 3 (comes with glass 3855)", noun: "window", group: "window", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3", glass: "3855",
+  extras: [{ id: "3855", n: 1, color: "fixed", c: "transparent" }] });
+def("4132", { en: "Window 2 x 4 x 3 (comes with pane 4133)", noun: "window", group: "window", shape: "window", w: 4, d: 2, h: 9, dir: true, size: "2×4×3", glass: "4133",
+  extras: [{ id: "4133", n: 1, color: "fixed", c: "transparent" }] });
+def("4130", { en: "Door Frame 2 x 4 x 5 (comes with door 4131)", noun: "frame", group: "window", shape: "frame", w: 4, d: 2, h: 15, dir: true, size: "2×4×5",
+  door: "4131", extras: [{ id: "4131", n: 1, color: "c2" }] });
+def("30179", { en: "Door Frame 1 x 4 x 6 (comes with door 60623 with 4 panes)", noun: "frame", group: "window", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
+  door: "60623", extras: [{ id: "60623", n: 1, color: "c2" }] });
+def("122c01", { en: "Plate 2 x 2 with Red Wheels (small wheels; see WHEELS)", noun: "wplate", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
+  wheels: { r: 0.6, width: 0.5, off: 0.26, below: 2, above: 1, hub: 0.36, hubColor: "red" } });
+def("3829c01", { en: "Car Steering Stand with Steering Wheel (1 x 2, wheel toward -z; nothing attaches on top)", noun: "steer", group: "vehicle", shape: "steer", w: 1, d: 2, h: 3, studs: "none", dir: true, size: "1×2" });
+def("3403c01", { en: "Turntable 4 x 4 (square base, round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 2, studs: "round", size: "4×4" });
+// Pieces that come along with the parts above.
+def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
+def("4133", { en: "Pane for Window 2 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "2×4×3", child: true });
+def("4131", { en: "Door 1 x 4 x 5", noun: "door", group: "window", shape: "doorpanel", w: 4, d: 1, h: 14, studs: "none", size: "1×4×5", child: true });
+def("60623", { en: "Door 1 x 4 x 6 with 4 Panes and Stud Handle", noun: "door", group: "window", shape: "doorpanel", panes: true, w: 4, d: 1, h: 17, studs: "none", size: "1×4×6", child: true });
+def("3742", { en: "Plant Flower 2 x 2 Rounded", noun: "flower", group: "nature", shape: "flowerhead", w: 1, d: 1, h: 1, studs: "none", size: "", child: true });
 
 const LEVELS = [
   null,
@@ -645,6 +723,25 @@ function normBuild(raw) {
 }
 
 /* ======================================================= part geometry */
+/** Cells a part covers at r=0 (most parts fill their w x d rectangle; corner pieces leave one out). */
+function canonCells(C) {
+  if (C.mask) return C.mask;
+  const all = [];
+  for (let cx = 0; cx < C.w; cx++) for (let cz = 0; cz < C.d; cz++) all.push([cx, cz]);
+  return all;
+}
+/** Cells at r=0 that have studs on top or accept studs underneath, by rule. */
+function ruleCells(C, rule) {
+  const all = canonCells(C);
+  switch (rule) {
+    case "all": return all;
+    case "back": return all.filter(([, cz]) => cz === 0);
+    case "ends": return all.filter(([cx]) => cx === 0 || cx === C.w - 1);
+    case "center": return all.filter(([cx, cz]) => cx >= 1 && cx <= C.w - 2 && cz >= 1 && cz <= C.d - 2);
+    case "round": return all.filter(([cx, cz]) => !((cx === 0 || cx === C.w - 1) && (cz === 0 || cz === C.d - 1)));
+    default: return [];
+  }
+}
 /** Footprint, connection cells and occupied space of a placed part, in world grid units. */
 function info(p) {
   const C = CAT[p.id], r = p.r || 0, sw = r === 90 || r === 270;
@@ -652,14 +749,12 @@ function info(p) {
     const [a, b] = r === 0 ? [cx, cz] : r === 180 ? [C.w - 1 - cx, C.d - 1 - cz] : r === 90 ? [cz, C.w - 1 - cx] : [C.d - 1 - cz, cx];
     return [a + p.x, b + p.z];
   };
-  const all = [];
-  for (let cx = 0; cx < C.w; cx++) for (let cz = 0; cz < C.d; cz++) all.push([cx, cz]);
-  const pick = (rule) => (rule === "all" ? all : rule === "back" ? all.filter(([, cz]) => cz === 0) : []);
-  const cells = all.map(([a, b]) => tc(a, b));
+  const cells = canonCells(C).map(([a, b]) => tc(a, b));
   const occ = [];
   for (const [x, z] of cells) for (let y = p.y; y < p.y + C.h; y++) occ.push([x, y, z]);
-  if (C.wheels) for (const cx of [-1, C.w]) for (let cz = 0; cz < C.d; cz++) { const [x, z] = tc(cx, cz); for (let y = p.y - 3; y <= p.y + 2; y++) occ.push([x, y, z]); }
-  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + C.h, cells, studs: pick(C.studs).map(([a, b]) => tc(a, b)), bottom: pick(C.bottom).map(([a, b]) => tc(a, b)), occ };
+  const W = C.wheels;
+  if (W) for (const cx of [-1, C.w]) for (let cz = 0; cz < C.d; cz++) { const [x, z] = tc(cx, cz); for (let y = p.y - W.below; y <= p.y + W.above; y++) occ.push([x, y, z]); }
+  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + C.h, cells, studs: ruleCells(C, C.studs).map(([a, b]) => tc(a, b)), bottom: ruleCells(C, C.bottom).map(([a, b]) => tc(a, b)), occ };
 }
 function rotMatrix(C, r, p) {
   const m = new THREE.Matrix4(), W = C.w, D = C.d;
@@ -694,11 +789,46 @@ function profile(points, W) {
 /** Canonical geometry (r=0, origin at min corner) as a list of {geos, color, alpha} layers. */
 function shapeLayers(C, p, solo) {
   const col = p.c, H = C.h * PH, W = C.w, D = C.d;
-  const studsOn = (rule, top) => (rule === "none" ? [] : [...Array(W * D).keys()].map((i) => [Math.floor(i / D), i % D]).filter(([, cz]) => rule === "all" || cz === 0).map(([cx, cz]) => stud(cx, cz, top)));
+  const studsOn = (rule, top) => ruleCells(C, rule).map(([cx, cz]) => stud(cx, cz, top));
   const L = [];
   const main = [];
   switch (C.shape) {
-    case "box": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
+    case "box":
+      if (C.mask) for (const [cx, cz] of C.mask) main.push(box(cx + 0.02, 0.01, cz + 0.02, cx + 0.98, H - 0.01, cz + 0.98));
+      else main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02));
+      decoLayers(C, H, W, D, main, L);
+      break;
+    case "baseplate": main.push(box(0.01, H - 0.12, 0.01, W - 0.01, H - 0.01, D - 0.01)); break;
+    case "arch": {
+      // Front outline with a smooth opening, extruded through the 1-stud depth.
+      const lintel = 0.4, rx = W / 2 - 1, ry = Math.min(rx * 0.6, H - lintel - 0.2), spring = H - lintel - ry;
+      const sh = new THREE.Shape();
+      sh.moveTo(0.02, 0.01); sh.lineTo(0.98, 0.01); sh.lineTo(0.98, spring);
+      sh.absellipse(W / 2, spring, rx - 0.02, ry, Math.PI, 0, true);
+      sh.lineTo(W - 0.98, 0.01); sh.lineTo(W - 0.02, 0.01); sh.lineTo(W - 0.02, H - 0.01); sh.lineTo(0.02, H - 0.01);
+      main.push(new THREE.ExtrudeGeometry(sh, { depth: D - 0.04, bevelEnabled: false, curveSegments: 16 }).translate(0, 0, 0.02));
+      break;
+    }
+    case "cone2": main.push(new THREE.CylinderGeometry(0.32, 0.98, H - 0.2, 28).translate(1, (H - 0.2) / 2, 1), new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).translate(1, H - 0.1, 1)); break;
+    case "antenna": main.push(new THREE.CylinderGeometry(0.3, 0.32, 0.3, 18).translate(0.5, 0.15, 0.5), new THREE.CylinderGeometry(0.07, 0.07, H - 0.3, 10).translate(0.5, 0.3 + (H - 0.3) / 2, 0.5), new THREE.SphereGeometry(0.1, 10, 8).translate(0.5, H - 0.1, 0.5)); break;
+    case "pine":
+      main.push(box(1.1, 0.01, 1.1, 2.9, 0.6, 2.9));
+      for (const [y0, y1, r] of [[0.6, 4.2, 1.96], [3.0, 6.2, 1.55], [5.0, 7.98, 1.05]]) main.push(new THREE.CylinderGeometry(0.05, r, y1 - y0, 10).translate(2, (y0 + y1) / 2, 2));
+      break;
+    case "fruit": main.push(new THREE.CylinderGeometry(0.35, 0.45, 2.6, 12).translate(2, 1.3, 2), new THREE.SphereGeometry(1.9, 16, 12).translate(2, H - 1.92, 2)); break;
+    case "stem": {
+      main.push(new THREE.CylinderGeometry(0.46, 0.46, 0.38, 18).translate(0.5, 0.2, 0.5));
+      for (const [dx, dz, hh] of STEMS) main.push(new THREE.CylinderGeometry(0.06, 0.06, hh - 0.4, 6).translate(0.5 + dx, 0.4 + (hh - 0.4) / 2, 0.5 + dz));
+      if (!solo) L.push({ geos: STEMS.map(([dx, dz, hh]) => new THREE.CylinderGeometry(0.22, 0.22, 0.14, 5).translate(0.5 + dx, hh, 0.5 + dz)), color: p.c2 || "red" });
+      break;
+    }
+    case "flowerhead": main.push(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 5).translate(0.5, 0.15, 0.5)); break;
+    case "glass": L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" }); return L;
+    case "steer":
+      main.push(box(0.05, 0.01, 0.05, 0.95, 0.4, 1.95), box(0.35, 0.4, 0.75, 0.65, 0.95, 1.05));
+      L.push({ geos: [new THREE.TorusGeometry(0.32, 0.05, 8, 24).rotateX(Math.PI / 2.6).translate(0.5, 1.02, 0.7), box(0.46, 0.92, 0.66, 0.54, 1.1, 1.0)], color: p.c2 || "black" });
+      break;
+    case "turn": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), new THREE.CylinderGeometry(1.96, 1.96, H - 0.41, 40).translate(W / 2, 0.4 + (H - 0.41) / 2, D / 2)); break;
     case "slope": {
       const top = D >= 2 ? 1 : 0.02, low = D >= 2 ? 0.26 : 0.06;
       const pts = [[0.02, 0.01], [D - 0.02, 0.01], [D - 0.02, low], [top, H - 0.01]];
@@ -716,28 +846,43 @@ function shapeLayers(C, p, solo) {
       const sill = C.shape === "window" ? 0.4 : 0.16;
       main.push(box(0.02, 0.01, 0.02, W - 0.02, sill, D - 0.02), box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02),
         box(0.02, sill, 0.02, 0.2, H - 0.4, D - 0.02), box(W - 0.2, sill, 0.02, W - 0.02, H - 0.4, D - 0.02));
-      if (C.shape === "window") L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" });
+      if (C.shape === "window" && (!C.glass || !solo)) L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" });
       break;
     }
-    case "doorpanel": main.push(box(0.22, 0.17, 0.66, W - 0.22, H - 0.02, 0.86), new THREE.CylinderGeometry(0.16, 0.16, 0.2, 14).rotateX(Math.PI / 2).translate(W - 0.7, H / 2, 0.96)); break;
-    case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02), box(0.1, -0.18, 0.8, W - 0.1, 0.01, 1.2)); break;
-    case "wheel": {
-      L.push({ geos: [new THREE.CylinderGeometry(0.94, 0.94, 0.72, 30).rotateZ(Math.PI / 2).translate(0.5, 0.94, 1)], color: "black" });
-      L.push({ geos: [new THREE.CylinderGeometry(0.5, 0.5, 0.76, 22).rotateZ(Math.PI / 2).translate(0.5, 0.94, 1)], color: col });
-      return L;
-    }
+    case "doorpanel":
+      main.push(box(0.22, 0.17, 0.66, W - 0.22, H - 0.02, 0.86), new THREE.CylinderGeometry(0.16, 0.16, 0.2, 14).rotateX(Math.PI / 2).translate(W - 0.7, H / 2, 0.96));
+      if (C.panes) L.push({ geos: [0, 1].flatMap((i) => [0, 1].map((j) => box(0.55 + i * 1.5, H * 0.55 + j * H * 0.2, 0.87, 1.85 + i * 1.5, H * 0.72 + j * H * 0.2, 0.9))), color: "transparent" });
+      break;
+    case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
+    case "wheel": return wheelLayers({ r: 0.94, width: 0.72, hub: 0.5 }, 0.5, 0.94, col);
   }
   main.push(...studsOn(C.studs, H));
   L.unshift({ geos: main, color: col });
-  if (!solo && C.shape === "frame") L.push(...shapeLayers(CAT["60616"], { c: p.c2 || col }, true));
+  if (!solo && C.door) L.push(...shapeLayers(CAT[C.door], { c: p.c2 || col }, true));
   if (!solo && C.wheels) {
-    const hub = p.c2 || "lightgray";
-    for (const cx of [-0.38, W + 0.38]) {
-      L.push({ geos: [new THREE.CylinderGeometry(0.94, 0.94, 0.72, 30).rotateZ(Math.PI / 2).translate(cx, 0, 1)], color: "black" });
-      L.push({ geos: [new THREE.CylinderGeometry(0.5, 0.5, 0.76, 22).rotateZ(Math.PI / 2).translate(cx, 0, 1)], color: hub });
-    }
+    const Wh = C.wheels, hub = Wh.hubColor || p.c2 || "lightgray";
+    for (const cx of [-Wh.off, W + Wh.off]) L.push(...wheelLayers(Wh, cx, 0, hub));
   }
   return L;
+}
+const STEMS = [[-0.25, 0, 2.3], [0.22, -0.18, 1.9], [0.15, 0.25, 1.6]];
+function wheelLayers(Wh, cx, cy, hub) {
+  return [
+    { geos: [new THREE.CylinderGeometry(Wh.r, Wh.r, Wh.width, 30).rotateZ(Math.PI / 2).translate(cx, cy, 1)], color: "black" },
+    { geos: [new THREE.CylinderGeometry(Wh.hub, Wh.hub, Wh.width + 0.04, 22).rotateZ(Math.PI / 2).translate(cx, cy, 1)], color: hub },
+  ];
+}
+/** Small molded details that don't change how a part connects: lamps, grilles, holes, handles. */
+function decoLayers(C, H, W, D, main, L) {
+  switch (C.deco) {
+    case "headlight": main.push(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 18).rotateX(Math.PI / 2).translate(0.5, H / 2, D + 0.03)); break;
+    case "grille": for (const y of [0.3, 0.55, 0.8]) main.push(box(0.15, y, D - 0.06, W - 0.15, y + 0.1, D + 0.02)); break;
+    case "gtile": for (let i = 0; i < 4; i++) main.push(box(0.14 + i * 0.2, H - 0.01, 0.15, 0.24 + i * 0.2, H + 0.04, D - 0.15)); break;
+    case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, H * 0.5, k + 1)), color: "black" }); break;
+    case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
+    case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
+    case "handle": main.push(new THREE.CylinderGeometry(0.08, 0.08, W - 0.5, 10).rotateZ(Math.PI / 2).translate(W / 2, 0.2, D - 0.1)); break;
+  }
 }
 function edgeColor(c) {
   const col = new THREE.Color(COLORS[c].hex);
@@ -786,7 +931,7 @@ function pieceList(parts) {
   const out = [];
   for (const p of parts) {
     out.push({ id: p.id, c: p.c });
-    for (const ex of CAT[p.id].extras || []) for (let i = 0; i < ex.n; i++) out.push({ id: ex.id, c: ex.color === "c2" ? (p.c2 || ex.def || p.c) : p.c });
+    for (const ex of CAT[p.id].extras || []) for (let i = 0; i < ex.n; i++) out.push({ id: ex.id, c: ex.color === "fixed" ? ex.c : ex.color === "c2" ? (p.c2 || ex.def || p.c) : p.c });
   }
   return out;
 }
@@ -800,7 +945,8 @@ function groupParts(list) {
 /* =================================================== structural checks */
 /**
  * Checks a build against how real bricks connect:
- * overlaps (shared space), floats (after a step, not connected to the model started in step 1),
+ * overlaps (shared space), floats (after a step, neither connected to the model started in step 1 nor standing on the table
+ * at the height of the first part, so separate pillars for an arch are fine),
  * trapped (a new piece that would have to be squeezed in between pieces already placed above and below it).
  */
 function analyze(steps) {
@@ -824,10 +970,12 @@ function analyze(steps) {
     }
   });
   const anchor = parts.findIndex((_, i) => !bad.has(i));
+  const ground = anchor >= 0 ? parts[anchor].y : 0;
   const floats = [], reported = new Set();
   for (let s = 0; s < steps.length && anchor >= 0; s++) {
     const live = (i) => !bad.has(i) && parts[i].step <= s;
-    const seen = new Set([anchor]), stack = [anchor];
+    const roots = parts.map((_, i) => i).filter((i) => live(i) && (i === anchor || parts[i].y === ground));
+    const seen = new Set(roots), stack = [...roots];
     while (stack.length) { const a = stack.pop(); for (const b of edges[a]) if (live(b) && !seen.has(b)) { seen.add(b); stack.push(b); } }
     parts.forEach((p, i) => { if (live(i) && !seen.has(i) && !reported.has(i)) { reported.add(i); floats.push({ i, step: s }); } });
   }
@@ -842,8 +990,8 @@ function analyze(steps) {
 function describeForFix(p) { return `${p.id} (${CAT[p.id].en}) ${p.c} at x=${p.x},y=${p.y},z=${p.z},r=${p.r}`; }
 function problemList(a, unknown = []) {
   const out = [...unknown.slice(0, 15)];
-  for (const o of a.overlaps.slice(0, 20)) { const p = a.parts[o.i], q = a.parts[o.j]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} overlaps step ${q.step + 1} part ${q.pi + 1} ${describeForFix(q)}${CAT[q.id].wheels || CAT[p.id].wheels ? " (remember the wheel space of 4600)" : ""}.`); }
-  for (const f of a.floats.slice(0, 20)) { const p = a.parts[f.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} is not connected by studs to the model when step ${f.step + 1} is finished.`); }
+  for (const o of a.overlaps.slice(0, 20)) { const p = a.parts[o.i], q = a.parts[o.j]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} overlaps step ${q.step + 1} part ${q.pi + 1} ${describeForFix(q)}${CAT[q.id].wheels || CAT[p.id].wheels ? " (remember the wheel space)" : ""}.`); }
+  for (const f of a.floats.slice(0, 20)) { const p = a.parts[f.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} is not held by studs (not attached to the model and not standing on the table) when step ${f.step + 1} is finished.`); }
   for (const t of a.trapped.slice(0, 10)) { const p = a.parts[t.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} must be squeezed in between pieces that are already above and below it. Place it in an earlier step.`); }
   return out;
 }
@@ -1138,6 +1286,7 @@ function catalogText() {
     if (C.shape === "screen") return "glass leans toward +z; studs only on the back row z+0";
     if (C.shape === "window" || C.shape === "frame") return "glass/door faces +z; studs on top; 1 deep";
     if (C.wheels) return "see WHEELS";
+    if (C.mask || C.shape === "arch" || C.bottom === "center" || C.studs === "round" || C.bottom === "none") return "";
     if (C.studs === "none") return "smooth top, nothing attaches on top";
     return "";
   };
@@ -1150,13 +1299,13 @@ ${catalogText()}
 
 COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative.
 ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
-WHEELS: vehicles use 4600 (2x2 plate with wheel holders; the 2 wheels come with it). Attach it UNDER a chassis plate or brick (its studs go into the part above it). At r=0 its wheels stick out on the left and right (the columns x-1 and x+2, rows z and z+1) and reach from 3 plates below the 4600 to 2 plates above its bottom (y-3 to y+2). Nothing else may be in that wheel space, so anything wider than the 2x2 holder over the wheels must be at least 3 plates above the 4600 (y+3 or higher). Use r=90 to put wheels front and back instead.
-EXTRA COLOR "c2" (optional): hub color for 4600 wheels, door color for 60596.
+WHEELS: vehicles use 4600 (2x2 plate with wheel holders, normal size wheels) or 122c01 (2x2 plate with small red wheels, 1990s style). The wheels come with the plate. Attach it UNDER a chassis plate or brick (its studs go into the part above it). At r=0 its wheels stick out on the left and right (the columns x-1 and x+2, rows z and z+1). 4600 wheels fill y-3 to y+2 there, 122c01 wheels fill y-2 to y+1. Nothing else may be in that wheel space, so anything wider than the 2x2 plate over the wheels must be above it (4600: y+3 or higher, 122c01: y+2 or higher). Use r=90 to put wheels front and back instead.
+EXTRA COLOR "c2" (optional): hub color for 4600 wheels, door color for door frames, flower color for 3741, steering wheel color for 3829c01.
 
 BUILDING RULES (critical, a checker verifies them):
 1. No two parts may share any space.
 2. Every part connects with studs: its bottom presses onto studs on the top of a part directly below (footprints overlap by at least one stud with studs there), or its studs press into the bottom of a part directly above. Smooth tops (tiles, slanted slope surfaces) hold nothing.
-3. After every step, everything built so far is ONE connected model, attached to what step 1 started. Never place a part in mid air waiting for later support.
+3. After every step, every part is attached to what step 1 started, or stands on the table at the same height as step 1's first part (so two separate pillars may later be bridged by an arch). Never place a part in mid air waiting for later support.
 4. Never squeeze a new part in between parts that are already placed above and below it.
 5. Build like official instructions: 1 to 6 new parts per step, identical parts grouped together, a solid base first. Overlap joints like masonry so the model is strong.
 COLORS ("c"), exact names only: ${Object.keys(COLORS).join(" ")}.
@@ -1171,7 +1320,7 @@ function inventoryLine(o) {
   if (!o.useInv || !inv.length) return "";
   const list = inv.map((p) => `${p.id} ${p.c} x${p.n}`).join("; ");
   return o.strict
-    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (id, color, count): ${list}. Use only these and never more of one than its count (a 4600 already includes its wheels). Make the model smaller if needed.`
+    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (id, color, count): ${list}. Use only these and never more of one than its count (4600 and 122c01 include their wheels, door frames include their door, windows their glass). Make the model smaller if needed.`
     : `\nAVAILABLE PIECES: the child owns these pieces (id, color, count): ${list}. Build mostly from them; you may add a few common bricks or plates from the catalog when really needed.`;
 }
 function buildPrompt(o) {
@@ -1508,7 +1657,7 @@ $("#inv-scan").addEventListener("click", () => pickPhoto(async (file) => {
   try {
     const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
     const res = await AI.sample.json(`Identify every LEGO piece visible in this photo and count identical pieces.
-Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel holder plate with wheels counts as one 4600.
+Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel holder plate with wheels counts as one 4600 (or one 122c01 for the small red-hub wheels on a 2x2 plate).
 ${list}
 Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
 Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });

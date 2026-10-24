@@ -42,14 +42,33 @@ In the instruction viewer:
 
 ### Parts catalog
 
+About 120 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+
 | Group | Parts (design IDs) |
 |---|---|
-| Bricks | 3005, 3004, 3622, 3010, 3009, 3008, 6111 (1×1 to 1×10); 3003, 3002, 3001, 2456, 3007, 3006 (2×2 to 2×10); 3245c (1×2×2); 30145 (2×2×3) |
-| Plates | 3024, 3023, 3623, 3710, 3666, 3460, 4477; 3022, 3021, 3020, 3795, 3034, 3832; 3031, 3032, 3035, 3030; 3958, 3036, 3033; 41539 |
-| Tiles | 3070b, 3069b, 63864, 2431, 6636, 3068b, 87079 |
-| Slopes | 3040, 3039, 3038, 3037 (45°); 3665, 3660 (45° inverted); 54200, 85984 (30° cheese) |
-| Round | 3062b, 4073, 98138, 3941, 4032, 14769, 4589 (cone), 33291 (flower) |
-| Special | 60592, 60593, 60594 (windows with glass); 60596 door frame + 60616 door; 3823 windscreen 2×4×2; 4600 plate 2×2 with wheel holders + 2× wheel 4624 with tire 3641 |
+| Bricks | 1×1 to 1×16: 3005, 3004, 3622, 3010, 3009, 3008, 6111, 6112, 2465; 2×2 to 2×10: 3003, 3002, 3001, 2456, 3007, 3006; tall: 3245c (1×2×2), 30145 (2×2×3), 2453, 2454, 3755, 3754 (×5 pillars); 2357 corner; 4070 headlight brick; 2877 grille brick |
+| Technic bricks with holes (normal studs) | 3700, 3701, 3894, 3702, 2730, 3895, 32018, 3703 (1×2 to 1×16) |
+| Arches | 3659 (1×4), 3455 (1×6), 3307 (1×6×2) |
+| Plates | 3024 to 41539 (1×1 to 8×8), plus 60479 1×12, 2445 2×12, 4282 2×16, 3029 4×12, 3028 6×12, 3456 6×14, 3027 6×16, 3026 6×24; 2420 corner; 3709b / 3738 Technic plates with holes; 2540 with handle; 4081b with clip light |
+| Baseplates | 3867 16×16, 3857 16×32, 3811 32×32 |
+| Tiles | 3070b, 3069b, 63864, 2431, 6636, 4162, 3068b, 87079; 2412b grille |
+| Slopes | 45°: 3040, 3039, 3038, 3037; 33°: 4286, 3298, 4161, 3297; 75°: 4460, 3684; inverted: 3665, 3660, 4287, 3747b; 30° cheese: 54200, 85984 |
+| Round | 3062b, 4073, 98138, 3941, 4032, 14769; cones 4589, 3942c; antenna 3957 |
+| Nature | 3471 pine tree, 3470 fruit tree, 3741 flower stem with 3× 3742 flowers, 33291 flower plate |
+| Windows & doors | 2377 1×2×2 plane window, 3853 1×4×3 window + 3855 glass, 4132 2×4×3 window + 4133 pane, 4130 2×4×5 door frame + 4131 door, 30179 1×4×6 door frame + 60623 4-pane door; newer 60592, 60593, 60594, 60596 + 60616 |
+| Vehicles | 4600 wheel holder + 2× 4624/3641 wheels, 122c01 plate with small red wheels, 3829c01 steering wheel stand, 3823 windscreen |
+| Special | 3403c01 turntable 4×4 |
+
+The checker knows each part's special rules:
+
+- Corner pieces leave their fourth cell empty.
+- Arches rest only on their two end columns.
+- Trees attach with the 2×2 center of their base.
+- The turntable has studs on its round top but not the corners.
+- Nothing attaches under a baseplate or a wheel plate.
+- Pieces that come with another piece (glass, doors, flowers, wheels) are listed separately in the parts list.
+
+The rule for loose parts allows pillars standing side by side on the table before an arch or plate bridges them. Gears, axles, beams and the big Technic wheels are left out until Technic support is added.
 
 **Wheels work like real LEGO.** The 4600 plate clips *under* a chassis with its studs, and its two wheels snap onto the side pins. The wheels take up real space: one stud column on each side, from 3 plates below the holder to 2 plates above it. Anything wider than the holder has to sit above that space, like a fender.
 
