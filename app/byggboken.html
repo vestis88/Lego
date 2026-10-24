@@ -535,6 +535,9 @@ const NOUNS = {
   turn:   { name: "Vridskiva",         sg: "vridskiva",         pl: "vridskivor",          g: "en" },
   steer:  { name: "Ratt",              sg: "ratt",              pl: "rattar",              g: "en" },
   glass:  { name: "Glas",              sg: "glas",              pl: "glas",                g: "ett" },
+  seat:   { name: "Stol",              sg: "stol",              pl: "stolar",              g: "en" },
+  wedge:  { name: "Kilplatta",         sg: "kilplatta",         pl: "kilplattor",          g: "en" },
+  htile:  { name: "Slät platta med handtag", sg: "slät platta med handtag", pl: "släta plattor med handtag", g: "en" },
   wplate: { name: "Hjulplatta",        sg: "hjulplatta",        pl: "hjulplattor",         g: "en" },
   window: { name: "Fönster",           sg: "fönster",           pl: "fönster",             g: "ett" },
   frame:  { name: "Dörrkarm",          sg: "dörrkarm",          pl: "dörrkarmar",          g: "en" },
@@ -633,7 +636,18 @@ def("122c01", { en: "Plate 2 x 2 with Red Wheels (small wheels; see WHEELS)", no
   wheels: { r: 0.6, width: 0.5, off: 0.26, below: 2, above: 1, hub: 0.36, hubColor: "red" } });
 def("3829c01", { en: "Car Steering Stand with Steering Wheel (1 x 2, wheel toward -z; nothing attaches on top)", noun: "steer", group: "vehicle", shape: "steer", w: 1, d: 2, h: 3, studs: "none", dir: true, size: "1×2" });
 def("3403c01", { en: "Turntable 4 x 4 (square base, round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 2, studs: "round", size: "4×4" });
+def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger wheels 6014 + tires 6015; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
+  wheels: { r: 1.31, width: 1.5, off: 0.8, cols: 2, rows: [-1, 2], below: 4, above: 3, hub: 0.72 },
+  extras: [{ id: "6014ac01", n: 2, color: "c2", def: "white" }] });
+def("2926", { en: "Plate 1 x 4 with Wheel Holders at both ends (comes with 2 wheels 4624 + tires 3641; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 4, d: 1, h: 1, dir: true, bottom: "none", size: "1×4",
+  wheels: { r: 0.94, width: 0.72, off: 0.38, rows: [-1, 1], cz: 0.5, below: 3, above: 2, hub: 0.5 },
+  extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
+def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0, faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 3, studs: "none", dir: true });
+def("2432", { en: "Tile 1 x 2 with Bar Handle (smooth; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 1, studs: "none" });
+def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
+  mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
 // Pieces that come along with the parts above.
+def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
 def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
 def("4133", { en: "Pane for Window 2 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "2×4×3", child: true });
 def("4131", { en: "Door 1 x 4 x 5", noun: "door", group: "window", shape: "doorpanel", w: 4, d: 1, h: 14, studs: "none", size: "1×4×5", child: true });
@@ -739,6 +753,7 @@ function ruleCells(C, rule) {
     case "ends": return all.filter(([cx]) => cx === 0 || cx === C.w - 1);
     case "center": return all.filter(([cx, cz]) => cx >= 1 && cx <= C.w - 2 && cz >= 1 && cz <= C.d - 2);
     case "round": return all.filter(([cx, cz]) => !((cx === 0 || cx === C.w - 1) && (cz === 0 || cz === C.d - 1)));
+    case "list": return C.studList;
     default: return [];
   }
 }
@@ -753,7 +768,13 @@ function info(p) {
   const occ = [];
   for (const [x, z] of cells) for (let y = p.y; y < p.y + C.h; y++) occ.push([x, y, z]);
   const W = C.wheels;
-  if (W) for (const cx of [-1, C.w]) for (let cz = 0; cz < C.d; cz++) { const [x, z] = tc(cx, cz); for (let y = p.y - W.below; y <= p.y + W.above; y++) occ.push([x, y, z]); }
+  if (W) {
+    const [z0, z1] = W.rows || [0, C.d - 1];
+    for (let k = 1; k <= (W.cols || 1); k++) for (const cx of [-k, C.w - 1 + k]) for (let cz = z0; cz <= z1; cz++) {
+      const [x, z] = tc(cx, cz);
+      for (let y = p.y - W.below; y <= p.y + W.above; y++) occ.push([x, y, z]);
+    }
+  }
   return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + C.h, cells, studs: ruleCells(C, C.studs).map(([a, b]) => tc(a, b)), bottom: ruleCells(C, C.bottom).map(([a, b]) => tc(a, b)), occ };
 }
 function rotMatrix(C, r, p) {
@@ -855,21 +876,29 @@ function shapeLayers(C, p, solo) {
       break;
     case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
     case "wheel": return wheelLayers({ r: 0.94, width: 0.72, hub: 0.5 }, 0.5, 0.94, col);
+    case "bigwheel": return wheelLayers({ r: 1.31, width: 1.5, hub: 0.72 }, 1, 1.31, col, 1.5);
+    case "seat": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.5, D - 0.02), box(0.02, 0.5, 0.02, W - 0.02, H - 0.01, 0.4)); break;
+    case "cutcorner": {
+      const sh = new THREE.Shape();
+      [[0.02, 0.02], [2.98, 0.02], [2.98, 0.98], [0.98, 2.98], [0.02, 2.98]].forEach(([x, z], i) => (i ? sh.lineTo(x, -z) : sh.moveTo(x, -z)));
+      main.push(new THREE.ExtrudeGeometry(sh, { depth: H - 0.02, bevelEnabled: false }).rotateX(-Math.PI / 2).translate(0, 0.01, 0));
+      break;
+    }
   }
   main.push(...studsOn(C.studs, H));
   L.unshift({ geos: main, color: col });
   if (!solo && C.door) L.push(...shapeLayers(CAT[C.door], { c: p.c2 || col }, true));
   if (!solo && C.wheels) {
     const Wh = C.wheels, hub = Wh.hubColor || p.c2 || "lightgray";
-    for (const cx of [-Wh.off, W + Wh.off]) L.push(...wheelLayers(Wh, cx, 0, hub));
+    for (const cx of [-Wh.off, W + Wh.off]) L.push(...wheelLayers(Wh, cx, 0, hub, Wh.cz ?? 1));
   }
   return L;
 }
 const STEMS = [[-0.25, 0, 2.3], [0.22, -0.18, 1.9], [0.15, 0.25, 1.6]];
-function wheelLayers(Wh, cx, cy, hub) {
+function wheelLayers(Wh, cx, cy, hub, cz = 1) {
   return [
-    { geos: [new THREE.CylinderGeometry(Wh.r, Wh.r, Wh.width, 30).rotateZ(Math.PI / 2).translate(cx, cy, 1)], color: "black" },
-    { geos: [new THREE.CylinderGeometry(Wh.hub, Wh.hub, Wh.width + 0.04, 22).rotateZ(Math.PI / 2).translate(cx, cy, 1)], color: hub },
+    { geos: [new THREE.CylinderGeometry(Wh.r, Wh.r, Wh.width, 30).rotateZ(Math.PI / 2).translate(cx, cy, cz)], color: "black" },
+    { geos: [new THREE.CylinderGeometry(Wh.hub, Wh.hub, Wh.width + 0.04, 22).rotateZ(Math.PI / 2).translate(cx, cy, cz)], color: hub },
   ];
 }
 /** Small molded details that don't change how a part connects: lamps, grilles, holes, handles. */
@@ -881,6 +910,7 @@ function decoLayers(C, H, W, D, main, L) {
     case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, H * 0.5, k + 1)), color: "black" }); break;
     case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
     case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
+    case "tilehandle": main.push(box(0.4, H - 0.01, 0.25, 0.6, H + 0.12, 0.4), box(0.4, H - 0.01, D - 0.4, 0.6, H + 0.12, D - 0.25), new THREE.CylinderGeometry(0.06, 0.06, D - 0.5, 8).rotateX(Math.PI / 2).translate(0.5, H + 0.12, D / 2)); break;
     case "handle": main.push(new THREE.CylinderGeometry(0.08, 0.08, W - 0.5, 10).rotateZ(Math.PI / 2).translate(W / 2, 0.2, D - 0.1)); break;
   }
 }
@@ -1201,6 +1231,33 @@ const EXAMPLE = {
       { id: "3070b", x: 3, y: 5, z: 0, r: 0, c: "transred" } ] },
   ],
 };
+const EXAMPLE_BUGGY = {
+  id: "example-buggy", example: true, title: "Strandbuggy", level: 3, createdAt: 0,
+  description: "En buggy med stora hjul, stol och ratt.",
+  steps: [
+    { text: "Börja med den långa svarta plattan.", parts: [
+      { id: "3034", x: 1, y: 0, z: 0, r: 0, c: "black" } ] },
+    { text: "Tryck fast de breda hjulhållarna under.", parts: [
+      { id: "6157", x: 1, y: -1, z: 0, r: 0, c: "black", c2: "white" },
+      { id: "6157", x: 1, y: -1, z: 6, r: 0, c: "black", c2: "white" } ] },
+    { text: "Lägg den långa gula klossen ovanpå.", parts: [
+      { id: "3007", x: 1, y: 1, z: 0, r: 0, c: "yellow" } ] },
+    { text: "Den breda plattan täcker hjulen.", parts: [
+      { id: "3036", x: -1, y: 4, z: 0, r: 0, c: "yellow" } ] },
+    { text: "Sätt dit stolen, ratten och vindrutan.", parts: [
+      { id: "4079", x: 1, y: 5, z: 2, r: 0, c: "blue" },
+      { id: "3829c01", x: 1, y: 5, z: 4, r: 0, c: "blue", c2: "black" },
+      { id: "3823", x: 0, y: 5, z: 6, r: 0, c: "transparent" } ] },
+    { text: "Lampor fram och bak, och två avgasrör.", parts: [
+      { id: "3070b", x: -1, y: 5, z: 7, r: 0, c: "transyellow" },
+      { id: "3070b", x: 4, y: 5, z: 7, r: 0, c: "transyellow" },
+      { id: "3070b", x: -1, y: 5, z: 0, r: 0, c: "transred" },
+      { id: "3070b", x: 4, y: 5, z: 0, r: 0, c: "transred" },
+      { id: "4073", x: 0, y: 5, z: 0, r: 0, c: "darkgray" },
+      { id: "4073", x: 3, y: 5, z: 0, r: 0, c: "darkgray" } ] },
+  ],
+};
+const EXAMPLES = [EXAMPLE, EXAMPLE_BUGGY];
 
 const Store = {
   db: null, builds: [], inventory: [],
@@ -1299,8 +1356,14 @@ ${catalogText()}
 
 COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative.
 ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
-WHEELS: vehicles use 4600 (2x2 plate with wheel holders, normal size wheels) or 122c01 (2x2 plate with small red wheels, 1990s style). The wheels come with the plate. Attach it UNDER a chassis plate or brick (its studs go into the part above it). At r=0 its wheels stick out on the left and right (the columns x-1 and x+2, rows z and z+1). 4600 wheels fill y-3 to y+2 there, 122c01 wheels fill y-2 to y+1. Nothing else may be in that wheel space, so anything wider than the 2x2 plate over the wheels must be above it (4600: y+3 or higher, 122c01: y+2 or higher). Use r=90 to put wheels front and back instead.
-EXTRA COLOR "c2" (optional): hub color for 4600 wheels, door color for door frames, flower color for 3741, steering wheel color for 3829c01.
+WHEELS: the wheels come with their plate. Attach the wheel plate UNDER a chassis plate or brick (its studs go into the part above it); nothing attaches under it. At r=0 the wheels stick out on the left and right. Nothing else may be in the wheel space:
+- 4600 (2x2, normal wheels): columns x-1 and x+2, rows z..z+1, from y-3 to y+2. Parts wider than 2 over the wheels need y+3 or higher.
+- 122c01 (2x2, small red wheels, classic 1990s): columns x-1 and x+2, rows z..z+1, from y-2 to y+1. Parts wider than 2 over the wheels need y+2 or higher.
+- 6157 (2x2, big wide wheels for buggies and trucks): columns x-2, x-1, x+2 and x+3, rows z-1..z+2, from y-4 to y+3. Parts wider than 2 over the wheels need y+4 or higher.
+- 2926 (1x4 plate across the car, one normal wheel at each end): columns x-1 and x+4, rows z-1..z+1, from y-3 to y+2. Build the body 4 wide right above it, or go wider only at y+3 or higher.
+Use r=90 to turn a wheel plate so the wheels point front and back instead.
+VEHICLE TIPS: a car is usually a chassis plate (4 or 6 wide) with two wheel plates under it, a seat 4079 with a steering stand 3829c01 in front, a windscreen 3823, a grille tile 2412b or brick 2877 at the front, trans-yellow headlights (4070, 3070b, 4073) and trans-red taillights. Bumpers: tiles 2432. Noses and wing tips: 2450.
+EXTRA COLOR "c2" (optional): hub color for 4600, 6157 and 2926 wheels, door color for door frames, flower color for 3741, steering wheel color for 3829c01.
 
 BUILDING RULES (critical, a checker verifies them):
 1. No two parts may share any space.
@@ -1320,7 +1383,7 @@ function inventoryLine(o) {
   if (!o.useInv || !inv.length) return "";
   const list = inv.map((p) => `${p.id} ${p.c} x${p.n}`).join("; ");
   return o.strict
-    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (id, color, count): ${list}. Use only these and never more of one than its count (4600 and 122c01 include their wheels, door frames include their door, windows their glass). Make the model smaller if needed.`
+    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (id, color, count): ${list}. Use only these and never more of one than its count (wheel plates include their wheels, door frames include their door, windows their glass). Make the model smaller if needed.`
     : `\nAVAILABLE PIECES: the child owns these pieces (id, color, count): ${list}. Build mostly from them; you may add a few common bricks or plates from the catalog when really needed.`;
 }
 function buildPrompt(o) {
@@ -1355,10 +1418,10 @@ document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("clic
 /* home */
 function renderShelf() {
   const shelf = $("#shelf"); shelf.textContent = "";
-  for (const b of [...Store.builds, EXAMPLE]) {
+  for (const b of [...Store.builds, ...EXAMPLES]) {
     const card = document.createElement("button"); card.className = "build-card";
     const th = document.createElement("div"); th.className = "thumb";
-    const img = document.createElement("img"); img.alt = ""; img.src = b.example ? exampleThumb() : (b.thumb || ""); th.append(img);
+    const img = document.createElement("img"); img.alt = ""; img.src = b.example ? exampleThumb(b) : (b.thumb || ""); th.append(img);
     const meta = document.createElement("div"); meta.className = "meta";
     if (b.example) { const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = "Exempel"; meta.append(bd); }
     const t = document.createElement("b"); t.textContent = b.title;
@@ -1368,8 +1431,8 @@ function renderShelf() {
     shelf.append(card);
   }
 }
-let exThumb = "";
-function exampleThumb() { if (!exThumb) exThumb = Snap.model(EXAMPLE.steps); return exThumb; }
+const exThumbs = {};
+function exampleThumb(b) { return (exThumbs[b.id] ||= Snap.model(b.steps)); }
 
 /* create */
 let createMode = "text", photoFile = null, invStrict = true, useInv = false;
@@ -1657,7 +1720,7 @@ $("#inv-scan").addEventListener("click", () => pickPhoto(async (file) => {
   try {
     const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
     const res = await AI.sample.json(`Identify every LEGO piece visible in this photo and count identical pieces.
-Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel holder plate with wheels counts as one 4600 (or one 122c01 for the small red-hub wheels on a 2x2 plate).
+Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end).
 ${list}
 Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
 Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });

@@ -42,7 +42,7 @@ In the instruction viewer:
 
 ### Parts catalog
 
-About 120 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+About 125 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
 
 | Group | Parts (design IDs) |
 |---|---|
@@ -56,7 +56,7 @@ About 120 real System parts, focused on the classic 1990s range (Town, Castle, S
 | Round | 3062b, 4073, 98138, 3941, 4032, 14769; cones 4589, 3942c; antenna 3957 |
 | Nature | 3471 pine tree, 3470 fruit tree, 3741 flower stem with 3× 3742 flowers, 33291 flower plate |
 | Windows & doors | 2377 1×2×2 plane window, 3853 1×4×3 window + 3855 glass, 4132 2×4×3 window + 4133 pane, 4130 2×4×5 door frame + 4131 door, 30179 1×4×6 door frame + 60623 4-pane door; newer 60592, 60593, 60594, 60596 + 60616 |
-| Vehicles | 4600 wheel holder + 2× 4624/3641 wheels, 122c01 plate with small red wheels, 3829c01 steering wheel stand, 3823 windscreen |
+| Vehicles | Wheel plates: 4600 + 2× 4624/3641 wheels, 122c01 with small red wheels, 6157 wide holder + 2× 6014/6015 big wheels, 2926 1×4 with a wheel at each end. Also 3829c01 steering wheel stand, 4079 seat, 3823 windscreen, 2450 3×3 cut-corner wedge plate, 2432 tile with handle (bumpers) |
 | Special | 3403c01 turntable 4×4 |
 
 The checker knows each part's special rules:
@@ -70,7 +70,18 @@ The checker knows each part's special rules:
 
 The rule for loose parts allows pillars standing side by side on the table before an arch or plate bridges them. Gears, axles, beams and the big Technic wheels are left out until Technic support is added.
 
-**Wheels work like real LEGO.** The 4600 plate clips *under* a chassis with its studs, and its two wheels snap onto the side pins. The wheels take up real space: one stud column on each side, from 3 plates below the holder to 2 plates above it. Anything wider than the holder has to sit above that space, like a fender.
+**Wheels work like real LEGO.** Every wheel plate clips *under* a chassis with its studs, and its wheels sit on side pins. Each wheel plate reserves its real wheel space, and anything wider than the chassis has to sit above it, like a fender. The prompt also gives Claude a short recipe for vehicles: chassis, wheel plates, seat, steering wheel, windscreen, grille, headlights and taillights.
+
+| Wheel plate | Wheel space beside it | Wider parts start at |
+|---|---|---|
+| 4600 | 1 column each side, 3 plates below to 2 above | y+3 |
+| 122c01 | 1 column each side, 2 below to 1 above | y+2 |
+| 6157 | 2 columns each side, 4 rows long, 4 below to 3 above | y+4 |
+| 2926 | 1 column at each end | y+3 |
+
+The 3788 mudguard and the hinged 1×3×1 car doors are not in yet. Their studs sit at two heights, or they attach with a hinge, and the grid engine can't represent that yet.
+
+The home screen has two examples: a small race car (4600 wheels) and a beach buggy (6157 big wheels, seat, steering wheel and windscreen).
 
 ### Model format
 
