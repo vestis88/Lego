@@ -1,0 +1,1444 @@
+<title>Byggboken</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: a picture-first build booklet. Pale "instruction page" ground, white callout boxes, one big yellow action per screen. */
+:root {
+  --page: #dce8f2;
+  --page-deep: #c9dae8;
+  --card: #ffffff;
+  --ink: #1b2733;
+  --ink-soft: #52637a;
+  --line: #b9cad9;
+  --go: #ffcc1f;
+  --go-ink: #2a2100;
+  --stop: #d8352a;
+  --focus: #1f6fd1;
+  --display: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --r: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #142030; --page-deep: #0e1825; --card: #1f2e40; --ink: #edf3f9; --ink-soft: #a5b6c9;
+    --line: #34485f; --go: #ffcc1f; --go-ink: #2a2100; --stop: #ff6b5e; --focus: #7fb3ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #142030; --page-deep: #0e1825; --card: #1f2e40; --ink: #edf3f9; --ink-soft: #a5b6c9;
+  --line: #34485f; --go: #ffcc1f; --go-ink: #2a2100; --stop: #ff6b5e; --focus: #7fb3ff; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--page); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.1; margin: 0; text-wrap: balance; }
+
+.wrap {
+  max-width: 980px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 40px;
+}
+.view { display: flex; flex-direction: column; gap: 20px; }
+
+/* Header */
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand svg { flex: none; }
+.brand h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.01em; }
+.brand p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+.topbar { display: flex; align-items: center; gap: 12px; }
+.topbar h2 { font-size: 1.6rem; font-weight: 800; min-width: 0; }
+.iconbtn {
+  width: 52px; height: 52px; flex: none; border-radius: 16px; display: grid; place-items: center;
+  background: var(--card); box-shadow: 0 2px 0 var(--line);
+}
+.iconbtn svg { width: 26px; height: 26px; }
+.iconbtn[aria-pressed="true"] { background: var(--go); color: var(--go-ink); }
+
+/* Big home tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.tile {
+  background: var(--card); border-radius: var(--r); padding: 18px 14px 14px; text-align: left;
+  display: flex; flex-direction: column; gap: 10px; min-height: 150px; box-shadow: 0 3px 0 var(--line);
+  transition: transform .12s ease;
+}
+.tile:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.tile .pic { width: 64px; height: 64px; }
+.tile b { font-family: var(--display); font-size: 1.45rem; font-weight: 800; line-height: 1; }
+.tile span { color: var(--ink-soft); font-size: 0.9rem; line-height: 1.25; }
+.tile.hero { grid-column: 1 / -1; min-height: 0; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 16px; align-items: center; }
+.tile.hero .pic { grid-row: 1 / 3; }
+.tile.hero b { align-self: end; }
+.tile.hero span { align-self: start; }
+.tile.hero { background: var(--go); color: var(--go-ink); box-shadow: 0 3px 0 #c99a00; }
+.tile.hero span { color: var(--go-ink); opacity: .75; }
+.tile[disabled] { opacity: .45; pointer-events: none; }
+
+.section-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.section-h h2 { font-size: 1.5rem; font-weight: 800; }
+.section-h small { color: var(--ink-soft); }
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.build-card {
+  background: var(--card); border-radius: var(--r); overflow: hidden; text-align: left; display: flex; flex-direction: column;
+  box-shadow: 0 3px 0 var(--line);
+}
+.build-card .thumb { aspect-ratio: 4 / 3; max-width: 100%; background: #f4f7fa; display: grid; place-items: center; }
+.build-card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.build-card .meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.build-card .meta b { font-family: var(--display); font-size: 1.15rem; line-height: 1.1; overflow-wrap: anywhere; }
+.build-card .meta span { color: var(--ink-soft); font-size: .82rem; }
+.badge { align-self: flex-start; background: var(--page-deep); border-radius: 99px; padding: 1px 9px; font-size: .75rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
+
+.notice {
+  background: var(--card); border-radius: var(--r); padding: 14px 16px; border: 2px dashed var(--line);
+  color: var(--ink-soft); font-size: .95rem;
+}
+.notice b { color: var(--ink); }
+
+/* Panels and form bits */
+.panel { background: var(--card); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 3px 0 var(--line); }
+.panel h3 { font-size: 1.25rem; font-weight: 800; }
+label.lbl { font-weight: 800; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+textarea {
+  width: 100%; min-height: 110px; resize: vertical; border-radius: 14px; border: 2px solid var(--line); background: var(--page);
+  padding: 12px 14px; font-size: 1.15rem; line-height: 1.35; box-sizing: border-box;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 8px 14px; border-radius: 99px; background: var(--page); font-weight: 700; border: 2px solid transparent; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--go); color: var(--go-ink); }
+.swatch { width: 44px; height: 44px; border-radius: 12px; border: 3px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.swatch[aria-pressed="true"] { border-color: var(--ink); }
+
+.level-row { display: flex; align-items: center; gap: 14px; }
+.level-num {
+  font-family: var(--display); font-weight: 800; font-size: 2.2rem; width: 64px; height: 64px; flex: none; border-radius: 16px;
+  display: grid; place-items: center; background: var(--go); color: var(--go-ink); font-variant-numeric: tabular-nums;
+}
+.level-text { display: flex; flex-direction: column; min-width: 0; }
+.level-text b { font-family: var(--display); font-size: 1.3rem; line-height: 1.1; }
+.level-text span { color: var(--ink-soft); font-size: .9rem; }
+input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
+.range-ends { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: .8rem; font-weight: 700; margin-top: -8px; }
+
+.toggle { display: flex; align-items: center; gap: 12px; padding: 4px 0; text-align: left; }
+.toggle .knob { width: 54px; height: 32px; flex: none; border-radius: 99px; background: var(--line); position: relative; transition: background .15s; }
+.toggle .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: var(--card); transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.toggle[aria-checked="true"] .knob { background: #2f9e55; }
+.toggle[aria-checked="true"] .knob::after { transform: translateX(22px); }
+.toggle span { min-width: 0; }
+.toggle small { display: block; color: var(--ink-soft); }
+
+.btn {
+  min-height: 60px; border-radius: 18px; padding: 0 22px; font-family: var(--display); font-weight: 800; font-size: 1.35rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: var(--card); box-shadow: 0 3px 0 var(--line);
+}
+.btn svg { width: 26px; height: 26px; }
+.btn.go { background: var(--go); color: var(--go-ink); box-shadow: 0 3px 0 #c99a00; }
+.btn.danger { color: var(--stop); }
+.btn.small { min-height: 46px; font-size: 1.05rem; padding: 0 16px; border-radius: 14px; }
+.btn:disabled { opacity: .45; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn-row .btn { flex: 1 1 auto; }
+
+.photo-drop {
+  border: 3px dashed var(--line); border-radius: var(--r); min-height: 180px; display: grid; place-items: center; text-align: center;
+  padding: 16px; color: var(--ink-soft); background: var(--page); position: relative; overflow: hidden;
+}
+.photo-drop img { max-height: 320px; border-radius: 12px; }
+.photo-drop b { display: block; font-family: var(--display); font-size: 1.3rem; color: var(--ink); }
+
+/* Working screen */
+.working { align-items: center; text-align: center; padding-top: 8vh; }
+.stack { position: relative; width: 140px; height: 150px; }
+.stack i {
+  position: absolute; left: 50%; width: 96px; height: 34px; margin-left: -48px; border-radius: 4px;
+  animation: drop 2.4s infinite ease-in; opacity: 0;
+}
+.stack i::before, .stack i::after { content: ""; position: absolute; top: -9px; width: 22px; height: 10px; border-radius: 3px 3px 0 0; background: inherit; filter: brightness(1.08); }
+.stack i::before { left: 16px; } .stack i::after { right: 16px; }
+.stack i:nth-child(1) { bottom: 0; background: #c91a09; animation-delay: 0s; }
+.stack i:nth-child(2) { bottom: 38px; background: #0055bf; animation-delay: .4s; width: 72px; margin-left: -30px; }
+.stack i:nth-child(3) { bottom: 76px; background: #f2cd37; animation-delay: .8s; }
+.stack i:nth-child(4) { bottom: 114px; background: #237841; animation-delay: 1.2s; width: 48px; margin-left: -24px; }
+.stack i:nth-child(4)::after { display: none; }
+@keyframes drop {
+  0% { transform: translateY(-120px); opacity: 0; }
+  12% { opacity: 1; }
+  22% { transform: translateY(0); }
+  26% { transform: translateY(-6px); }
+  30%, 82% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+.working h2 { font-size: 1.9rem; font-weight: 800; }
+.working p { margin: 0; color: var(--ink-soft); max-width: 34ch; }
+.count { font-family: var(--display); font-size: 3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* Viewer */
+.viewer {
+  position: fixed; inset: 0; z-index: 5; background: var(--page); display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.v-top {
+  display: flex; align-items: center; gap: 10px; padding-block: 10px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.v-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.v-title b { font-family: var(--display); font-size: 1.2rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v-title span { color: var(--ink-soft); font-size: .85rem; }
+.v-stage { position: relative; flex: 1; min-height: 0; }
+.v-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.stepnum {
+  position: absolute; top: 6px; right: max(14px, env(safe-area-inset-right, 0px)); font-family: var(--display); font-weight: 800;
+  font-size: 4.2rem; line-height: 1; color: var(--ink); pointer-events: none; font-variant-numeric: tabular-nums;
+}
+.stepnum small { font-size: 1.3rem; color: var(--ink-soft); font-weight: 700; }
+.callout {
+  position: absolute; top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); max-width: min(62%, 420px);
+  background: var(--card); border: 3px solid var(--ink); border-radius: 16px; padding: 8px 10px;
+  display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: flex-end;
+}
+.callout button { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 0; }
+.callout img { width: 64px; height: 64px; display: block; }
+.callout em { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 1.15rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.v-text {
+  text-align: center; font-weight: 700; font-size: 1.05rem; color: var(--ink); min-height: 1.5em;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.v-bottom {
+  display: flex; align-items: center; gap: 12px; padding-block: 10px 12px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.navbtn {
+  width: 92px; height: 76px; border-radius: 22px; flex: none; display: grid; place-items: center;
+  background: var(--card); box-shadow: 0 4px 0 var(--line);
+}
+.navbtn svg { width: 40px; height: 40px; }
+.navbtn.next { background: var(--go); color: var(--go-ink); box-shadow: 0 4px 0 #c99a00; width: 120px; }
+.navbtn:disabled { opacity: .35; }
+.progress { flex: 1; height: 14px; border-radius: 99px; background: var(--page-deep); overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--go); border-radius: 99px; transition: width .25s ease; }
+.cover-card {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(520px, calc(100% - 32px));
+  background: var(--card); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 6px 24px rgba(10, 30, 60, .18); box-sizing: border-box;
+}
+.cover-card h2 { font-size: 1.9rem; font-weight: 800; }
+.cover-card p { margin: 0; color: var(--ink-soft); }
+.cover-card .facts { display: flex; gap: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: var(--page); border-radius: 14px; padding: 10px 12px; }
+
+.sheet-bg { position: fixed; inset: 0; z-index: 20; background: rgba(8, 18, 30, .45); display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  background: var(--card); width: min(640px, 100%); max-height: 85%; overflow: auto; border-radius: 24px 24px 0 0; box-sizing: border-box;
+  padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+.sheet h3 { font-size: 1.4rem; font-weight: 800; }
+.bom { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.bom-item { background: var(--page); border-radius: 14px; padding: 6px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+.bom-item img { width: 72px; height: 72px; }
+.bom-item b { font-family: var(--display); font-size: 1.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.bom-item span { font-size: .75rem; color: var(--ink-soft); line-height: 1.15; }
+
+.inv-list { display: flex; flex-direction: column; gap: 8px; }
+.inv-row { display: flex; align-items: center; gap: 10px; background: var(--page); border-radius: 14px; padding: 6px 10px 6px 6px; }
+.inv-row img { width: 56px; height: 56px; flex: none; }
+.inv-row .nm { flex: 1; min-width: 0; font-weight: 700; line-height: 1.2; }
+.inv-row .nm small { display: block; color: var(--ink-soft); font-weight: 600; }
+.stepper { display: flex; align-items: center; gap: 4px; }
+.stepper button { width: 40px; height: 40px; border-radius: 12px; background: var(--card); font-weight: 800; font-size: 1.3rem; }
+.stepper output { min-width: 2.2em; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.finder-photo { position: relative; border-radius: var(--r); overflow: hidden; background: #000; }
+.finder-photo img { display: block; width: 100%; height: auto; }
+.ring {
+  position: absolute; border-radius: 50%; border: 5px solid var(--go); box-shadow: 0 0 0 3px rgba(0,0,0,.6), inset 0 0 0 3px rgba(0,0,0,.6);
+  transform: translate(-50%, -50%); animation: pulse 1.4s ease-in-out infinite;
+}
+.ring.maybe { border-style: dashed; }
+@keyframes pulse { 50% { transform: translate(-50%, -50%) scale(1.12); } }
+.hint { font-family: var(--display); font-weight: 700; font-size: 1.35rem; line-height: 1.2; }
+.target { display: flex; align-items: center; gap: 12px; }
+.target img { width: 80px; height: 80px; flex: none; background: var(--page); border-radius: 14px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+  background: var(--ink); color: var(--page); padding: 12px 18px; border-radius: 14px; font-weight: 700; max-width: calc(100% - 32px);
+}
+
+@media (max-width: 520px) {
+  .brand h1 { font-size: 1.8rem; }
+  .tile { min-height: 132px; }
+  .tile .pic { width: 52px; height: 52px; }
+  .stepnum { font-size: 3.2rem; }
+  .callout img { width: 52px; height: 52px; }
+  .navbtn { width: 76px; height: 68px; }
+  .navbtn.next { width: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stack i, .ring { animation: none; opacity: 1; }
+  .tile, .progress i { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <!-- HOME -->
+  <section class="view" id="v-home">
+    <header class="brand">
+      <svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true">
+        <rect x="4" y="18" width="50" height="34" rx="5" fill="#c91a09"/>
+        <rect x="11" y="9" width="12" height="11" rx="3" fill="#c91a09"/><rect x="35" y="9" width="12" height="11" rx="3" fill="#c91a09"/>
+        <rect x="11" y="9" width="12" height="4" rx="2" fill="#e8463a"/><rect x="35" y="9" width="12" height="4" rx="2" fill="#e8463a"/>
+        <path d="M17 33h24M17 41h16" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Byggboken</h1>
+        <p>Byggbeskrivningar för klossar, steg för steg</p>
+      </div>
+    </header>
+
+    <div class="notice" id="ai-notice" hidden></div>
+
+    <div class="tiles">
+      <button class="tile hero" data-mode="text" id="t-text">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="10" width="52" height="40" rx="8" fill="#fff" stroke="#2a2100" stroke-width="3"/><path d="M16 24h32M16 33h22" stroke="#2a2100" stroke-width="4" stroke-linecap="round"/><path d="M20 50l-4 10 12-10" fill="#fff" stroke="#2a2100" stroke-width="3" stroke-linejoin="round"/></svg>
+        <b>Berätta</b><span>Skriv eller säg vad du vill bygga</span>
+      </button>
+      <button class="tile" data-mode="photo" id="t-photo">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="16" width="54" height="38" rx="8" fill="#0055bf"/><rect x="20" y="9" width="24" height="10" rx="3" fill="#0055bf"/><circle cx="32" cy="35" r="12" fill="#fff"/><circle cx="32" cy="35" r="7" fill="#1b2733"/><circle cx="49" cy="25" r="3" fill="#f2cd37"/></svg>
+        <b>Foto</b><span>Fota något och bygg det</span>
+      </button>
+      <button class="tile" data-mode="random" id="t-random">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="8" width="48" height="48" rx="11" fill="#237841"/><g fill="#fff"><circle cx="21" cy="21" r="5"/><circle cx="43" cy="21" r="5"/><circle cx="32" cy="32" r="5"/><circle cx="21" cy="43" r="5"/><circle cx="43" cy="43" r="5"/></g></svg>
+        <b>Överraska</b><span>Appen väljer något roligt</span>
+      </button>
+      <button class="tile" id="t-inv">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 30h52l-5 26H11z" fill="#fe8a18"/><rect x="12" y="18" width="14" height="12" rx="2" fill="#c91a09"/><rect x="28" y="12" width="12" height="18" rx="2" fill="#f2cd37"/><rect x="41" y="20" width="12" height="10" rx="2" fill="#0055bf"/></svg>
+        <b>Mina bitar</b><span>Fota dina klossar</span>
+      </button>
+      <button class="tile" id="t-find">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><circle cx="27" cy="27" r="17" fill="#fff" stroke="#1b2733" stroke-width="5"/><rect x="19" y="23" width="16" height="9" rx="2" fill="#c91a09"/><path d="M40 40l15 15" stroke="#1b2733" stroke-width="7" stroke-linecap="round"/></svg>
+        <b>Hitta bit</b><span>Leta i högen med kameran</span>
+      </button>
+    </div>
+
+    <div class="section-h"><h2>Sparade byggen</h2><small id="sync-note"></small></div>
+    <div class="shelf" id="shelf"></div>
+  </section>
+
+  <!-- CREATE -->
+  <section class="view" id="v-create" hidden>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2 id="create-title">Vad vill du bygga?</h2>
+    </div>
+
+    <div class="panel" id="c-text">
+      <label class="lbl" for="prompt">Beskriv ditt bygge</label>
+      <textarea id="prompt" placeholder="Till exempel: ett brandfordon med stege och blåljus"></textarea>
+      <div class="chips" id="ideas"></div>
+    </div>
+
+    <div class="panel" id="c-photo" hidden>
+      <label class="lbl">Foto</label>
+      <button class="photo-drop" id="photo-pick"><span><b>Tryck för att ta ett foto</b>eller välj en bild</span></button>
+      <label class="lbl" for="photo-note">Något mer? (valfritt)</label>
+      <textarea id="photo-note" style="min-height:64px" placeholder="Till exempel: gör den röd"></textarea>
+    </div>
+
+    <div class="panel" id="c-random" hidden>
+      <h3>Hemligt bygge!</h3>
+      <p style="margin:0;color:var(--ink-soft)">Appen hittar på något roligt. Du ser vad det blir när bygget är klart.</p>
+    </div>
+
+    <div class="panel">
+      <label class="lbl" for="level">Hur svårt?</label>
+      <div class="level-row">
+        <div class="level-num" id="level-num">8</div>
+        <div class="level-text"><b id="level-label">Som 10 år</b><span id="level-sub">Cirka 90 bitar, 22 steg</span></div>
+      </div>
+      <input type="range" id="level" min="1" max="10" step="1" value="8" aria-describedby="level-label">
+      <div class="range-ends"><span>Lätt</span><span>Expert</span></div>
+      <button class="toggle" id="use-inv" role="switch" aria-checked="false">
+        <span class="knob"></span>
+        <span>Använd mina bitar<small id="inv-sub">Fota dina bitar under Mina bitar först</small></span>
+      </button>
+      <div class="chips" id="inv-mode" hidden>
+        <button class="chip" data-strict="1" aria-pressed="true">Bara mina bitar</button>
+        <button class="chip" data-strict="0" aria-pressed="false">Mina bitar + några extra</button>
+      </div>
+    </div>
+
+    <button class="btn go" id="go"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>Bygg!</button>
+  </section>
+
+  <!-- WORKING -->
+  <section class="view working" id="v-working" hidden>
+    <div class="stack" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <h2 id="w-title">Klossmästaren tänker…</h2>
+    <div class="count" id="w-count" hidden>0</div>
+    <p id="w-sub">Stora byggen kan ta ett par minuter.</p>
+    <button class="btn small" id="w-stop">Avbryt</button>
+  </section>
+
+  <!-- INVENTORY -->
+  <section class="view" id="v-inv" hidden>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2>Mina bitar</h2>
+    </div>
+    <p style="margin:0;color:var(--ink-soft)">Lägg ut klossarna på ett bord så att de inte ligger på varandra, och ta ett foto. Ta flera foton om du har många bitar. Varje foto läggs till i listan.</p>
+    <div class="btn-row">
+      <button class="btn go" id="inv-scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-3h3L15 7"/></svg>Fota bitar</button>
+    </div>
+    <div class="notice" id="inv-status" hidden></div>
+    <div class="section-h"><h2 id="inv-count">Inga bitar än</h2><button class="btn small danger" id="inv-clear" hidden>Töm listan</button></div>
+    <div class="confirm" id="inv-clear-confirm" hidden><span style="flex:1;min-width:0">Ta bort alla bitar från listan?</span><button class="btn small danger" id="inv-clear-yes">Ja, töm</button><button class="btn small" id="inv-clear-no">Nej</button></div>
+    <div class="inv-list" id="inv-list"></div>
+  </section>
+
+  <!-- FINDER -->
+  <section class="view" id="v-find" hidden>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2>Hitta en bit</h2>
+    </div>
+    <div class="panel">
+      <div class="target"><img id="f-img" alt=""><div><label class="lbl">Jag letar efter</label><div class="hint" id="f-name"></div></div></div>
+      <label class="lbl">Sort</label><div class="chips" id="f-kinds"></div>
+      <label class="lbl" id="f-sizes-l">Storlek</label><div class="chips" id="f-sizes"></div>
+      <label class="lbl">Färg</label><div class="chips" id="f-colors"></div>
+    </div>
+    <button class="btn go" id="f-shoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-3h3L15 7"/></svg>Fota högen</button>
+    <div class="panel" id="f-result" hidden>
+      <div class="hint" id="f-hint"></div>
+      <div class="finder-photo" id="f-photo"></div>
+      <div class="btn-row"><button class="btn small" id="f-say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 010 8"/></svg>Läs upp</button><button class="btn small" id="f-again">Fota igen</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- VIEWER -->
+<section class="viewer" id="v-view" hidden>
+  <div class="v-top">
+    <button class="iconbtn" id="v-close" aria-label="Stäng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="v-title"><b id="v-name"></b><span id="v-sub"></span></div>
+    <button class="iconbtn" id="v-parts" aria-label="Alla bitar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="2"/><rect x="6" y="6" width="4" height="4" rx="1"/><rect x="14" y="6" width="4" height="4" rx="1"/></svg></button>
+    <button class="iconbtn" id="v-reset" aria-label="Vrid tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 108-8H8"/><path d="M10 1L7 4l3 3"/></svg></button>
+    <button class="iconbtn" id="v-speak" aria-label="Läs upp" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 010 8"/></svg></button>
+  </div>
+  <div class="v-stage" id="v-stage">
+    <canvas id="v-canvas"></canvas>
+    <div class="callout" id="v-callout" hidden></div>
+    <div class="stepnum" id="v-stepnum" hidden></div>
+    <div class="cover-card" id="v-cover" hidden>
+      <h2 id="c-name"></h2>
+      <p id="c-desc"></p>
+      <div class="facts"><span id="c-parts"></span><span id="c-steps"></span></div>
+      <div class="btn-row">
+        <button class="btn go" id="c-start"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>Börja bygga</button>
+        <button class="btn small" id="c-allparts">Alla bitar</button>
+        <button class="btn small danger" id="c-del">Ta bort</button>
+      </div>
+      <div class="confirm" id="c-del-confirm" hidden><span style="flex:1;min-width:0">Ta bort bygget för alltid?</span><button class="btn small danger" id="c-del-yes">Ja, ta bort</button><button class="btn small" id="c-del-no">Nej</button></div>
+    </div>
+    <div class="cover-card" id="v-done" hidden>
+      <h2>Klart! Snyggt byggt!</h2>
+      <p id="d-desc"></p>
+      <div class="btn-row">
+        <button class="btn small" id="d-again">Från början</button>
+        <button class="btn go small" id="d-home">Till startsidan</button>
+      </div>
+    </div>
+  </div>
+  <div class="v-text" id="v-text"></div>
+  <div class="v-bottom">
+    <button class="navbtn" id="v-prev" aria-label="Förra steget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="progress"><i id="v-prog" style="width:0%"></i></div>
+    <button class="navbtn next" id="v-next" aria-label="Nästa steg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+  </div>
+</section>
+
+<div class="sheet-bg" id="sheet" hidden><div class="sheet" id="sheet-body" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+<input type="file" id="file" accept="image/*" hidden>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ---------------------------------------------------------------- data */
+const PH = 0.4; // one plate in stud units
+const COLORS = {
+  red:        { hex: 0xc91a09, sg: "röd",        pl: "röda" },
+  blue:       { hex: 0x0055bf, sg: "blå",        pl: "blå" },
+  yellow:     { hex: 0xf2cd37, sg: "gul",        pl: "gula" },
+  green:      { hex: 0x237841, sg: "grön",       pl: "gröna" },
+  white:      { hex: 0xf2f3f2, sg: "vit",        pl: "vita" },
+  black:      { hex: 0x1d2a33, sg: "svart",      pl: "svarta" },
+  lightgray:  { hex: 0xa0a5a9, sg: "ljusgrå",    pl: "ljusgrå" },
+  darkgray:   { hex: 0x6c6e68, sg: "mörkgrå",    pl: "mörkgrå" },
+  orange:     { hex: 0xfe8a18, sg: "orange",     pl: "orange" },
+  lime:       { hex: 0xbbe90b, sg: "limegrön",   pl: "limegröna" },
+  tan:        { hex: 0xe4cd9e, sg: "sandfärgad", pl: "sandfärgade" },
+  brown:      { hex: 0x6b4128, sg: "brun",       pl: "bruna" },
+  darkblue:   { hex: 0x0a3463, sg: "mörkblå",    pl: "mörkblå" },
+  darkred:    { hex: 0x720e0f, sg: "mörkröd",    pl: "mörkröda" },
+  pink:       { hex: 0xfc97ac, sg: "rosa",       pl: "rosa" },
+  purple:     { hex: 0x81007b, sg: "lila",       pl: "lila" },
+  azure:      { hex: 0x36aebf, sg: "ljusblå",    pl: "ljusblå" },
+  transparent:{ hex: 0xd6ecf5, sg: "genomskinlig", pl: "genomskinliga", alpha: 0.45 },
+};
+const KINDS = {
+  brick: { label: "Kloss",       sg: "kloss",       pl: "klossar" },
+  plate: { label: "Platta",      sg: "platta",      pl: "plattor" },
+  tile:  { label: "Slät platta", sg: "slät platta", pl: "släta plattor" },
+  slope: { label: "Taklutning",  sg: "taklutning",  pl: "taklutningar" },
+  round: { label: "Rund",        sg: "rund bit",    pl: "runda bitar" },
+  wheel: { label: "Hjul",        sg: "hjul",        pl: "hjul" },
+};
+const SIZES = {
+  brick: ["1x1","1x2","1x3","1x4","1x6","1x8","2x2","2x3","2x4","2x6","2x8"],
+  plate: ["1x1","1x2","1x3","1x4","1x6","1x8","2x2","2x3","2x4","2x6","2x8","4x4","4x6","4x8","6x6","6x8","8x8"],
+  tile:  ["1x1","1x2","1x4","2x2"],
+  slope: ["1x1","1x2","2x1","2x2","2x3","2x4"],
+  round: ["1x1"],
+  wheel: [],
+};
+const LEVELS = [
+  null,
+  { label: "Som 3 år",  age: "3-year-old",  parts: 8,   steps: 4 },
+  { label: "Som 4 år",  age: "4-year-old",  parts: 14,  steps: 6 },
+  { label: "Som 5 år",  age: "5-year-old",  parts: 22,  steps: 8 },
+  { label: "Som 6 år",  age: "6-year-old",  parts: 30,  steps: 10 },
+  { label: "Som 7 år",  age: "7-year-old",  parts: 40,  steps: 12 },
+  { label: "Som 8 år",  age: "8-year-old",  parts: 55,  steps: 15 },
+  { label: "Som 9 år",  age: "9-year-old",  parts: 70,  steps: 18 },
+  { label: "Som 10 år", age: "10-year-old", parts: 90,  steps: 22 },
+  { label: "Som 12 år", age: "12-year-old", parts: 110, steps: 26 },
+  { label: "Expert",    age: "teenage expert", parts: 140, steps: 30 },
+];
+const IDEAS = ["Rymdraket", "Polisbil", "Drake", "Fyr", "Robot", "Traktor", "Slott", "Ubåt", "Glassbil", "Dinosaurie"];
+const SURPRISES = [
+  "a fire truck with a ladder", "a small castle tower with a flag", "a space shuttle on a launch pad", "a pirate ship",
+  "a dinosaur (T-rex)", "a lighthouse on rocks", "a tractor with a trailer", "a robot with arms", "an ice cream truck",
+  "a racing car", "a submarine", "a windmill", "a dragon", "a treehouse", "a police helicopter", "a train locomotive",
+  "a garbage truck", "a crane", "a snowman scene", "a Viking ship", "a hot air balloon", "a farm barn", "a rocket car",
+  "an owl", "a penguin", "a camper van", "a moon rover", "a race boat", "a bulldozer", "an airplane", "a fishing boat",
+  "a red Swedish cottage (stuga)", "a dump truck", "a tank-like snow groomer", "a giraffe", "a fountain", "a medieval catapult",
+  "a monster truck", "a city bus", "a mech walker",
+];
+
+/* -------------------------------------------------------------- helpers */
+const $ = (s) => document.querySelector(s);
+const int = (v, d = 0) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : d; };
+const clampInt = (v, lo, hi, d) => Math.min(hi, Math.max(lo, int(v, d)));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3500); }
+
+function normPart(p) {
+  p = p || {};
+  const k = KINDS[p.k] ? p.k : "brick";
+  let w = clampInt(p.w, 1, 16, 1), d = clampInt(p.d, 1, 16, 1);
+  let h = k === "brick" ? 3 : (k === "plate" || k === "tile") ? 1 : k === "slope" ? (int(p.h) === 2 ? 2 : 3) : k === "round" ? (int(p.h) === 1 ? 1 : 3) : 5;
+  if (k === "round") w = d = 1;
+  const out = { k, x: int(p.x), y: Math.max(0, int(p.y)), z: int(p.z), w, d, h, c: COLORS[p.c] ? p.c : "lightgray" };
+  if (k === "slope") out.dir = ["+x", "-x", "+z", "-z"].includes(p.dir) ? p.dir : "+z";
+  if (k === "wheel") { out.axis = p.axis === "z" ? "z" : "x"; if (out.axis === "x") { out.w = 1; out.d = 2; } else { out.w = 2; out.d = 1; } }
+  return out;
+}
+function normBuild(raw) {
+  const steps = (Array.isArray(raw?.steps) ? raw.steps : [])
+    .map((s) => ({ text: String(s?.text || "").slice(0, 160), parts: (Array.isArray(s?.parts) ? s.parts : []).map(normPart) }))
+    .filter((s) => s.parts.length);
+  return { title: String(raw?.title || "Mitt bygge").slice(0, 60), description: String(raw?.description || "").slice(0, 240), steps };
+}
+const slopeAlong = (p) => (p.dir[1] === "x" ? p.w : p.d);
+const slopeAcross = (p) => (p.dir[1] === "x" ? p.d : p.w);
+function partKey(p) {
+  if (p.k === "wheel") return `wheel:${p.c}`;
+  if (p.k === "slope") return `slope:${slopeAlong(p)}x${slopeAcross(p)}:${p.h}:${p.c}`;
+  return `${p.k}:${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}:${p.h}:${p.c}`;
+}
+function sizeText(p, sep = "×") {
+  if (p.k === "wheel") return "";
+  if (p.k === "slope") return `${slopeAcross(p)}${sep}${slopeAlong(p)}`;
+  return `${Math.min(p.w, p.d)}${sep}${Math.max(p.w, p.d)}`;
+}
+function partName(p) {
+  const kind = p.k === "round" ? (p.h === 1 ? "Rund platta" : "Rund kloss") : KINDS[p.k].label;
+  const s = sizeText(p);
+  return s ? `${kind} ${s}` : kind;
+}
+const NUMS = ["noll", "en", "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio"];
+function spokenPart(p, n) {
+  const col = COLORS[p.c];
+  const kind = KINDS[p.k];
+  const size = sizeText(p, " gånger ");
+  if (p.k === "wheel") return `${n === 1 ? "ett" : (NUMS[n] || n)} hjul`;
+  const count = n === 1 ? "en" : (NUMS[n] || String(n));
+  return `${count} ${n === 1 ? col.sg : col.pl} ${n === 1 ? kind.sg : kind.pl}${size ? " " + size : ""}`;
+}
+function groupParts(list) {
+  const m = new Map();
+  for (const p of list) { const k = partKey(p); const e = m.get(k); if (e) e.n++; else m.set(k, { key: k, p, n: 1 }); }
+  return [...m.values()];
+}
+
+/* -------------------------------------------------- structural checking */
+function cellsOf(p) { const out = []; for (let x = p.x; x < p.x + p.w; x++) for (let z = p.z; z < p.z + p.d; z++) out.push([x, z]); return out; }
+function studCells(p) {
+  if (p.k === "tile" || p.k === "wheel") return [];
+  if (p.k === "slope") {
+    if (slopeAlong(p) < 2) return [];
+    const c = cellsOf(p);
+    if (p.dir === "+x") return c.filter(([x]) => x === p.x);
+    if (p.dir === "-x") return c.filter(([x]) => x === p.x + p.w - 1);
+    if (p.dir === "+z") return c.filter(([, z]) => z === p.z);
+    return c.filter(([, z]) => z === p.z + p.d - 1);
+  }
+  return cellsOf(p);
+}
+function analyze(steps) {
+  const parts = [];
+  steps.forEach((s, si) => s.parts.forEach((p, pi) => parts.push({ ...p, step: si, pi })));
+  const occ = new Map();
+  const overlaps = [];
+  const bad = new Set();
+  parts.forEach((p, i) => {
+    let hit = -1;
+    for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) { const k = `${x},${y},${z}`; if (occ.has(k)) hit = occ.get(k); }
+    if (hit >= 0) { overlaps.push({ i, j: hit }); bad.add(i); return; }
+    for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) occ.set(`${x},${y},${z}`, i);
+  });
+  const tops = new Map();
+  parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z] of studCells(p)) { const k = `${x},${p.y + p.h},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
+  const edges = parts.map(() => new Set());
+  const link = (a, b) => { if (a !== b) { edges[a].add(b); edges[b].add(a); } };
+  parts.forEach((p, j) => {
+    if (bad.has(j)) return;
+    if (p.k === "wheel") {
+      for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) {
+        const sides = p.axis === "x" ? [[x - 1, z], [x + 1, z]] : [[x, z - 1], [x, z + 1]];
+        for (const [sx, sz] of sides) { const o = occ.get(`${sx},${y},${sz}`); if (o != null) link(j, o); }
+      }
+      return;
+    }
+    for (const [x, z] of cellsOf(p)) { const below = tops.get(`${x},${p.y},${z}`); if (below) below.forEach((i) => link(i, j)); }
+  });
+  const floats = [];
+  const reported = new Set();
+  for (let s = 0; s < steps.length; s++) {
+    const live = parts.map((p, i) => !bad.has(i) && p.step <= s);
+    const seen = new Array(parts.length).fill(false);
+    for (let i = 0; i < parts.length; i++) {
+      if (!live[i] || seen[i]) continue;
+      const comp = []; const stack = [i]; seen[i] = true;
+      while (stack.length) { const a = stack.pop(); comp.push(a); for (const b of edges[a]) if (live[b] && !seen[b]) { seen[b] = true; stack.push(b); } }
+      if (!comp.some((a) => parts[a].y === 0)) for (const a of comp) if (!reported.has(a)) { reported.add(a); floats.push({ i: a, step: s }); }
+    }
+  }
+  return { parts, overlaps, floats };
+}
+function describeForFix(p) {
+  return `${p.k} ${p.w}x${p.d} h${p.h} ${p.c} at x=${p.x},y=${p.y},z=${p.z}${p.dir ? " dir " + p.dir : ""}${p.axis ? " axis " + p.axis : ""}`;
+}
+function problemList(a) {
+  const out = [];
+  for (const o of a.overlaps.slice(0, 25)) { const p = a.parts[o.i], q = a.parts[o.j]; out.push(`Step ${p.step + 1} part ${p.pi + 1} (${describeForFix(p)}) overlaps step ${q.step + 1} part ${q.pi + 1} (${describeForFix(q)}).`); }
+  for (const f of a.floats.slice(0, 25)) { const p = a.parts[f.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} (${describeForFix(p)}) is not attached to anything standing on the ground when step ${f.step + 1} is finished.`); }
+  return out;
+}
+function dropOverlaps(steps, a) {
+  const drop = new Set(a.overlaps.map((o) => `${a.parts[o.i].step}:${a.parts[o.i].pi}`));
+  return steps.map((s, si) => ({ ...s, parts: s.parts.filter((_, pi) => !drop.has(`${si}:${pi}`)) })).filter((s) => s.parts.length);
+}
+
+/* ------------------------------------------------------------ geometry */
+function mergeGeoms(list, withNormals = true) {
+  const arrs = list.map((g) => (g.index ? g.toNonIndexed() : g));
+  let n = 0; for (const g of arrs) n += g.attributes.position.array.length;
+  const pos = new Float32Array(n), nor = withNormals ? new Float32Array(n) : null;
+  let o = 0;
+  for (const g of arrs) { pos.set(g.attributes.position.array, o); if (nor) nor.set(g.attributes.normal.array, o); o += g.attributes.position.array.length; }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  if (nor) out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+  return out;
+}
+const STUD = new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18);
+function studAt(lx, top, lz) { return STUD.clone().translate(lx + 0.5, top + 0.09, lz + 0.5); }
+function slopeGeom(p) {
+  const L = slopeAlong(p), W = slopeAcross(p), H = p.h * PH;
+  const top = L >= 2 ? 1 : 0.02, low = L >= 2 ? 0.26 : 0.12;
+  const s = new THREE.Shape();
+  s.moveTo(0.02, 0.01); s.lineTo(L - 0.02, 0.01); s.lineTo(L - 0.02, low); s.lineTo(top, H - 0.01);
+  if (top > 0.03) s.lineTo(0.02, H - 0.01);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: W - 0.04, bevelEnabled: false }).translate(0, 0, 0.02);
+  const m = new THREE.Matrix4();
+  if (p.dir === "+x") m.identity();
+  else if (p.dir === "-x") m.set(-1, 0, 0, L, 0, 1, 0, 0, 0, 0, -1, W, 0, 0, 0, 1);
+  else if (p.dir === "+z") m.set(0, 0, -1, W, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
+  else m.set(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, L, 0, 0, 0, 1);
+  g.applyMatrix4(m);
+  return g;
+}
+function edgeColor(c) {
+  const col = new THREE.Color(COLORS[c].hex);
+  const l = col.r * 0.3 + col.g * 0.59 + col.b * 0.11;
+  return l < 0.22 ? new THREE.Color(0x7d8b97) : col.multiplyScalar(0.42);
+}
+function makeMat(hex, alpha) {
+  return new THREE.MeshLambertMaterial({ color: hex, transparent: !!alpha, opacity: alpha || 1, emissive: 0x000000 });
+}
+/** One part as a THREE.Group whose origin is the part's min corner. */
+function buildPart(p) {
+  const g = new THREE.Group();
+  const col = COLORS[p.c];
+  const mats = [];
+  const add = (geos, hex, alpha, ec) => {
+    const mesh = new THREE.Mesh(mergeGeoms(geos), makeMat(hex, alpha));
+    const edges = new THREE.LineSegments(mergeGeoms(geos.map((x) => new THREE.EdgesGeometry(x, 28)), false), new THREE.LineBasicMaterial({ color: ec, transparent: true, opacity: alpha ? 0.6 : 1 }));
+    g.add(mesh, edges); mats.push(mesh.material);
+  };
+  const H = p.h * PH;
+  if (p.k === "wheel") {
+    const tire = new THREE.CylinderGeometry(0.98, 0.98, 0.9, 28), hub = new THREE.CylinderGeometry(0.55, 0.55, 0.96, 20);
+    if (p.axis === "x") { tire.rotateZ(Math.PI / 2).translate(0.5, 1, 1); hub.rotateZ(Math.PI / 2).translate(0.5, 1, 1); }
+    else { tire.rotateX(Math.PI / 2).translate(1, 1, 0.5); hub.rotateX(Math.PI / 2).translate(1, 1, 0.5); }
+    add([tire], 0x22282e, 0, new THREE.Color(0x6d7a86));
+    add([hub], col.hex, col.alpha, edgeColor(p.c));
+  } else {
+    const geos = [];
+    if (p.k === "slope") geos.push(slopeGeom(p));
+    else if (p.k === "round") geos.push(new THREE.CylinderGeometry(0.48, 0.48, H - 0.02, 24).translate(0.5, H / 2, 0.5));
+    else geos.push(new THREE.BoxGeometry(p.w - 0.04, H - 0.02, p.d - 0.04).translate(p.w / 2, H / 2, p.d / 2));
+    for (const [x, z] of studCells(p)) geos.push(studAt(x - p.x, H, z - p.z));
+    add(geos, col.hex, col.alpha, edgeColor(p.c));
+  }
+  g.position.set(p.x, p.y * PH, p.z);
+  g.userData.mats = mats;
+  return g;
+}
+function disposeTree(o) { o.traverse((c) => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); }
+function addLights(scene, camera) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9bb0, 0.78));
+  const d = new THREE.DirectionalLight(0xffffff, 0.62); d.position.set(-3, 6, 4); camera.add(d); scene.add(camera);
+}
+function orbitPos(target, dist, az, el) {
+  return new THREE.Vector3(target.x + dist * Math.cos(el) * Math.sin(az), target.y + dist * Math.sin(el), target.z + dist * Math.cos(el) * Math.cos(az));
+}
+
+/* ---------------------------------------------- small offscreen renderer */
+const Snap = {
+  r: null, cache: new Map(),
+  init() {
+    if (this.r) return true;
+    try {
+      const c = document.createElement("canvas");
+      this.r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
+      this.r.setPixelRatio(1);
+      return true;
+    } catch { return false; }
+  },
+  shoot(group, w, h, opts = {}) {
+    if (!this.init()) return "";
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(28, w / h, 0.1, 500);
+    addLights(scene, cam);
+    scene.add(group);
+    const box = new THREE.Box3().setFromObject(group), sph = box.getBoundingSphere(new THREE.Sphere());
+    const dist = (sph.radius / Math.sin((28 * Math.PI) / 360)) * (opts.pad || 1.02) / Math.min(1, w / h);
+    cam.position.copy(orbitPos(sph.center, dist, 0.68, 0.52)); cam.lookAt(sph.center);
+    this.r.setSize(w, h, false);
+    this.r.setClearColor(opts.bg != null ? opts.bg : 0x000000, opts.bg != null ? 1 : 0);
+    this.r.render(scene, cam);
+    const url = this.r.domElement.toDataURL(opts.jpeg ? "image/jpeg" : "image/png", 0.82);
+    scene.remove(group); disposeTree(group);
+    return url;
+  },
+  icon(p) {
+    const key = partKey(p);
+    if (this.cache.has(key)) return this.cache.get(key);
+    let q;
+    if (p.k === "slope") q = { ...p, x: 0, y: 0, z: 0, dir: "+z", w: slopeAcross(p), d: slopeAlong(p) };
+    else if (p.k === "wheel") q = { ...p, x: 0, y: 0, z: 0, axis: "x", w: 1, d: 2 };
+    else q = { ...p, x: 0, y: 0, z: 0, w: Math.max(p.w, p.d), d: Math.min(p.w, p.d) };
+    const url = this.shoot(buildPart(q), 160, 160, { pad: 1.0 });
+    this.cache.set(key, url);
+    return url;
+  },
+  model(steps) {
+    const root = new THREE.Group();
+    steps.forEach((s) => s.parts.forEach((p) => root.add(buildPart(p))));
+    return this.shoot(root, 360, 270, { jpeg: true, bg: 0xf4f7fa, pad: 1.05 });
+  },
+};
+
+/* ------------------------------------------------------ main 3D viewer */
+const Stage = {
+  ready: false,
+  init() {
+    if (this.ready) return true;
+    try {
+      this.canvas = $("#v-canvas");
+      this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    } catch { return false; }
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
+    addLights(this.scene, this.camera);
+    this.root = new THREE.Group(); this.scene.add(this.root);
+    this.az = 0.68; this.el = 0.52; this.zoom = 1; this.spin = false;
+    this.anims = []; this.parts = [];
+    this.target = new THREE.Vector3(); this.radius = 5;
+    const ptrs = new Map(); let lastDist = 0;
+    this.canvas.addEventListener("pointerdown", (e) => { this.canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.spin = false; });
+    this.canvas.addEventListener("pointermove", (e) => {
+      if (!ptrs.has(e.pointerId)) return;
+      const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptrs.size === 1) {
+        this.az -= (e.clientX - prev.x) * 0.012;
+        this.el = Math.min(1.45, Math.max(-0.25, this.el + (e.clientY - prev.y) * 0.01));
+      } else if (ptrs.size === 2) {
+        const [a, b] = [...ptrs.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y);
+        if (lastDist) this.zoom = Math.min(3, Math.max(0.35, this.zoom * (lastDist / dd)));
+        lastDist = dd;
+      }
+      this.kick();
+    });
+    const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) lastDist = 0; };
+    this.canvas.addEventListener("pointerup", up); this.canvas.addEventListener("pointercancel", up);
+    this.canvas.addEventListener("wheel", (e) => { e.preventDefault(); this.zoom = Math.min(3, Math.max(0.35, this.zoom * Math.exp(e.deltaY * 0.001))); this.kick(); }, { passive: false });
+    new ResizeObserver(() => this.resize()).observe($("#v-stage"));
+    this.ready = true;
+    return true;
+  },
+  resize() {
+    const el = $("#v-stage"); const w = el.clientWidth, h = el.clientHeight;
+    if (!w || !h) return;
+    this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.kick();
+  },
+  setModel(steps) {
+    while (this.root.children.length) { const c = this.root.children[0]; this.root.remove(c); disposeTree(c); }
+    this.parts = [];
+    const box = new THREE.Box3();
+    steps.forEach((s, si) => s.parts.forEach((p) => {
+      const g = buildPart(p); g.userData.step = si; g.userData.baseY = g.position.y;
+      this.root.add(g); this.parts.push(g);
+      box.expandByPoint(new THREE.Vector3(p.x, p.y * PH, p.z)); box.expandByPoint(new THREE.Vector3(p.x + p.w, (p.y + p.h) * PH + 0.2, p.z + p.d));
+    }));
+    const sph = box.getBoundingSphere(new THREE.Sphere());
+    this.root.position.set(-sph.center.x, -sph.center.y, -sph.center.z);
+    this.radius = Math.max(1.5, sph.radius);
+    this.resetView();
+  },
+  resetView() { this.az = 0.68; this.el = 0.52; this.zoom = 1; this.kick(); },
+  show(step, animate) {
+    const now = performance.now();
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this.anims = [];
+    let k = 0;
+    for (const g of this.parts) {
+      const s = g.userData.step;
+      g.visible = step == null || s <= step;
+      g.position.y = g.userData.baseY;
+      for (const m of g.userData.mats) m.emissive.setHex(0x000000);
+      if (step != null && s === step) {
+        if (animate && !reduce) { this.anims.push({ g, t0: now + k * 110, kind: "drop" }); k++; }
+        this.anims.push({ g, t0: now + (animate && !reduce ? k * 110 + 450 : 0), kind: "glow" });
+      }
+    }
+    this.kick();
+  },
+  kick() { if (!this.raf) this.raf = requestAnimationFrame((t) => this.frame(t)); },
+  frame(t) {
+    this.raf = 0;
+    if (!this.ready || $("#v-view").hidden) return;
+    let more = false;
+    for (const a of this.anims) {
+      const u = (t - a.t0) / (a.kind === "drop" ? 520 : 1600);
+      if (u < 1) more = true;
+      if (a.kind === "drop") {
+        const c = Math.min(1, Math.max(0, u)); const e = 1 - Math.pow(1 - c, 3);
+        a.g.position.y = a.g.userData.baseY + (1 - e) * 3.2;
+        a.g.visible = u >= 0;
+      } else {
+        const c = Math.min(1, Math.max(0, u));
+        const v = u < 0 ? 0 : Math.sin(c * Math.PI * 3) ** 2 * (1 - c) * 0.38;
+        for (const m of a.g.userData.mats) m.emissive.setRGB(v, v * 0.85, v * 0.2);
+      }
+    }
+    if (this.spin) { this.az += 0.006; more = true; }
+    const dist = (this.radius / Math.sin((30 * Math.PI) / 360)) * 1.05 * this.zoom / Math.min(1, this.camera.aspect);
+    this.camera.position.copy(orbitPos(this.target, dist, this.az, this.el));
+    this.camera.lookAt(this.target);
+    this.renderer.render(this.scene, this.camera);
+    if (more) this.kick();
+  },
+};
+
+/* --------------------------------------------------------- storage */
+const EXAMPLE = {
+  id: "example", example: true, title: "Liten racerbil", level: 2, createdAt: 0,
+  description: "En snabb röd bil med blå fönsterruta. Ett bra första bygge.",
+  steps: [
+    { text: "Sätt fyra hjul på den svarta klossen.", parts: [
+      { k: "brick", x: 1, y: 1, z: 0, w: 2, d: 6, h: 3, c: "black" },
+      { k: "wheel", x: 0, y: 0, z: 0, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
+      { k: "wheel", x: 0, y: 0, z: 4, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
+      { k: "wheel", x: 3, y: 0, z: 0, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
+      { k: "wheel", x: 3, y: 0, z: 4, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" } ] },
+    { text: "Lägg en röd kloss ovanpå.", parts: [ { k: "brick", x: 1, y: 4, z: 0, w: 2, d: 6, h: 3, c: "red" } ] },
+    { text: "Den stora röda plattan blir taket över hjulen.", parts: [ { k: "plate", x: 0, y: 7, z: 0, w: 4, d: 6, h: 1, c: "red" } ] },
+    { text: "Bygg förarhytten med en vit kloss och en ruta.", parts: [
+      { k: "brick", x: 1, y: 8, z: 1, w: 2, d: 2, h: 3, c: "white" },
+      { k: "slope", x: 1, y: 8, z: 3, w: 2, d: 2, h: 3, c: "transparent", dir: "+z" } ] },
+    { text: "Taket på, och lampor fram och bak.", parts: [
+      { k: "plate", x: 1, y: 11, z: 1, w: 2, d: 3, h: 1, c: "blue" },
+      { k: "tile", x: 0, y: 8, z: 5, w: 1, d: 1, h: 1, c: "yellow" },
+      { k: "tile", x: 3, y: 8, z: 5, w: 1, d: 1, h: 1, c: "yellow" },
+      { k: "tile", x: 0, y: 8, z: 0, w: 1, d: 1, h: 1, c: "orange" },
+      { k: "tile", x: 3, y: 8, z: 0, w: 1, d: 1, h: 1, c: "orange" } ] },
+  ],
+};
+
+const Store = {
+  db: null, builds: [], inventory: [], listeners: [],
+  async init() {
+    try { this.db = window.claude?.use ? await window.claude.use("db") : null; } catch { this.db = null; }
+    if (this.db) {
+      $("#sync-note").textContent = "Synkas mellan dina enheter";
+      this.db.collection("builds").orderBy("createdAt", "desc").onSnapshot(
+        (snap) => { this.builds = snap.docs.map((d) => ({ id: d.id, ...d.data() })); renderShelf(); },
+        () => { $("#sync-note").textContent = "Kunde inte läsa sparade byggen"; },
+      );
+      this.db.doc("inventory/main").onSnapshot((d) => { this.inventory = (d.exists && Array.isArray(d.data().parts)) ? d.data().parts : []; renderInventory(); updateInvToggle(); }, () => {});
+    } else {
+      $("#sync-note").textContent = "Sparas bara på den här enheten";
+      this.builds = lsGet("builds", []); this.inventory = lsGet("inventory", []);
+      renderShelf(); renderInventory(); updateInvToggle();
+    }
+  },
+  async saveBuild(b) {
+    if (this.db) { const { id, ...rest } = b; await this.db.doc("builds/" + id).set(rest); }
+    else { this.builds = [b, ...this.builds.filter((x) => x.id !== b.id)]; lsSet("builds", this.builds); renderShelf(); }
+  },
+  async deleteBuild(id) {
+    if (this.db) await this.db.doc("builds/" + id).delete();
+    else { this.builds = this.builds.filter((x) => x.id !== id); lsSet("builds", this.builds); renderShelf(); }
+  },
+  async saveInventory(parts) {
+    this.inventory = parts;
+    if (this.db) await this.db.doc("inventory/main").set({ parts, updatedAt: Date.now() });
+    else lsSet("inventory", parts);
+    renderInventory(); updateInvToggle();
+  },
+};
+
+/* ---------------------------------------------------------- Claude */
+const AI = { sample: null, images: false };
+async function initAI() {
+  try {
+    AI.sample = window.claude?.use ? await window.claude.use("sample") : null;
+    if (AI.sample) { const lim = await AI.sample.limits().catch(() => null); AI.images = !!lim?.images; }
+  } catch { AI.sample = null; }
+  const n = $("#ai-notice");
+  if (!AI.sample) {
+    n.hidden = false;
+    n.innerHTML = "<b>Öppna Byggboken i Claude-appen</b> för att skapa nya byggen. Här kan du titta på sparade byggen och exemplet.";
+  } else if (!AI.images) {
+    n.hidden = false;
+    n.innerHTML = "<b>Foton fungerar inte här.</b> Uppdatera Claude-appen för att använda kameran. Att skriva vad du vill bygga fungerar.";
+  } else n.hidden = true;
+  for (const id of ["#t-text", "#t-random"]) $(id).disabled = !AI.sample;
+  for (const id of ["#t-photo", "#t-find"]) $(id).disabled = !(AI.sample && AI.images);
+  $("#inv-scan").disabled = !(AI.sample && AI.images);
+}
+function errText(e) {
+  switch (e?.code) {
+    case "not_granted": return "Byggboken fick inte fråga Claude. Stäng och öppna appen igen och tryck Tillåt.";
+    case "rate_limited": return "Claude behöver vila en stund. Försök igen lite senare.";
+    case "invalid_json": return "Beskrivningen blev trasig på vägen. Tryck på Bygg igen.";
+    case "refused": return "Det där kunde Claude inte bygga. Prova något annat.";
+    case "image_rejected": return "Bilden gick inte att läsa. Ta ett nytt foto.";
+    case "session_expired": return "Logga in i Claude igen och försök på nytt.";
+    case "sampling_disabled": return "Claude är inte tillgängligt för det här kontot.";
+    case "prompt_too_large": return "Det blev för mycket på en gång. Prova en lägre svårighet.";
+    default: return "Något gick fel på vägen. Försök igen.";
+  }
+}
+
+const RULES = `COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is 3 plates tall, a plate is 1). Every part's x,y,z is its MINIMUM corner (lowest x, lowest z, bottom y). w = size along x in studs, d = size along z in studs, h = height in plates.
+PART KINDS ("k"):
+- "brick": h 3. Sizes 1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x3 2x4 2x6 2x8 (either orientation).
+- "plate": h 1. Sizes 1x1 to 2x8 as for bricks, plus 4x4 4x6 4x8 6x6 6x8 8x8 8x16.
+- "tile": h 1, smooth top: NOTHING can be attached on top of it. Sizes 1x1 1x2 1x4 2x2.
+- "slope": a 45 degree roof slope, h 3. Add "dir": the direction it slopes DOWN toward, one of "+x" "-x" "+z" "-z". The size along dir is 2 (or 1 for a small "cheese" slope with h 2), the size across is 1 to 4. Only the 1-stud strip at the high end has studs; nothing attaches to the slanted part.
+- "round": 1x1 round brick (h 3) or round plate (h 1).
+- "wheel": fixed size, 2 studs in diameter, 1 stud thick, h 5. Add "axis": "x" (then w 1, d 2) or "z" (then w 2, d 1). It clips onto the SIDE of a part next to it along its axis, so put it right beside a brick at the same height range.
+BUILDING RULES (critical):
+1. No two parts may share any space.
+2. Every part must be held by studs: its bottom rests on the top of a part directly below (footprints overlap by at least one stud), or a part directly above presses on its top. Wheels instead touch a part's side.
+3. After every step, everything built so far must be connected to parts standing at y=0. Never place a part in the air expecting later steps to support it.
+4. Build bottom-up like official instructions: 1 to 6 new parts per step, identical parts grouped in the same step. Overlap joints like masonry so the model is strong.
+COLORS ("c"), exact names only: red blue yellow green white black lightgray darkgray orange lime tan brown darkblue darkred pink purple azure transparent.`;
+const FORMAT = `Reply with ONLY this JSON and nothing else:
+{"title":"Swedish name, max 4 words","description":"one short Swedish sentence for the cover","steps":[{"text":"short Swedish instruction for a 5-year-old, max 10 words","parts":[{"k":"brick","x":0,"y":0,"z":0,"w":2,"d":4,"h":3,"c":"red"}]}]}`;
+
+function inventoryLine(o) {
+  const inv = Store.inventory, strict = o.strict;
+  if (!o.useInv || !inv.length) return "";
+  const list = inv.map((p) => `${p.k} ${p.w}x${p.d}${p.k === "round" ? " h" + p.h : ""} ${p.c} x${p.n}`).join("; ");
+  return strict
+    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (kind, size, color, count): ${list}. Use only these pieces and never more of one than its count. Make the model smaller if needed.`
+    : `\nAVAILABLE PIECES: the child owns these pieces (kind, size, color, count): ${list}. Build mostly from them; you may add a few common bricks or plates when really needed.`;
+}
+function buildPrompt(o) {
+  const L = LEVELS[o.level];
+  const what = o.mode === "random"
+    ? `Pick ONE of these and design it: ${o.surprise.join(", ")}. Make it fun and recognizable.`
+    : o.mode === "photo"
+      ? `Look at the photo. Design a LEGO model of the main thing in it. If the photo shows a LEGO model, recreate it as closely as you can.${o.text ? ` Extra wish from the child: "${o.text}".` : ""}`
+      : `The child (writing in Swedish) wants to build: "${o.text}".`;
+  return `You are an expert LEGO set designer making official-style building instructions for a 5-year-old Swedish boy who builds at the level of a ${L.age}.
+TASK: ${what}
+SIZE: about ${L.parts} parts in about ${L.steps} steps. The model must clearly look like the subject, with good colors and details (windows, lights, wheels, roofs) where they fit.
+${RULES}${inventoryLine(o)}
+Before you answer, plan the model layer by layer on the grid and check every part against the rules.
+${FORMAT}`;
+}
+function fixPrompt(build, problems, o) {
+  return `You designed this LEGO model, but a checker found problems. Fix ALL of them by moving, resizing or adding parts (adding support parts is fine), keep the model looking the same, and keep the step order buildable.
+PROBLEMS:
+${problems.join("\n")}
+${RULES}${inventoryLine(o)}
+MODEL:
+${JSON.stringify({ title: build.title, description: build.description, steps: build.steps })}
+Return the full corrected model. ${FORMAT}`;
+}
+
+/* ---------------------------------------------------------- views */
+const VIEWS = ["#v-home", "#v-create", "#v-working", "#v-inv", "#v-find"];
+function go(view) {
+  for (const v of VIEWS) $(v).hidden = v !== view;
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => go("#v-home")));
+
+/* home */
+function renderShelf() {
+  const shelf = $("#shelf"); shelf.textContent = "";
+  const list = [...Store.builds, EXAMPLE];
+  for (const b of list) {
+    const card = document.createElement("button"); card.className = "build-card";
+    const th = document.createElement("div"); th.className = "thumb";
+    const img = document.createElement("img"); img.alt = ""; img.src = b.thumb || (b.example ? exampleThumb() : ""); th.append(img);
+    const meta = document.createElement("div"); meta.className = "meta";
+    if (b.example) { const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = "Exempel"; meta.append(bd); }
+    const t = document.createElement("b"); t.textContent = b.title;
+    const n = (b.steps || []).reduce((a, s) => a + s.parts.length, 0);
+    const s = document.createElement("span"); s.textContent = `${n} bitar · ${(b.steps || []).length} steg`;
+    meta.append(t, s); card.append(th, meta);
+    card.addEventListener("click", () => openBuild(b));
+    shelf.append(card);
+  }
+}
+let exThumb = "";
+function exampleThumb() { if (!exThumb) exThumb = Snap.model(EXAMPLE.steps); return exThumb; }
+
+/* create */
+let createMode = "text", photoFile = null, invStrict = true, useInv = false;
+function openCreate(mode) {
+  createMode = mode; photoFile = null;
+  $("#c-text").hidden = mode !== "text"; $("#c-photo").hidden = mode !== "photo"; $("#c-random").hidden = mode !== "random";
+  $("#create-title").textContent = mode === "photo" ? "Bygg från ett foto" : mode === "random" ? "Överraska mig" : "Vad vill du bygga?";
+  $("#photo-pick").innerHTML = "<span><b>Tryck för att ta ett foto</b>eller välj en bild</span>";
+  go("#v-create");
+  if (mode === "photo") pickPhoto((f) => setPhoto(f));
+}
+function setPhoto(f) {
+  photoFile = f;
+  const img = new Image(); img.alt = "Ditt foto"; img.src = URL.createObjectURL(f);
+  const box = $("#photo-pick"); box.textContent = ""; box.append(img);
+}
+["#t-text", "#t-photo", "#t-random"].forEach((id) => $(id).addEventListener("click", (e) => openCreate(e.currentTarget.dataset.mode)));
+$("#photo-pick").addEventListener("click", () => pickPhoto(setPhoto));
+for (const idea of IDEAS) {
+  const c = document.createElement("button"); c.className = "chip"; c.textContent = idea;
+  c.addEventListener("click", () => { $("#prompt").value = idea; });
+  $("#ideas").append(c);
+}
+function setLevel(v) {
+  const L = LEVELS[v];
+  $("#level-num").textContent = v; $("#level-label").textContent = L.label; $("#level-sub").textContent = `Cirka ${L.parts} bitar, ${L.steps} steg`;
+}
+$("#level").value = lsGet("level", 8); setLevel(+$("#level").value);
+$("#level").addEventListener("input", (e) => { setLevel(+e.target.value); lsSet("level", +e.target.value); });
+function updateInvToggle() {
+  const has = Store.inventory.length > 0;
+  const total = Store.inventory.reduce((a, p) => a + p.n, 0);
+  $("#inv-sub").textContent = has ? `${total} bitar i listan` : "Fota dina bitar under Mina bitar först";
+  if (!has) useInv = false;
+  $("#use-inv").setAttribute("aria-checked", String(useInv)); $("#use-inv").disabled = !has; $("#inv-mode").hidden = !useInv;
+}
+$("#use-inv").addEventListener("click", () => { useInv = !useInv; updateInvToggle(); });
+$("#inv-mode").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-strict]"); if (!b) return;
+  invStrict = b.dataset.strict === "1";
+  $("#inv-mode").querySelectorAll("[data-strict]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+});
+
+let working = null;
+$("#w-stop").addEventListener("click", () => working?.abort());
+$("#go").addEventListener("click", async () => {
+  const level = +$("#level").value;
+  const o = { mode: createMode, level, strict: invStrict && useInv, useInv };
+  if (createMode === "text") { o.text = $("#prompt").value.trim(); if (!o.text) { toast("Skriv vad du vill bygga först."); $("#prompt").focus(); return; } }
+  if (createMode === "photo") { if (!photoFile) { pickPhoto(setPhoto); return; } o.text = $("#photo-note").value.trim(); }
+  if (createMode === "random") { const pool = [...SURPRISES].sort(() => Math.random() - 0.5); o.surprise = pool.slice(0, 3); }
+  await generate(o);
+});
+
+function countParts(text) { return (text.match(/"k"\s*:/g) || []).length; }
+async function generate(o) {
+  if (!AI.sample) return;
+  const prompt = buildPrompt(o);
+  const tier = o.level >= 4 ? "complex" : "default";
+  working = new AbortController();
+  go("#v-working");
+  $("#w-title").textContent = "Klossmästaren tänker…"; $("#w-count").hidden = true;
+  $("#w-sub").textContent = o.level >= 7 ? "Stora byggen kan ta ett par minuter." : "Det här tar en liten stund.";
+  const onText = ({ text }) => { const n = countParts(text); if (n) { $("#w-title").textContent = "Lägger ut bitar"; $("#w-count").hidden = false; $("#w-count").textContent = n; } };
+  try {
+    const opts = { signal: working.signal, onText, modelTier: tier, cache: false };
+    if (o.mode === "photo" && photoFile) opts.images = [photoFile];
+    let build = normBuild(await AI.sample.json(prompt, opts));
+    if (!build.steps.length) throw { code: "invalid_json" };
+    let a = analyze(build.steps);
+    let problems = problemList(a);
+    if (problems.length) {
+      $("#w-title").textContent = "Kollar att allt sitter ihop…"; $("#w-count").hidden = true;
+      $("#w-sub").textContent = `Fixar ${problems.length} ${problems.length === 1 ? "bit" : "bitar"} som inte satt fast.`;
+      try {
+        const fixed = normBuild(await AI.sample.json(fixPrompt(build, problems, o), { signal: working.signal, modelTier: tier, cache: false }));
+        const fa = analyze(fixed.steps);
+        if (fixed.steps.length && problemList(fa).length <= problems.length) { build = fixed; a = fa; }
+      } catch (e) { if (e?.code === "cancelled") throw e; }
+      build.steps = dropOverlaps(build.steps, a);
+    }
+    const rec = {
+      id: uid(), title: build.title, description: build.description, steps: build.steps, level: o.level, source: o.mode,
+      request: o.mode === "random" ? "" : (o.text || "").slice(0, 200), createdAt: Date.now(),
+    };
+    rec.thumb = Snap.model(rec.steps);
+    try { await Store.saveBuild(rec); } catch (e) { toast(e?.code === "quota_exceeded" ? "Minnet är fullt. Ta bort några gamla byggen." : "Bygget kunde inte sparas, men du kan bygga det nu."); }
+    go("#v-home");
+    openBuild(rec);
+  } catch (e) {
+    go("#v-create");
+    if (e?.code !== "cancelled") toast(errText(e));
+  } finally { working = null; }
+}
+
+/* photo picking */
+let pickCb = null;
+function pickPhoto(cb) { pickCb = cb; const f = $("#file"); f.value = ""; f.click(); }
+$("#file").addEventListener("change", (e) => { const f = e.target.files && e.target.files[0]; if (f && pickCb) pickCb(f); pickCb = null; });
+
+/* ---------------------------------------------------------- viewer */
+let B = null, step = -1, wake = null;
+const speakOn = () => $("#v-speak").getAttribute("aria-pressed") === "true";
+function speak(text) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "sv-SE"; u.rate = 0.92;
+    const v = speechSynthesis.getVoices().find((x) => /^sv/i.test(x.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch {}
+}
+if (!("speechSynthesis" in window)) { $("#v-speak").hidden = true; $("#f-say").hidden = true; }
+$("#v-speak").setAttribute("aria-pressed", String(lsGet("speak", false)));
+$("#v-speak").addEventListener("click", () => {
+  const on = !speakOn(); $("#v-speak").setAttribute("aria-pressed", String(on)); lsSet("speak", on);
+  if (on) speakStep(); else try { speechSynthesis.cancel(); } catch {}
+});
+function speakStep() {
+  if (!B) return;
+  if (step < 0) return speak(`${B.title}. ${B.description}`);
+  if (step >= B.steps.length) return speak("Klart! Snyggt byggt!");
+  const s = B.steps[step];
+  const need = groupParts(s.parts).map((g) => spokenPart(g.p, g.n)).join(", ");
+  speak(`Steg ${step + 1}. Du behöver ${need}. ${s.text}`);
+}
+async function openBuild(b) {
+  B = b;
+  $("#v-view").hidden = false;
+  document.body.style.overflow = "hidden";
+  if (!Stage.init()) { $("#v-view").hidden = true; document.body.style.overflow = ""; toast("Den här enheten kan inte visa 3D-bilder."); return; }
+  Stage.resize();
+  Stage.setModel(b.steps);
+  $("#v-name").textContent = b.title;
+  const saved = lsGet("step:" + b.id, -1);
+  setStep(saved >= 0 && saved < b.steps.length ? saved : -1, false);
+  try { wake = await navigator.wakeLock?.request("screen"); } catch {}
+}
+function closeViewer() {
+  $("#v-view").hidden = true; document.body.style.overflow = "";
+  try { speechSynthesis.cancel(); } catch {}
+  try { wake?.release(); } catch {} wake = null;
+  $("#c-del-confirm").hidden = true;
+}
+function setStep(s, animate = true) {
+  const n = B.steps.length;
+  step = Math.max(-1, Math.min(n, s));
+  if (!B.example) lsSet("step:" + B.id, step >= n ? -1 : step);
+  const cover = step < 0, done = step >= n;
+  $("#v-cover").hidden = !cover; $("#v-done").hidden = !done;
+  $("#v-callout").hidden = cover || done; $("#v-stepnum").hidden = cover || done;
+  $("#v-prev").disabled = cover; $("#v-next").disabled = done;
+  $("#v-prog").style.width = `${cover ? 0 : done ? 100 : ((step + 1) / n) * 100}%`;
+  const total = B.steps.reduce((a, x) => a + x.parts.length, 0);
+  $("#v-sub").textContent = cover ? `${total} bitar · ${n} steg` : done ? "Färdigt!" : `Steg ${step + 1} av ${n}`;
+  Stage.spin = done;
+  Stage.target.y = cover || done ? -Stage.radius * 0.3 : 0;
+  if (cover) {
+    $("#c-name").textContent = B.title; $("#c-desc").textContent = B.description;
+    $("#c-parts").textContent = `${total} bitar`; $("#c-steps").textContent = `${n} steg`;
+    $("#c-del").hidden = !!B.example; $("#c-start").lastChild.textContent = lsGet("step:" + B.id, -1) > 0 ? "Fortsätt bygga" : "Börja bygga";
+    $("#v-text").textContent = "";
+    Stage.show(null, false);
+  } else if (done) {
+    $("#d-desc").textContent = `Du byggde ${B.title.toLowerCase()} med ${total} bitar.`;
+    $("#v-text").textContent = "";
+    Stage.show(null, false);
+  } else {
+    const st = B.steps[step];
+    $("#v-stepnum").innerHTML = `${step + 1}<small> / ${n}</small>`;
+    $("#v-text").textContent = st.text;
+    const co = $("#v-callout"); co.textContent = "";
+    for (const g of groupParts(st.parts)) {
+      const b = document.createElement("button");
+      b.setAttribute("aria-label", `${g.n} ${partName(g.p)}, ${COLORS[g.p.c].sg}`);
+      const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(g.p);
+      const em = document.createElement("em"); em.textContent = `${g.n}×`;
+      b.append(img, em); b.addEventListener("click", () => partSheet(g.p));
+      co.append(b);
+    }
+    Stage.show(step, animate);
+  }
+  if (speakOn() && animate !== false) speakStep();
+}
+$("#v-close").addEventListener("click", closeViewer);
+$("#v-prev").addEventListener("click", () => setStep(step - 1));
+$("#v-next").addEventListener("click", () => setStep(step + 1));
+$("#v-reset").addEventListener("click", () => Stage.resetView());
+$("#c-start").addEventListener("click", () => { const s = lsGet("step:" + B.id, -1); setStep(s > 0 ? s : 0); });
+$("#d-again").addEventListener("click", () => { lsSet("step:" + B.id, -1); setStep(-1, false); });
+$("#d-home").addEventListener("click", closeViewer);
+$("#c-allparts").addEventListener("click", () => bomSheet());
+$("#v-parts").addEventListener("click", () => bomSheet());
+$("#c-del").addEventListener("click", () => { $("#c-del-confirm").hidden = false; });
+$("#c-del-no").addEventListener("click", () => { $("#c-del-confirm").hidden = true; });
+$("#c-del-yes").addEventListener("click", async () => {
+  const id = B.id; closeViewer();
+  try { await Store.deleteBuild(id); toast("Bygget är borttaget."); } catch { toast("Kunde inte ta bort bygget. Försök igen."); }
+});
+document.addEventListener("keydown", (e) => {
+  if ($("#v-view").hidden || !$("#sheet").hidden) return;
+  if (e.key === "ArrowRight") setStep(step + 1); else if (e.key === "ArrowLeft") setStep(step - 1); else if (e.key === "Escape") closeViewer();
+});
+
+/* sheets */
+function openSheet(build) { const body = $("#sheet-body"); body.textContent = ""; build(body); $("#sheet").hidden = false; }
+function closeSheet() { $("#sheet").hidden = true; }
+$("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet") closeSheet(); });
+function sheetHeader(body, title) {
+  const row = document.createElement("div"); row.className = "topbar";
+  const h = document.createElement("h3"); h.style.flex = "1"; h.textContent = title;
+  const x = document.createElement("button"); x.className = "iconbtn"; x.setAttribute("aria-label", "Stäng");
+  x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  x.addEventListener("click", closeSheet); row.append(h, x); body.append(row);
+}
+function bomSheet() {
+  openSheet((body) => {
+    const groups = groupParts(B.steps.flatMap((s) => s.parts)).sort((a, b) => b.n - a.n);
+    sheetHeader(body, `Alla bitar (${groups.reduce((a, g) => a + g.n, 0)})`);
+    const grid = document.createElement("div"); grid.className = "bom";
+    for (const g of groups) {
+      const it = document.createElement("button"); it.className = "bom-item";
+      const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(g.p);
+      const b = document.createElement("b"); b.textContent = `${g.n}×`;
+      const s = document.createElement("span"); s.textContent = `${partName(g.p)} · ${COLORS[g.p.c].sg}`;
+      it.append(img, b, s); it.addEventListener("click", () => partSheet(g.p)); grid.append(it);
+    }
+    body.append(grid);
+  });
+}
+function partSheet(p) {
+  openSheet((body) => {
+    sheetHeader(body, partName(p));
+    const t = document.createElement("div"); t.className = "target";
+    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
+    const d = document.createElement("div"); d.className = "hint"; d.textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
+    t.append(img, d); body.append(t);
+    const row = document.createElement("div"); row.className = "btn-row";
+    const f = document.createElement("button"); f.className = "btn go"; f.textContent = "Hitta den i högen";
+    f.disabled = !(AI.sample && AI.images);
+    f.addEventListener("click", () => { closeSheet(); closeViewer(); openFinder(p); });
+    row.append(f); body.append(row);
+  });
+}
+
+/* ---------------------------------------------------------- inventory */
+function invKey(p) { return `${p.k}:${p.w}x${p.d}:${p.h}:${p.c}`; }
+function canonInv(p) {
+  const q = normPart(p);
+  let w = q.w, d = q.d;
+  if (q.k !== "slope") { w = Math.max(q.w, q.d); d = Math.min(q.w, q.d); }
+  return { k: q.k, w, d, h: q.h, c: q.c, n: clampInt(p.n, 1, 500, 1) };
+}
+function renderInventory() {
+  const inv = Store.inventory, list = $("#inv-list"); list.textContent = "";
+  const total = inv.reduce((a, p) => a + p.n, 0);
+  $("#inv-count").textContent = total ? `${total} bitar` : "Inga bitar än";
+  $("#inv-clear").hidden = !total;
+  inv.forEach((p, i) => {
+    const row = document.createElement("div"); row.className = "inv-row";
+    const img = document.createElement("img"); img.alt = "";
+    img.src = Snap.icon(p.k === "slope" ? { ...p, x: 0, y: 0, z: 0, dir: "+z" } : { ...p, x: 0, y: 0, z: 0, axis: "x", dir: "+z" });
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = partName({ ...p, dir: "+z" });
+    const sm = document.createElement("small"); sm.textContent = COLORS[p.c].sg; nm.append(sm);
+    const st = document.createElement("div"); st.className = "stepper";
+    const minus = document.createElement("button"); minus.textContent = "−"; minus.setAttribute("aria-label", "En färre");
+    const out = document.createElement("output"); out.textContent = p.n;
+    const plus = document.createElement("button"); plus.textContent = "+"; plus.setAttribute("aria-label", "En till");
+    minus.addEventListener("click", () => changeInv(i, -1)); plus.addEventListener("click", () => changeInv(i, 1));
+    st.append(minus, out, plus); row.append(img, nm, st); list.append(row);
+  });
+}
+let invSaveTimer = null;
+function changeInv(i, delta) {
+  const inv = Store.inventory.map((p) => ({ ...p }));
+  inv[i].n += delta;
+  const next = inv.filter((p) => p.n > 0);
+  Store.inventory = next; renderInventory(); updateInvToggle();
+  clearTimeout(invSaveTimer); invSaveTimer = setTimeout(() => Store.saveInventory(Store.inventory).catch(() => toast("Kunde inte spara listan.")), 700);
+}
+$("#t-inv").addEventListener("click", () => { renderInventory(); go("#v-inv"); });
+$("#inv-clear").addEventListener("click", () => { $("#inv-clear-confirm").hidden = false; });
+$("#inv-clear-no").addEventListener("click", () => { $("#inv-clear-confirm").hidden = true; });
+$("#inv-clear-yes").addEventListener("click", async () => { $("#inv-clear-confirm").hidden = true; try { await Store.saveInventory([]); } catch { toast("Kunde inte tömma listan."); } });
+$("#inv-scan").addEventListener("click", () => pickPhoto(async (file) => {
+  const st = $("#inv-status"); st.hidden = false; st.innerHTML = "<b>Tittar på bilden…</b> Claude räknar dina bitar.";
+  $("#inv-scan").disabled = true;
+  try {
+    const res = await AI.sample.json(`Identify every LEGO piece visible in this photo and count identical pieces.
+Use these kinds: "brick" (h 3), "plate" (h 1), "tile" (smooth, h 1), "slope" (45 degree roof slope, h 3; w = size across, d = size along the slope), "round" (1x1, h 3 brick or h 1 plate), "wheel".
+Use only these color names: red blue yellow green white black lightgray darkgray orange lime tan brown darkblue darkred pink purple azure transparent.
+Give your best guess for sizes in studs (w x d). Ignore minifigures, Technic beams and anything that is not a LEGO piece.
+Reply with ONLY JSON: {"parts":[{"k":"brick","w":4,"d":2,"h":3,"c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });
+    const found = (Array.isArray(res?.parts) ? res.parts : []).map(canonInv);
+    const merged = Store.inventory.map((p) => ({ ...p }));
+    for (const p of found) { const m = merged.find((q) => invKey(q) === invKey(p)); if (m) m.n += p.n; else merged.push(p); }
+    merged.sort((a, b) => (a.k + a.c).localeCompare(b.k + b.c));
+    await Store.saveInventory(merged);
+    const n = found.reduce((a, p) => a + p.n, 0);
+    st.innerHTML = n ? `<b>${n} bitar hittade</b> och tillagda. Rätta antalet med plus och minus om något blev fel.` : "<b>Hittade inga bitar.</b> Prova att lägga dem glest på ett ljust bord.";
+  } catch (e) { st.innerHTML = ""; st.textContent = errText(e); }
+  finally { $("#inv-scan").disabled = !(AI.sample && AI.images); }
+}));
+
+/* ---------------------------------------------------------- finder */
+let F = { k: "brick", size: "2x4", c: "red" };
+function finderPart() {
+  if (F.k === "wheel") return { k: "wheel", x: 0, y: 0, z: 0, w: 1, d: 2, h: 5, axis: "x", c: F.c };
+  const [a, b] = F.size.split("x").map(Number);
+  if (F.k === "slope") return normPart({ k: "slope", w: b, d: a, h: a === 1 ? 2 : 3, c: F.c, dir: "+z" });
+  return normPart({ k: F.k, w: b, d: a, h: F.k === "round" ? 3 : undefined, c: F.c });
+}
+function renderFinder() {
+  const mk = (wrap, items, isOn, onPick, render) => {
+    wrap.textContent = "";
+    for (const it of items) {
+      const b = document.createElement("button"); render(b, it); b.setAttribute("aria-pressed", String(isOn(it)));
+      b.addEventListener("click", () => { onPick(it); renderFinder(); }); wrap.append(b);
+    }
+  };
+  mk($("#f-kinds"), Object.keys(KINDS), (k) => k === F.k, (k) => { F.k = k; if (!SIZES[k].includes(F.size)) F.size = SIZES[k][Math.min(SIZES[k].length - 1, 1)] || ""; },
+    (b, k) => { b.className = "chip"; b.textContent = KINDS[k].label; });
+  $("#f-sizes-l").hidden = $("#f-sizes").hidden = !SIZES[F.k].length;
+  mk($("#f-sizes"), SIZES[F.k], (s) => s === F.size, (s) => { F.size = s; }, (b, s) => { b.className = "chip"; b.textContent = s.replace("x", "×"); });
+  mk($("#f-colors"), Object.keys(COLORS), (c) => c === F.c, (c) => { F.c = c; },
+    (b, c) => { b.className = "swatch"; b.style.background = "#" + COLORS[c].hex.toString(16).padStart(6, "0"); if (c === "transparent") b.style.background = "linear-gradient(135deg,#e8f6fc,#9fd0e6)"; b.setAttribute("aria-label", COLORS[c].sg); });
+  const p = finderPart();
+  $("#f-img").src = Snap.icon(p);
+  $("#f-name").textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
+}
+function openFinder(p) {
+  if (p) {
+    F = { k: p.k, c: p.c, size: p.k === "slope" ? `${slopeAlong(p)}x${slopeAcross(p)}` : `${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}` };
+    if (!SIZES[F.k].includes(F.size) && SIZES[F.k].length) SIZES[F.k] = [...SIZES[F.k], F.size];
+  }
+  $("#f-result").hidden = true;
+  renderFinder(); go("#v-find");
+}
+function describeTarget(p) {
+  const col = p.c === "lightgray" ? "light bluish gray" : p.c === "darkgray" ? "dark bluish gray" : p.c === "azure" ? "medium azure (light blue)" : p.c;
+  if (p.k === "wheel") return `a LEGO wheel with a black tire and a ${col} hub`;
+  if (p.k === "slope") return `a ${col} LEGO 45 degree slope, ${slopeAcross(p)} studs wide and ${slopeAlong(p)} deep`;
+  if (p.k === "round") return `a ${col} LEGO 1x1 round ${p.h === 1 ? "plate" : "brick"}`;
+  const s = `${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}`, studs = p.w * p.d;
+  if (p.k === "tile") return `a ${col} smooth LEGO tile ${s} (no studs on top)`;
+  if (p.k === "plate") return `a ${col} LEGO plate ${s} (${studs} studs, thin)`;
+  return `a ${col} LEGO brick ${s} (${studs} studs, full height)`;
+}
+let lastHint = "";
+$("#t-find").addEventListener("click", () => openFinder(null));
+$("#f-say").addEventListener("click", () => speak(lastHint));
+const shoot = () => pickPhoto(async (file) => {
+  const p = finderPart();
+  const res = $("#f-result"); res.hidden = false;
+  $("#f-hint").textContent = "Letar…"; lastHint = "";
+  const ph = $("#f-photo"); ph.textContent = "";
+  const img = new Image(); img.alt = "Din hög med bitar"; img.src = URL.createObjectURL(file); ph.append(img);
+  $("#f-shoot").disabled = true;
+  res.scrollIntoView({ behavior: "smooth", block: "start" });
+  try {
+    const r = await AI.sample.json(`This photo shows a pile of LEGO pieces. Find ${describeTarget(p)}.
+Look carefully at size (count studs) and color. Reply with ONLY JSON:
+{"found":true,"spots":[{"x":0.42,"y":0.63,"r":0.06,"sure":true}],"hint":"..."}
+x and y are the center of the piece as fractions of the image width and height (0 = left/top, 1 = right/bottom), r is a circle radius as a fraction of the image width that covers the piece. Give up to 3 spots, best first; "sure" false for weak guesses.
+"hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces and try again.`, { images: [file], modelTier: "complex", cache: false });
+    const spots = (Array.isArray(r?.spots) ? r.spots : []).slice(0, 3);
+    for (const s of spots) {
+      const x = Number(s.x), y = Number(s.y); if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) continue;
+      const rr = Math.min(0.25, Math.max(0.04, Number(s.r) || 0.07));
+      const ring = document.createElement("div"); ring.className = "ring" + (s.sure === false ? " maybe" : "");
+      Object.assign(ring.style, { left: x * 100 + "%", top: y * 100 + "%", width: rr * 200 + "%" });
+      ring.style.aspectRatio = "1"; ph.append(ring);
+    }
+    lastHint = String(r?.hint || (spots.length ? "Titta i ringen!" : "Jag hittade den inte. Sprid ut bitarna och försök igen."));
+    $("#f-hint").textContent = lastHint;
+    speak(lastHint);
+  } catch (e) { $("#f-hint").textContent = errText(e); }
+  finally { $("#f-shoot").disabled = false; }
+});
+$("#f-shoot").addEventListener("click", shoot);
+$("#f-again").addEventListener("click", shoot);
+
+/* ---------------------------------------------------------- boot */
+renderShelf();
+initAI();
+Store.init();
+</script>
