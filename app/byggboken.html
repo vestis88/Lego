@@ -247,6 +247,10 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 .bom-item b { font-family: var(--display); font-size: 1.1rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .bom-item span { font-size: .75rem; color: var(--ink-soft); line-height: 1.15; }
 
+.partgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.partgrid button { background: var(--page); border-radius: 14px; padding: 4px; display: flex; flex-direction: column; align-items: center; border: 3px solid transparent; font-size: .75rem; font-weight: 700; line-height: 1.1; text-align: center; }
+.partgrid button[aria-pressed="true"] { border-color: var(--ink); }
+.partgrid img { width: 60px; height: 60px; }
 .inv-list { display: flex; flex-direction: column; gap: 8px; }
 .inv-row { display: flex; align-items: center; gap: 10px; background: var(--page); border-radius: 14px; padding: 6px 10px 6px 6px; }
 .inv-row img { width: 56px; height: 56px; flex: none; }
@@ -412,8 +416,8 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
     </div>
     <div class="panel">
       <div class="target"><img id="f-img" alt=""><div><label class="lbl">Jag letar efter</label><div class="hint" id="f-name"></div></div></div>
-      <label class="lbl">Sort</label><div class="chips" id="f-kinds"></div>
-      <label class="lbl" id="f-sizes-l">Storlek</label><div class="chips" id="f-sizes"></div>
+      <label class="lbl">Sort</label><div class="chips" id="f-groups"></div>
+      <div class="partgrid" id="f-parts"></div>
       <label class="lbl">Färg</label><div class="chips" id="f-colors"></div>
     </div>
     <button class="btn go" id="f-shoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-3h3L15 7"/></svg>Fota högen</button>
@@ -471,46 +475,93 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 <input type="file" id="file" accept="image/*" hidden>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 "use strict";
-/* ---------------------------------------------------------------- data */
+/* ================================================================ data */
 const PH = 0.4; // one plate in stud units
 const COLORS = {
-  red:        { hex: 0xc91a09, sg: "röd",        pl: "röda" },
-  blue:       { hex: 0x0055bf, sg: "blå",        pl: "blå" },
-  yellow:     { hex: 0xf2cd37, sg: "gul",        pl: "gula" },
-  green:      { hex: 0x237841, sg: "grön",       pl: "gröna" },
-  white:      { hex: 0xf2f3f2, sg: "vit",        pl: "vita" },
-  black:      { hex: 0x1d2a33, sg: "svart",      pl: "svarta" },
-  lightgray:  { hex: 0xa0a5a9, sg: "ljusgrå",    pl: "ljusgrå" },
-  darkgray:   { hex: 0x6c6e68, sg: "mörkgrå",    pl: "mörkgrå" },
-  orange:     { hex: 0xfe8a18, sg: "orange",     pl: "orange" },
-  lime:       { hex: 0xbbe90b, sg: "limegrön",   pl: "limegröna" },
-  tan:        { hex: 0xe4cd9e, sg: "sandfärgad", pl: "sandfärgade" },
-  brown:      { hex: 0x6b4128, sg: "brun",       pl: "bruna" },
-  darkblue:   { hex: 0x0a3463, sg: "mörkblå",    pl: "mörkblå" },
-  darkred:    { hex: 0x720e0f, sg: "mörkröd",    pl: "mörkröda" },
-  pink:       { hex: 0xfc97ac, sg: "rosa",       pl: "rosa" },
-  purple:     { hex: 0x81007b, sg: "lila",       pl: "lila" },
-  azure:      { hex: 0x36aebf, sg: "ljusblå",    pl: "ljusblå" },
-  transparent:{ hex: 0xd6ecf5, sg: "genomskinlig", pl: "genomskinliga", alpha: 0.45 },
+  red:         { hex: 0xc91a09, en: "red",               sg: "röd",        n: "rött",        pl: "röda" },
+  blue:        { hex: 0x0055bf, en: "blue",              sg: "blå",        n: "blått",       pl: "blå" },
+  yellow:      { hex: 0xf2cd37, en: "yellow",            sg: "gul",        n: "gult",        pl: "gula" },
+  green:       { hex: 0x237841, en: "green",             sg: "grön",       n: "grönt",       pl: "gröna" },
+  white:       { hex: 0xf2f3f2, en: "white",             sg: "vit",        n: "vitt",        pl: "vita" },
+  black:       { hex: 0x1d2a33, en: "black",             sg: "svart",      n: "svart",       pl: "svarta" },
+  lightgray:   { hex: 0xa0a5a9, en: "light bluish gray", sg: "ljusgrå",    n: "ljusgrått",   pl: "ljusgrå" },
+  darkgray:    { hex: 0x6c6e68, en: "dark bluish gray",  sg: "mörkgrå",    n: "mörkgrått",   pl: "mörkgrå" },
+  orange:      { hex: 0xfe8a18, en: "orange",            sg: "orange",     n: "orange",      pl: "orange" },
+  lime:        { hex: 0xbbe90b, en: "lime",              sg: "limegrön",   n: "limegrönt",   pl: "limegröna" },
+  tan:         { hex: 0xe4cd9e, en: "tan",               sg: "sandfärgad", n: "sandfärgat",  pl: "sandfärgade" },
+  brown:       { hex: 0x6b4128, en: "reddish brown",     sg: "brun",       n: "brunt",       pl: "bruna" },
+  darkblue:    { hex: 0x0a3463, en: "dark blue",         sg: "mörkblå",    n: "mörkblått",   pl: "mörkblå" },
+  darkred:     { hex: 0x720e0f, en: "dark red",          sg: "mörkröd",    n: "mörkrött",    pl: "mörkröda" },
+  pink:        { hex: 0xfc97ac, en: "bright pink",       sg: "rosa",       n: "rosa",        pl: "rosa" },
+  purple:      { hex: 0x81007b, en: "magenta",           sg: "lila",       n: "lila",        pl: "lila" },
+  azure:       { hex: 0x36aebf, en: "medium azure",      sg: "ljusblå",    n: "ljusblått",   pl: "ljusblå" },
+  transparent: { hex: 0xd6ecf5, en: "trans-clear",       sg: "genomskinlig", n: "genomskinligt", pl: "genomskinliga", alpha: 0.45 },
+  transred:    { hex: 0xe0263a, en: "trans-red",         sg: "genomskinligt röd", n: "genomskinligt rött", pl: "genomskinligt röda", alpha: 0.65 },
+  transyellow: { hex: 0xf5e33b, en: "trans-yellow",      sg: "genomskinligt gul", n: "genomskinligt gult", pl: "genomskinligt gula", alpha: 0.65 },
+  transblue:   { hex: 0x5fa8e8, en: "trans-light-blue",  sg: "genomskinligt blå", n: "genomskinligt blått", pl: "genomskinligt blå", alpha: 0.55 },
 };
-const KINDS = {
-  brick: { label: "Kloss",       sg: "kloss",       pl: "klossar" },
-  plate: { label: "Platta",      sg: "platta",      pl: "plattor" },
-  tile:  { label: "Slät platta", sg: "slät platta", pl: "släta plattor" },
-  slope: { label: "Taklutning",  sg: "taklutning",  pl: "taklutningar" },
-  round: { label: "Rund",        sg: "rund bit",    pl: "runda bitar" },
-  wheel: { label: "Hjul",        sg: "hjul",        pl: "hjul" },
+const NOUNS = {
+  brick:  { name: "Kloss",             sg: "kloss",             pl: "klossar",             g: "en" },
+  plate:  { name: "Platta",            sg: "platta",            pl: "plattor",             g: "en" },
+  tile:   { name: "Slät platta",       sg: "slät platta",       pl: "släta plattor",       g: "en" },
+  slope:  { name: "Taklutning",        sg: "taklutning",        pl: "taklutningar",        g: "en" },
+  inv:    { name: "Omvänd taklutning", sg: "omvänd taklutning", pl: "omvända taklutningar", g: "en" },
+  cheese: { name: "Liten lutning",     sg: "liten lutning",     pl: "små lutningar",       g: "en" },
+  rbrick: { name: "Rund kloss",        sg: "rund kloss",        pl: "runda klossar",       g: "en" },
+  rplate: { name: "Rund platta",       sg: "rund platta",       pl: "runda plattor",       g: "en" },
+  rtile:  { name: "Rund slät platta",  sg: "rund slät platta",  pl: "runda släta plattor", g: "en" },
+  cone:   { name: "Kon",               sg: "kon",               pl: "koner",               g: "en" },
+  flower: { name: "Blomma",            sg: "blomma",            pl: "blommor",             g: "en" },
+  window: { name: "Fönster",           sg: "fönster",           pl: "fönster",             g: "ett" },
+  frame:  { name: "Dörrkarm",          sg: "dörrkarm",          pl: "dörrkarmar",          g: "en" },
+  door:   { name: "Dörr",              sg: "dörr",              pl: "dörrar",              g: "en" },
+  screen: { name: "Vindruta",          sg: "vindruta",          pl: "vindrutor",           g: "en" },
+  holder: { name: "Hjulhållare",       sg: "hjulhållare",       pl: "hjulhållare",         g: "en" },
+  wheel:  { name: "Hjul med däck",     sg: "hjul",              pl: "hjul",                g: "ett" },
 };
-const SIZES = {
-  brick: ["1x1","1x2","1x3","1x4","1x6","1x8","2x2","2x3","2x4","2x6","2x8"],
-  plate: ["1x1","1x2","1x3","1x4","1x6","1x8","2x2","2x3","2x4","2x6","2x8","4x4","4x6","4x8","6x6","6x8","8x8"],
-  tile:  ["1x1","1x2","1x4","2x2"],
-  slope: ["1x1","1x2","2x1","2x2","2x3","2x4"],
-  round: ["1x1"],
-  wheel: [],
-};
+const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", special: "Special" };
+
+/* The catalog: real LEGO design IDs only. w x d is the footprint at r=0 (w along x, d along z), h is height in plates.
+   Directional parts face (or slope down toward) +z at r=0. studs/bottom: which cells connect ("all", "none", "back" = row z=0). */
+const CAT = {};
+function def(id, o) { CAT[id] = { id, studs: "all", bottom: "all", ...o, size: o.size ?? `${o.w}×${o.d}` }; }
+for (const [id, w, d] of [["3005",1,1],["3004",1,2],["3622",1,3],["3010",1,4],["3009",1,6],["3008",1,8],["6111",1,10],["3003",2,2],["3002",2,3],["3001",2,4],["2456",2,6],["3007",2,8],["3006",2,10]])
+  def(id, { en: `Brick ${w} x ${d}`, noun: "brick", group: "brick", shape: "box", w, d, h: 3 });
+def("3245c", { en: "Brick 1 x 2 x 2", noun: "brick", group: "brick", shape: "box", w: 1, d: 2, h: 6, size: "1×2×2" });
+def("30145", { en: "Brick 2 x 2 x 3", noun: "brick", group: "brick", shape: "box", w: 2, d: 2, h: 9, size: "2×2×3" });
+for (const [id, w, d] of [["3024",1,1],["3023",1,2],["3623",1,3],["3710",1,4],["3666",1,6],["3460",1,8],["4477",1,10],["3022",2,2],["3021",2,3],["3020",2,4],["3795",2,6],["3034",2,8],["3832",2,10],["3031",4,4],["3032",4,6],["3035",4,8],["3030",4,10],["3958",6,6],["3036",6,8],["3033",6,10],["41539",8,8]])
+  def(id, { en: `Plate ${w} x ${d}`, noun: "plate", group: "plate", shape: "box", w, d, h: 1 });
+for (const [id, w, d] of [["3070b",1,1],["3069b",1,2],["63864",1,3],["2431",1,4],["6636",1,6],["3068b",2,2],["87079",2,4]])
+  def(id, { en: `Tile ${w} x ${d} (smooth, no studs)`, noun: "tile", group: "tile", shape: "box", w, d, h: 1, studs: "none" });
+for (const [id, w] of [["3040",1],["3039",2],["3038",3],["3037",4]])
+  def(id, { en: `Slope 45 2 x ${w}`, noun: "slope", group: "slope", shape: "slope", w, d: 2, h: 3, studs: "back", dir: true, size: `${w}×2` });
+for (const [id, w] of [["3665",1],["3660",2]])
+  def(id, { en: `Slope 45 2 x ${w} Inverted`, noun: "inv", group: "slope", shape: "inv", w, d: 2, h: 3, bottom: "back", dir: true, size: `${w}×2` });
+def("54200", { en: "Slope 30 1 x 1 x 2/3 (cheese slope)", noun: "cheese", group: "slope", shape: "slope", w: 1, d: 1, h: 2, studs: "none", dir: true });
+def("85984", { en: "Slope 30 1 x 2 x 2/3", noun: "cheese", group: "slope", shape: "slope", w: 2, d: 1, h: 2, studs: "none", dir: true, size: "2×1" });
+def("3062b", { en: "Brick Round 1 x 1", noun: "rbrick", group: "round", shape: "cyl", w: 1, d: 1, h: 3 });
+def("4073",  { en: "Plate Round 1 x 1", noun: "rplate", group: "round", shape: "cyl", w: 1, d: 1, h: 1 });
+def("98138", { en: "Tile Round 1 x 1", noun: "rtile", group: "round", shape: "cyl", w: 1, d: 1, h: 1, studs: "none" });
+def("3941",  { en: "Brick Round 2 x 2 with Axle Hole", noun: "rbrick", group: "round", shape: "cyl", w: 2, d: 2, h: 3 });
+def("4032",  { en: "Plate Round 2 x 2 with Axle Hole", noun: "rplate", group: "round", shape: "cyl", w: 2, d: 2, h: 1 });
+def("14769", { en: "Tile Round 2 x 2", noun: "rtile", group: "round", shape: "cyl", w: 2, d: 2, h: 1, studs: "none" });
+def("4589",  { en: "Cone 1 x 1", noun: "cone", group: "round", shape: "cone", w: 1, d: 1, h: 3 });
+def("33291", { en: "Plate Round 1 x 1 with Flower Edge", noun: "flower", group: "round", shape: "flower", w: 1, d: 1, h: 1 });
+def("60592", { en: "Window 1 x 2 x 2 with glass", noun: "window", group: "special", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
+def("60593", { en: "Window 1 x 2 x 3 with glass", noun: "window", group: "special", shape: "window", w: 2, d: 1, h: 9, dir: true, size: "1×2×3" });
+def("60594", { en: "Window 1 x 4 x 3 with glass", noun: "window", group: "special", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3" });
+def("60596", { en: "Door Frame 1 x 4 x 6 (comes with door 60616)", noun: "frame", group: "special", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
+  extras: [{ id: "60616", n: 1, color: "c2" }] });
+def("3823",  { en: "Windscreen 2 x 4 x 2", noun: "screen", group: "special", shape: "screen", w: 4, d: 2, h: 6, studs: "back", dir: true, size: "2×4×2" });
+def("4600",  { en: "Plate 2 x 2 with Wheel Holders (comes with 2 wheels 4624 + tires 3641)", noun: "holder", group: "special", shape: "holder", w: 2, d: 2, h: 1, dir: true, wheels: true,
+  extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
+// Pieces that only come along with another piece; Claude never places them directly.
+def("60616", { en: "Door 1 x 4 x 6 with Stud Handle", noun: "door", group: "special", shape: "doorpanel", w: 4, d: 1, h: 17, studs: "none", size: "1×4×6", child: true });
+def("4624c01", { en: "Wheel 8mm D. x 6mm with Black Tire 15mm D. x 6mm (4624 / 3641)", noun: "wheel", group: "special", shape: "wheel", w: 1, d: 2, h: 5, studs: "none", size: "", child: true });
+
 const LEVELS = [
   null,
   { label: "Som 3 år",  age: "3-year-old",  parts: 8,   steps: 4 },
@@ -526,16 +577,16 @@ const LEVELS = [
 ];
 const IDEAS = ["Rymdraket", "Polisbil", "Drake", "Fyr", "Robot", "Traktor", "Slott", "Ubåt", "Glassbil", "Dinosaurie"];
 const SURPRISES = [
-  "a fire truck with a ladder", "a small castle tower with a flag", "a space shuttle on a launch pad", "a pirate ship",
-  "a dinosaur (T-rex)", "a lighthouse on rocks", "a tractor with a trailer", "a robot with arms", "an ice cream truck",
-  "a racing car", "a submarine", "a windmill", "a dragon", "a treehouse", "a police helicopter", "a train locomotive",
+  "a fire truck", "a small castle tower with a flag", "a space shuttle on a launch pad", "a pirate ship",
+  "a dinosaur (T-rex)", "a lighthouse on rocks", "a tractor with a trailer", "a robot", "an ice cream truck",
+  "a racing car", "a submarine", "a windmill", "a dragon", "a treehouse", "a police car", "a train locomotive",
   "a garbage truck", "a crane", "a snowman scene", "a Viking ship", "a hot air balloon", "a farm barn", "a rocket car",
   "an owl", "a penguin", "a camper van", "a moon rover", "a race boat", "a bulldozer", "an airplane", "a fishing boat",
-  "a red Swedish cottage (stuga)", "a dump truck", "a tank-like snow groomer", "a giraffe", "a fountain", "a medieval catapult",
-  "a monster truck", "a city bus", "a mech walker",
+  "a red Swedish cottage (stuga)", "a dump truck", "a giraffe", "a fountain", "a medieval catapult",
+  "a monster truck", "a city bus", "a mech walker", "a flower shop",
 ];
 
-/* -------------------------------------------------------------- helpers */
+/* ============================================================= helpers */
 const $ = (s) => document.querySelector(s);
 const int = (v, d = 0) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : d; };
 const clampInt = (v, lo, hi, d) => Math.min(hi, Math.max(lo, int(v, d)));
@@ -545,125 +596,79 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 let toastTimer;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3500); }
 
+const ROTS = [0, 90, 180, 270];
+/** Maps an old (pre-catalog) part {k,w,d,h,dir} to a catalog part, or null. */
+function legacyPart(p) {
+  const fit = (noun, h) => {
+    for (const C of Object.values(CAT)) {
+      if (C.noun !== noun || C.h !== h || C.child) continue;
+      if (C.w === p.w && C.d === p.d) return { id: C.id, r: 0 };
+      if (C.w === p.d && C.d === p.w) return { id: C.id, r: 90 };
+    }
+    return null;
+  };
+  let m = null;
+  if (p.k === "brick") m = fit("brick", 3);
+  else if (p.k === "plate") m = fit("plate", 1);
+  else if (p.k === "tile") m = fit("tile", 1);
+  else if (p.k === "round") m = { id: int(p.h) === 1 ? "4073" : "3062b", r: 0 };
+  else if (p.k === "slope") {
+    const r = { "+z": 0, "+x": 90, "-z": 180, "-x": 270 }[p.dir] ?? 0;
+    const along = r % 180 ? p.w : p.d, across = r % 180 ? p.d : p.w;
+    const C = Object.values(CAT).find((c) => c.shape === "slope" && c.d === along && c.w === across);
+    if (C) m = { id: C.id, r };
+  }
+  return m ? { ...p, ...m } : null;
+}
+/** Returns a clean catalog part, or null for anything that is not a real part in the catalog. */
 function normPart(p) {
-  p = p || {};
-  const k = KINDS[p.k] ? p.k : "brick";
-  let w = clampInt(p.w, 1, 16, 1), d = clampInt(p.d, 1, 16, 1);
-  let h = k === "brick" ? 3 : (k === "plate" || k === "tile") ? 1 : k === "slope" ? (int(p.h) === 2 ? 2 : 3) : k === "round" ? (int(p.h) === 1 ? 1 : 3) : 5;
-  if (k === "round") w = d = 1;
-  const out = { k, x: int(p.x), y: Math.max(0, int(p.y)), z: int(p.z), w, d, h, c: COLORS[p.c] ? p.c : "lightgray" };
-  if (k === "slope") out.dir = ["+x", "-x", "+z", "-z"].includes(p.dir) ? p.dir : "+z";
-  if (k === "wheel") { out.axis = p.axis === "z" ? "z" : "x"; if (out.axis === "x") { out.w = 1; out.d = 2; } else { out.w = 2; out.d = 1; } }
+  if (!p || typeof p !== "object") return null;
+  if (!p.id && p.k) { p = legacyPart(p); if (!p) return null; }
+  const id = String(p.id || "").trim();
+  const C = CAT[id];
+  if (!C || C.child) return null;
+  const out = { id, x: clampInt(p.x, -60, 60, 0), y: clampInt(p.y, -60, 300, 0), z: clampInt(p.z, -60, 60, 0), r: ROTS.includes(int(p.r)) ? int(p.r) : 0, c: COLORS[p.c] ? p.c : "lightgray" };
+  if (COLORS[p.c2]) out.c2 = p.c2;
   return out;
 }
 function normBuild(raw) {
-  const steps = (Array.isArray(raw?.steps) ? raw.steps : [])
-    .map((s) => ({ text: String(s?.text || "").slice(0, 160), parts: (Array.isArray(s?.parts) ? s.parts : []).map(normPart) }))
-    .filter((s) => s.parts.length);
-  return { title: String(raw?.title || "Mitt bygge").slice(0, 60), description: String(raw?.description || "").slice(0, 240), steps };
-}
-const slopeAlong = (p) => (p.dir[1] === "x" ? p.w : p.d);
-const slopeAcross = (p) => (p.dir[1] === "x" ? p.d : p.w);
-function partKey(p) {
-  if (p.k === "wheel") return `wheel:${p.c}`;
-  if (p.k === "slope") return `slope:${slopeAlong(p)}x${slopeAcross(p)}:${p.h}:${p.c}`;
-  return `${p.k}:${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}:${p.h}:${p.c}`;
-}
-function sizeText(p, sep = "×") {
-  if (p.k === "wheel") return "";
-  if (p.k === "slope") return `${slopeAcross(p)}${sep}${slopeAlong(p)}`;
-  return `${Math.min(p.w, p.d)}${sep}${Math.max(p.w, p.d)}`;
-}
-function partName(p) {
-  const kind = p.k === "round" ? (p.h === 1 ? "Rund platta" : "Rund kloss") : KINDS[p.k].label;
-  const s = sizeText(p);
-  return s ? `${kind} ${s}` : kind;
-}
-const NUMS = ["noll", "en", "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio"];
-function spokenPart(p, n) {
-  const col = COLORS[p.c];
-  const kind = KINDS[p.k];
-  const size = sizeText(p, " gånger ");
-  if (p.k === "wheel") return `${n === 1 ? "ett" : (NUMS[n] || n)} hjul`;
-  const count = n === 1 ? "en" : (NUMS[n] || String(n));
-  return `${count} ${n === 1 ? col.sg : col.pl} ${n === 1 ? kind.sg : kind.pl}${size ? " " + size : ""}`;
-}
-function groupParts(list) {
-  const m = new Map();
-  for (const p of list) { const k = partKey(p); const e = m.get(k); if (e) e.n++; else m.set(k, { key: k, p, n: 1 }); }
-  return [...m.values()];
+  const unknown = [];
+  const steps = (Array.isArray(raw?.steps) ? raw.steps : []).map((s, si) => ({
+    text: String(s?.text || "").slice(0, 160),
+    parts: (Array.isArray(s?.parts) ? s.parts : []).map((p, pi) => {
+      const n = normPart(p);
+      if (!n) unknown.push(`Step ${si + 1} part ${pi + 1} uses "${p?.id ?? p?.k ?? "?"}", which is not a part id from the catalog.`);
+      return n;
+    }).filter(Boolean),
+  })).filter((s) => s.parts.length);
+  return { title: String(raw?.title || "Mitt bygge").slice(0, 60), description: String(raw?.description || "").slice(0, 240), steps, unknown };
 }
 
-/* -------------------------------------------------- structural checking */
-function cellsOf(p) { const out = []; for (let x = p.x; x < p.x + p.w; x++) for (let z = p.z; z < p.z + p.d; z++) out.push([x, z]); return out; }
-function studCells(p) {
-  if (p.k === "tile" || p.k === "wheel") return [];
-  if (p.k === "slope") {
-    if (slopeAlong(p) < 2) return [];
-    const c = cellsOf(p);
-    if (p.dir === "+x") return c.filter(([x]) => x === p.x);
-    if (p.dir === "-x") return c.filter(([x]) => x === p.x + p.w - 1);
-    if (p.dir === "+z") return c.filter(([, z]) => z === p.z);
-    return c.filter(([, z]) => z === p.z + p.d - 1);
-  }
-  return cellsOf(p);
+/* ======================================================= part geometry */
+/** Footprint, connection cells and occupied space of a placed part, in world grid units. */
+function info(p) {
+  const C = CAT[p.id], r = p.r || 0, sw = r === 90 || r === 270;
+  const tc = (cx, cz) => {
+    const [a, b] = r === 0 ? [cx, cz] : r === 180 ? [C.w - 1 - cx, C.d - 1 - cz] : r === 90 ? [cz, C.w - 1 - cx] : [C.d - 1 - cz, cx];
+    return [a + p.x, b + p.z];
+  };
+  const all = [];
+  for (let cx = 0; cx < C.w; cx++) for (let cz = 0; cz < C.d; cz++) all.push([cx, cz]);
+  const pick = (rule) => (rule === "all" ? all : rule === "back" ? all.filter(([, cz]) => cz === 0) : []);
+  const cells = all.map(([a, b]) => tc(a, b));
+  const occ = [];
+  for (const [x, z] of cells) for (let y = p.y; y < p.y + C.h; y++) occ.push([x, y, z]);
+  if (C.wheels) for (const cx of [-1, C.w]) for (let cz = 0; cz < C.d; cz++) { const [x, z] = tc(cx, cz); for (let y = p.y - 3; y <= p.y + 2; y++) occ.push([x, y, z]); }
+  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + C.h, cells, studs: pick(C.studs).map(([a, b]) => tc(a, b)), bottom: pick(C.bottom).map(([a, b]) => tc(a, b)), occ };
 }
-function analyze(steps) {
-  const parts = [];
-  steps.forEach((s, si) => s.parts.forEach((p, pi) => parts.push({ ...p, step: si, pi })));
-  const occ = new Map();
-  const overlaps = [];
-  const bad = new Set();
-  parts.forEach((p, i) => {
-    let hit = -1;
-    for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) { const k = `${x},${y},${z}`; if (occ.has(k)) hit = occ.get(k); }
-    if (hit >= 0) { overlaps.push({ i, j: hit }); bad.add(i); return; }
-    for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) occ.set(`${x},${y},${z}`, i);
-  });
-  const tops = new Map();
-  parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z] of studCells(p)) { const k = `${x},${p.y + p.h},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
-  const edges = parts.map(() => new Set());
-  const link = (a, b) => { if (a !== b) { edges[a].add(b); edges[b].add(a); } };
-  parts.forEach((p, j) => {
-    if (bad.has(j)) return;
-    if (p.k === "wheel") {
-      for (const [x, z] of cellsOf(p)) for (let y = p.y; y < p.y + p.h; y++) {
-        const sides = p.axis === "x" ? [[x - 1, z], [x + 1, z]] : [[x, z - 1], [x, z + 1]];
-        for (const [sx, sz] of sides) { const o = occ.get(`${sx},${y},${sz}`); if (o != null) link(j, o); }
-      }
-      return;
-    }
-    for (const [x, z] of cellsOf(p)) { const below = tops.get(`${x},${p.y},${z}`); if (below) below.forEach((i) => link(i, j)); }
-  });
-  const floats = [];
-  const reported = new Set();
-  for (let s = 0; s < steps.length; s++) {
-    const live = parts.map((p, i) => !bad.has(i) && p.step <= s);
-    const seen = new Array(parts.length).fill(false);
-    for (let i = 0; i < parts.length; i++) {
-      if (!live[i] || seen[i]) continue;
-      const comp = []; const stack = [i]; seen[i] = true;
-      while (stack.length) { const a = stack.pop(); comp.push(a); for (const b of edges[a]) if (live[b] && !seen[b]) { seen[b] = true; stack.push(b); } }
-      if (!comp.some((a) => parts[a].y === 0)) for (const a of comp) if (!reported.has(a)) { reported.add(a); floats.push({ i: a, step: s }); }
-    }
-  }
-  return { parts, overlaps, floats };
+function rotMatrix(C, r, p) {
+  const m = new THREE.Matrix4(), W = C.w, D = C.d;
+  if (r === 0) m.identity();
+  else if (r === 180) m.set(-1, 0, 0, W, 0, 1, 0, 0, 0, 0, -1, D, 0, 0, 0, 1);
+  else if (r === 90) m.set(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, W, 0, 0, 0, 1);
+  else m.set(0, 0, -1, D, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
+  return new THREE.Matrix4().makeTranslation(p.x, p.y * PH, p.z).multiply(m);
 }
-function describeForFix(p) {
-  return `${p.k} ${p.w}x${p.d} h${p.h} ${p.c} at x=${p.x},y=${p.y},z=${p.z}${p.dir ? " dir " + p.dir : ""}${p.axis ? " axis " + p.axis : ""}`;
-}
-function problemList(a) {
-  const out = [];
-  for (const o of a.overlaps.slice(0, 25)) { const p = a.parts[o.i], q = a.parts[o.j]; out.push(`Step ${p.step + 1} part ${p.pi + 1} (${describeForFix(p)}) overlaps step ${q.step + 1} part ${q.pi + 1} (${describeForFix(q)}).`); }
-  for (const f of a.floats.slice(0, 25)) { const p = a.parts[f.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} (${describeForFix(p)}) is not attached to anything standing on the ground when step ${f.step + 1} is finished.`); }
-  return out;
-}
-function dropOverlaps(steps, a) {
-  const drop = new Set(a.overlaps.map((o) => `${a.parts[o.i].step}:${a.parts[o.i].pi}`));
-  return steps.map((s, si) => ({ ...s, parts: s.parts.filter((_, pi) => !drop.has(`${si}:${pi}`)) })).filter((s) => s.parts.length);
-}
-
-/* ------------------------------------------------------------ geometry */
 function mergeGeoms(list, withNormals = true) {
   const arrs = list.map((g) => (g.index ? g.toNonIndexed() : g));
   let n = 0; for (const g of arrs) n += g.attributes.position.array.length;
@@ -675,59 +680,84 @@ function mergeGeoms(list, withNormals = true) {
   if (nor) out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
   return out;
 }
-const STUD = new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18);
-function studAt(lx, top, lz) { return STUD.clone().translate(lx + 0.5, top + 0.09, lz + 0.5); }
-function slopeGeom(p) {
-  const L = slopeAlong(p), W = slopeAcross(p), H = p.h * PH;
-  const top = L >= 2 ? 1 : 0.02, low = L >= 2 ? 0.26 : 0.12;
+const box = (x0, y0, z0, x1, y1, z1) => new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+const stud = (cx, cz, top) => new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).translate(cx + 0.5, top + 0.09, cz + 0.5);
+/** A profile in the (along z, up) plane extruded across x: used for slopes, inverted slopes and the windscreen. */
+function profile(points, W) {
   const s = new THREE.Shape();
-  s.moveTo(0.02, 0.01); s.lineTo(L - 0.02, 0.01); s.lineTo(L - 0.02, low); s.lineTo(top, H - 0.01);
-  if (top > 0.03) s.lineTo(0.02, H - 0.01);
+  s.moveTo(points[0][0], points[0][1]);
+  for (const [a, b] of points.slice(1)) s.lineTo(a, b);
   s.closePath();
   const g = new THREE.ExtrudeGeometry(s, { depth: W - 0.04, bevelEnabled: false }).translate(0, 0, 0.02);
-  const m = new THREE.Matrix4();
-  if (p.dir === "+x") m.identity();
-  else if (p.dir === "-x") m.set(-1, 0, 0, L, 0, 1, 0, 0, 0, 0, -1, W, 0, 0, 0, 1);
-  else if (p.dir === "+z") m.set(0, 0, -1, W, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
-  else m.set(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, L, 0, 0, 0, 1);
-  g.applyMatrix4(m);
-  return g;
+  return g.applyMatrix4(new THREE.Matrix4().set(0, 0, -1, W, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1));
+}
+/** Canonical geometry (r=0, origin at min corner) as a list of {geos, color, alpha} layers. */
+function shapeLayers(C, p, solo) {
+  const col = p.c, H = C.h * PH, W = C.w, D = C.d;
+  const studsOn = (rule, top) => (rule === "none" ? [] : [...Array(W * D).keys()].map((i) => [Math.floor(i / D), i % D]).filter(([, cz]) => rule === "all" || cz === 0).map(([cx, cz]) => stud(cx, cz, top)));
+  const L = [];
+  const main = [];
+  switch (C.shape) {
+    case "box": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
+    case "slope": {
+      const top = D >= 2 ? 1 : 0.02, low = D >= 2 ? 0.26 : 0.06;
+      const pts = [[0.02, 0.01], [D - 0.02, 0.01], [D - 0.02, low], [top, H - 0.01]];
+      if (top > 0.03) pts.push([0.02, H - 0.01]);
+      main.push(profile(pts, W)); break;
+    }
+    case "inv": main.push(profile([[0.02, 0.01], [0.98, 0.01], [D - 0.02, H - 0.42], [D - 0.02, H - 0.01], [0.02, H - 0.01]], W)); break;
+    case "screen": {
+      main.push(profile([[0.02, 0.01], [D - 0.02, 0.01], [D - 0.02, 0.16], [0.98, H - 0.01], [0.02, H - 0.01]], W)); break;
+    }
+    case "cyl": main.push(new THREE.CylinderGeometry(W / 2 - 0.02, W / 2 - 0.02, H - 0.02, 28).translate(W / 2, H / 2, D / 2)); break;
+    case "cone": main.push(new THREE.CylinderGeometry(0.3, 0.48, H - 0.02, 24).translate(0.5, H / 2, 0.5)); break;
+    case "flower": main.push(new THREE.CylinderGeometry(0.5, 0.5, H - 0.02, 10).translate(0.5, H / 2, 0.5)); break;
+    case "window": case "frame": {
+      const sill = C.shape === "window" ? 0.4 : 0.16;
+      main.push(box(0.02, 0.01, 0.02, W - 0.02, sill, D - 0.02), box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02),
+        box(0.02, sill, 0.02, 0.2, H - 0.4, D - 0.02), box(W - 0.2, sill, 0.02, W - 0.02, H - 0.4, D - 0.02));
+      if (C.shape === "window") L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" });
+      break;
+    }
+    case "doorpanel": main.push(box(0.22, 0.17, 0.66, W - 0.22, H - 0.02, 0.86), new THREE.CylinderGeometry(0.16, 0.16, 0.2, 14).rotateX(Math.PI / 2).translate(W - 0.7, H / 2, 0.96)); break;
+    case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02), box(0.1, -0.18, 0.8, W - 0.1, 0.01, 1.2)); break;
+    case "wheel": {
+      L.push({ geos: [new THREE.CylinderGeometry(0.94, 0.94, 0.72, 30).rotateZ(Math.PI / 2).translate(0.5, 0.94, 1)], color: "black" });
+      L.push({ geos: [new THREE.CylinderGeometry(0.5, 0.5, 0.76, 22).rotateZ(Math.PI / 2).translate(0.5, 0.94, 1)], color: col });
+      return L;
+    }
+  }
+  main.push(...studsOn(C.studs, H));
+  L.unshift({ geos: main, color: col });
+  if (!solo && C.shape === "frame") L.push(...shapeLayers(CAT["60616"], { c: p.c2 || col }, true));
+  if (!solo && C.wheels) {
+    const hub = p.c2 || "lightgray";
+    for (const cx of [-0.38, W + 0.38]) {
+      L.push({ geos: [new THREE.CylinderGeometry(0.94, 0.94, 0.72, 30).rotateZ(Math.PI / 2).translate(cx, 0, 1)], color: "black" });
+      L.push({ geos: [new THREE.CylinderGeometry(0.5, 0.5, 0.76, 22).rotateZ(Math.PI / 2).translate(cx, 0, 1)], color: hub });
+    }
+  }
+  return L;
 }
 function edgeColor(c) {
   const col = new THREE.Color(COLORS[c].hex);
   const l = col.r * 0.3 + col.g * 0.59 + col.b * 0.11;
   return l < 0.22 ? new THREE.Color(0x7d8b97) : col.multiplyScalar(0.42);
 }
-function makeMat(hex, alpha) {
-  return new THREE.MeshLambertMaterial({ color: hex, transparent: !!alpha, opacity: alpha || 1, emissive: 0x000000 });
-}
-/** One part as a THREE.Group whose origin is the part's min corner. */
-function buildPart(p) {
+/** A placed part as a THREE.Group already transformed into world space. */
+function buildPart(p, solo = false) {
+  const C = CAT[p.id];
   const g = new THREE.Group();
-  const col = COLORS[p.c];
-  const mats = [];
-  const add = (geos, hex, alpha, ec) => {
-    const mesh = new THREE.Mesh(mergeGeoms(geos), makeMat(hex, alpha));
-    const edges = new THREE.LineSegments(mergeGeoms(geos.map((x) => new THREE.EdgesGeometry(x, 28)), false), new THREE.LineBasicMaterial({ color: ec, transparent: true, opacity: alpha ? 0.6 : 1 }));
-    g.add(mesh, edges); mats.push(mesh.material);
-  };
-  const H = p.h * PH;
-  if (p.k === "wheel") {
-    const tire = new THREE.CylinderGeometry(0.98, 0.98, 0.9, 28), hub = new THREE.CylinderGeometry(0.55, 0.55, 0.96, 20);
-    if (p.axis === "x") { tire.rotateZ(Math.PI / 2).translate(0.5, 1, 1); hub.rotateZ(Math.PI / 2).translate(0.5, 1, 1); }
-    else { tire.rotateX(Math.PI / 2).translate(1, 1, 0.5); hub.rotateX(Math.PI / 2).translate(1, 1, 0.5); }
-    add([tire], 0x22282e, 0, new THREE.Color(0x6d7a86));
-    add([hub], col.hex, col.alpha, edgeColor(p.c));
-  } else {
-    const geos = [];
-    if (p.k === "slope") geos.push(slopeGeom(p));
-    else if (p.k === "round") geos.push(new THREE.CylinderGeometry(0.48, 0.48, H - 0.02, 24).translate(0.5, H / 2, 0.5));
-    else geos.push(new THREE.BoxGeometry(p.w - 0.04, H - 0.02, p.d - 0.04).translate(p.w / 2, H / 2, p.d / 2));
-    for (const [x, z] of studCells(p)) geos.push(studAt(x - p.x, H, z - p.z));
-    add(geos, col.hex, col.alpha, edgeColor(p.c));
+  const m = rotMatrix(C, p.r || 0, p);
+  g.userData.mats = [];
+  for (const layer of shapeLayers(C, p, solo)) {
+    const colr = COLORS[layer.color];
+    const geo = mergeGeoms(layer.geos).applyMatrix4(m);
+    const mat = new THREE.MeshLambertMaterial({ color: colr.hex, transparent: !!colr.alpha, opacity: colr.alpha || 1, emissive: 0x000000 });
+    const edges = mergeGeoms(layer.geos.map((x) => new THREE.EdgesGeometry(x, 28)), false).applyMatrix4(m);
+    g.add(new THREE.Mesh(geo, mat), new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor(layer.color), transparent: true, opacity: colr.alpha ? 0.6 : 1 })));
+    g.userData.mats.push(mat);
   }
-  g.position.set(p.x, p.y * PH, p.z);
-  g.userData.mats = mats;
   return g;
 }
 function disposeTree(o) { o.traverse((c) => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); }
@@ -739,7 +769,120 @@ function orbitPos(target, dist, az, el) {
   return new THREE.Vector3(target.x + dist * Math.cos(el) * Math.sin(az), target.y + dist * Math.sin(el), target.z + dist * Math.cos(el) * Math.cos(az));
 }
 
-/* ---------------------------------------------- small offscreen renderer */
+/* ======================================================== naming */
+function partName(p) { const C = CAT[p.id]; return C.size ? `${NOUNS[C.noun].name} ${C.size}` : NOUNS[C.noun].name; }
+function colorWord(c, form) { return COLORS[c][form]; }
+const NUMS = ["noll", "en", "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio"];
+function spokenPart(p, n) {
+  const C = CAT[p.id], N = NOUNS[C.noun];
+  const size = C.size ? " " + C.size.split("×").join(" gånger ") : "";
+  if (C.noun === "wheel") return `${n === 1 ? "ett" : (NUMS[n] || n)} hjul`;
+  const count = n === 1 ? N.g : (NUMS[n] || String(n));
+  const adj = n === 1 ? colorWord(p.c, N.g === "ett" ? "n" : "sg") : colorWord(p.c, "pl");
+  return `${count} ${adj} ${n === 1 ? N.sg : N.pl}${size}`;
+}
+/** Every physical piece a list of placed parts needs, including pieces that come along (wheels, doors). */
+function pieceList(parts) {
+  const out = [];
+  for (const p of parts) {
+    out.push({ id: p.id, c: p.c });
+    for (const ex of CAT[p.id].extras || []) for (let i = 0; i < ex.n; i++) out.push({ id: ex.id, c: ex.color === "c2" ? (p.c2 || ex.def || p.c) : p.c });
+  }
+  return out;
+}
+const partKey = (p) => `${p.id}:${p.c}`;
+function groupParts(list) {
+  const m = new Map();
+  for (const p of pieceList(list)) { const k = partKey(p); const e = m.get(k); if (e) e.n++; else m.set(k, { key: k, p, n: 1 }); }
+  return [...m.values()];
+}
+
+/* =================================================== structural checks */
+/**
+ * Checks a build against how real bricks connect:
+ * overlaps (shared space), floats (after a step, not connected to the model started in step 1),
+ * trapped (a new piece that would have to be squeezed in between pieces already placed above and below it).
+ */
+function analyze(steps) {
+  const parts = [];
+  steps.forEach((s, si) => s.parts.forEach((p, pi) => parts.push({ ...p, step: si, pi, I: info(p) })));
+  const occ = new Map(), overlaps = [], bad = new Set();
+  parts.forEach((p, i) => {
+    let hit = -1;
+    for (const [x, y, z] of p.I.occ) { const k = `${x},${y},${z}`; if (occ.has(k)) { hit = occ.get(k); break; } }
+    if (hit >= 0) { overlaps.push({ i, j: hit }); bad.add(i); return; }
+    for (const [x, y, z] of p.I.occ) occ.set(`${x},${y},${z}`, i);
+  });
+  const tops = new Map();
+  parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z] of p.I.studs) { const k = `${x},${p.I.top},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
+  const edges = parts.map(() => new Set()), below = parts.map(() => new Set()), above = parts.map(() => new Set());
+  parts.forEach((p, j) => {
+    if (bad.has(j)) return;
+    for (const [x, z] of p.I.bottom) for (const i of tops.get(`${x},${p.y},${z}`) || []) {
+      if (i === j) continue;
+      edges[i].add(j); edges[j].add(i); below[j].add(i); above[i].add(j);
+    }
+  });
+  const anchor = parts.findIndex((_, i) => !bad.has(i));
+  const floats = [], reported = new Set();
+  for (let s = 0; s < steps.length && anchor >= 0; s++) {
+    const live = (i) => !bad.has(i) && parts[i].step <= s;
+    const seen = new Set([anchor]), stack = [anchor];
+    while (stack.length) { const a = stack.pop(); for (const b of edges[a]) if (live(b) && !seen.has(b)) { seen.add(b); stack.push(b); } }
+    parts.forEach((p, i) => { if (live(i) && !seen.has(i) && !reported.has(i)) { reported.add(i); floats.push({ i, step: s }); } });
+  }
+  const trapped = [];
+  parts.forEach((p, j) => {
+    if (bad.has(j)) return;
+    const older = (i) => parts[i].step < p.step;
+    if ([...below[j]].some(older) && [...above[j]].some(older)) trapped.push({ i: j });
+  });
+  return { parts, overlaps, floats, trapped };
+}
+function describeForFix(p) { return `${p.id} (${CAT[p.id].en}) ${p.c} at x=${p.x},y=${p.y},z=${p.z},r=${p.r}`; }
+function problemList(a, unknown = []) {
+  const out = [...unknown.slice(0, 15)];
+  for (const o of a.overlaps.slice(0, 20)) { const p = a.parts[o.i], q = a.parts[o.j]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} overlaps step ${q.step + 1} part ${q.pi + 1} ${describeForFix(q)}${CAT[q.id].wheels || CAT[p.id].wheels ? " (remember the wheel space of 4600)" : ""}.`); }
+  for (const f of a.floats.slice(0, 20)) { const p = a.parts[f.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} is not connected by studs to the model when step ${f.step + 1} is finished.`); }
+  for (const t of a.trapped.slice(0, 10)) { const p = a.parts[t.i]; out.push(`Step ${p.step + 1} part ${p.pi + 1} ${describeForFix(p)} must be squeezed in between pieces that are already above and below it. Place it in an earlier step.`); }
+  return out;
+}
+/** Local clean-up that always runs: drops overlapping pieces, splits huge steps, and moves loose pieces to the step where they get attached. */
+function repairLocally(steps) {
+  let dropped = 0;
+  const clone = (st) => st.map((s) => ({ text: s.text, parts: s.parts.slice() }));
+  steps = clone(steps);
+  const a0 = analyze(steps);
+  const del = new Set(a0.overlaps.map((o) => `${a0.parts[o.i].step}:${a0.parts[o.i].pi}`));
+  dropped += del.size;
+  steps = steps.map((s, si) => ({ text: s.text, parts: s.parts.filter((_, pi) => !del.has(`${si}:${pi}`)) }));
+  // Split very large steps bottom-up, the way printed instructions do.
+  const split = [];
+  for (const s of steps) {
+    if (s.parts.length <= 8) { split.push(s); continue; }
+    const sorted = s.parts.slice().sort((a, b) => a.y - b.y || a.z - b.z || a.x - b.x);
+    for (let i = 0; i < sorted.length; i += 6) split.push({ text: i === 0 ? s.text : "Fortsätt likadant.", parts: sorted.slice(i, i + 6) });
+  }
+  steps = split.filter((s) => s.parts.length);
+  // Move loose pieces one step later until they are held, or drop them if nothing ever holds them.
+  for (let round = 0; round <= steps.length + 1; round++) {
+    const a = analyze(steps);
+    if (!a.floats.length) break;
+    const move = new Set(a.floats.map((f) => `${a.parts[f.i].step}:${a.parts[f.i].pi}`));
+    const next = steps.map((s) => ({ text: s.text, parts: [] }));
+    steps.forEach((s, si) => s.parts.forEach((p, pi) => {
+      if (!move.has(`${si}:${pi}`)) next[si].parts.push(p);
+      else if (si + 1 < steps.length) next[si + 1].parts.push(p);
+      else dropped++;
+    }));
+    steps = next;
+  }
+  steps = steps.filter((s) => s.parts.length);
+  for (const s of steps) s.parts.sort((a, b) => a.y - b.y);
+  return { steps, dropped };
+}
+
+/* ================================================ offscreen snapshots */
 const Snap = {
   r: null, cache: new Map(),
   init() {
@@ -756,7 +899,7 @@ const Snap = {
     const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(28, w / h, 0.1, 500);
     addLights(scene, cam);
     scene.add(group);
-    const box = new THREE.Box3().setFromObject(group), sph = box.getBoundingSphere(new THREE.Sphere());
+    const sph = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
     const dist = (sph.radius / Math.sin((28 * Math.PI) / 360)) * (opts.pad || 1.02) / Math.min(1, w / h);
     cam.position.copy(orbitPos(sph.center, dist, 0.68, 0.52)); cam.lookAt(sph.center);
     this.r.setSize(w, h, false);
@@ -769,11 +912,7 @@ const Snap = {
   icon(p) {
     const key = partKey(p);
     if (this.cache.has(key)) return this.cache.get(key);
-    let q;
-    if (p.k === "slope") q = { ...p, x: 0, y: 0, z: 0, dir: "+z", w: slopeAcross(p), d: slopeAlong(p) };
-    else if (p.k === "wheel") q = { ...p, x: 0, y: 0, z: 0, axis: "x", w: 1, d: 2 };
-    else q = { ...p, x: 0, y: 0, z: 0, w: Math.max(p.w, p.d), d: Math.min(p.w, p.d) };
-    const url = this.shoot(buildPart(q), 160, 160, { pad: 1.0 });
+    const url = this.shoot(buildPart({ id: p.id, c: p.c, x: 0, y: 0, z: 0, r: 0 }, true), 160, 160, { pad: 1.0 });
     this.cache.set(key, url);
     return url;
   },
@@ -784,7 +923,7 @@ const Snap = {
   },
 };
 
-/* ------------------------------------------------------ main 3D viewer */
+/* ===================================================== main 3D viewer */
 const Stage = {
   ready: false,
   init() {
@@ -808,7 +947,7 @@ const Stage = {
       const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (ptrs.size === 1) {
         this.az -= (e.clientX - prev.x) * 0.012;
-        this.el = Math.min(1.45, Math.max(-0.25, this.el + (e.clientY - prev.y) * 0.01));
+        this.el = Math.min(1.45, Math.max(-0.6, this.el + (e.clientY - prev.y) * 0.01));
       } else if (ptrs.size === 2) {
         const [a, b] = [...ptrs.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y);
         if (lastDist) this.zoom = Math.min(3, Math.max(0.35, this.zoom * (lastDist / dd)));
@@ -831,13 +970,12 @@ const Stage = {
   setModel(steps) {
     while (this.root.children.length) { const c = this.root.children[0]; this.root.remove(c); disposeTree(c); }
     this.parts = [];
-    const box = new THREE.Box3();
+    this.root.position.set(0, 0, 0);
     steps.forEach((s, si) => s.parts.forEach((p) => {
       const g = buildPart(p); g.userData.step = si; g.userData.baseY = g.position.y;
       this.root.add(g); this.parts.push(g);
-      box.expandByPoint(new THREE.Vector3(p.x, p.y * PH, p.z)); box.expandByPoint(new THREE.Vector3(p.x + p.w, (p.y + p.h) * PH + 0.2, p.z + p.d));
     }));
-    const sph = box.getBoundingSphere(new THREE.Sphere());
+    const sph = new THREE.Box3().setFromObject(this.root).getBoundingSphere(new THREE.Sphere());
     this.root.position.set(-sph.center.x, -sph.center.y, -sph.center.z);
     this.radius = Math.max(1.5, sph.radius);
     this.resetView();
@@ -887,45 +1025,49 @@ const Stage = {
   },
 };
 
-/* --------------------------------------------------------- storage */
+/* ============================================================ storage */
 const EXAMPLE = {
   id: "example", example: true, title: "Liten racerbil", level: 2, createdAt: 0,
-  description: "En snabb röd bil med blå fönsterruta. Ett bra första bygge.",
+  description: "En snabb röd bil med riktiga hjulhållare. Ett bra första bygge.",
   steps: [
-    { text: "Sätt fyra hjul på den svarta klossen.", parts: [
-      { k: "brick", x: 1, y: 1, z: 0, w: 2, d: 6, h: 3, c: "black" },
-      { k: "wheel", x: 0, y: 0, z: 0, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
-      { k: "wheel", x: 0, y: 0, z: 4, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
-      { k: "wheel", x: 3, y: 0, z: 0, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" },
-      { k: "wheel", x: 3, y: 0, z: 4, axis: "x", w: 1, d: 2, h: 5, c: "lightgray" } ] },
-    { text: "Lägg en röd kloss ovanpå.", parts: [ { k: "brick", x: 1, y: 4, z: 0, w: 2, d: 6, h: 3, c: "red" } ] },
-    { text: "Den stora röda plattan blir taket över hjulen.", parts: [ { k: "plate", x: 0, y: 7, z: 0, w: 4, d: 6, h: 1, c: "red" } ] },
-    { text: "Bygg förarhytten med en vit kloss och en ruta.", parts: [
-      { k: "brick", x: 1, y: 8, z: 1, w: 2, d: 2, h: 3, c: "white" },
-      { k: "slope", x: 1, y: 8, z: 3, w: 2, d: 2, h: 3, c: "transparent", dir: "+z" } ] },
-    { text: "Taket på, och lampor fram och bak.", parts: [
-      { k: "plate", x: 1, y: 11, z: 1, w: 2, d: 3, h: 1, c: "blue" },
-      { k: "tile", x: 0, y: 8, z: 5, w: 1, d: 1, h: 1, c: "yellow" },
-      { k: "tile", x: 3, y: 8, z: 5, w: 1, d: 1, h: 1, c: "yellow" },
-      { k: "tile", x: 0, y: 8, z: 0, w: 1, d: 1, h: 1, c: "orange" },
-      { k: "tile", x: 3, y: 8, z: 0, w: 1, d: 1, h: 1, c: "orange" } ] },
+    { text: "Börja med den långa svarta plattan.", parts: [
+      { id: "3795", x: 1, y: 0, z: 0, r: 0, c: "black" } ] },
+    { text: "Tryck fast två hjulhållare under plattan.", parts: [
+      { id: "4600", x: 1, y: -1, z: 0, r: 0, c: "black", c2: "lightgray" },
+      { id: "4600", x: 1, y: -1, z: 4, r: 0, c: "black", c2: "lightgray" } ] },
+    { text: "Lägg en lång röd kloss ovanpå.", parts: [
+      { id: "2456", x: 1, y: 1, z: 0, r: 0, c: "red" } ] },
+    { text: "Den stora röda plattan täcker hjulen.", parts: [
+      { id: "3032", x: 0, y: 4, z: 0, r: 0, c: "red" } ] },
+    { text: "Bygg hytten med vindrutan framåt.", parts: [
+      { id: "3001", x: 0, y: 5, z: 1, r: 90, c: "white" },
+      { id: "3823", x: 0, y: 5, z: 3, r: 0, c: "transparent" },
+      { id: "3001", x: 0, y: 8, z: 1, r: 90, c: "white" } ] },
+    { text: "Lägg på taket.", parts: [
+      { id: "3031", x: 0, y: 11, z: 1, r: 0, c: "blue" } ] },
+    { text: "Lampor fram och bak.", parts: [
+      { id: "3070b", x: 0, y: 5, z: 5, r: 0, c: "transyellow" },
+      { id: "3069b", x: 1, y: 5, z: 5, r: 90, c: "black" },
+      { id: "3070b", x: 3, y: 5, z: 5, r: 0, c: "transyellow" },
+      { id: "3070b", x: 0, y: 5, z: 0, r: 0, c: "transred" },
+      { id: "3070b", x: 3, y: 5, z: 0, r: 0, c: "transred" } ] },
   ],
 };
 
 const Store = {
-  db: null, builds: [], inventory: [], listeners: [],
+  db: null, builds: [], inventory: [],
   async init() {
     try { this.db = window.claude?.use ? await window.claude.use("db") : null; } catch { this.db = null; }
     if (this.db) {
       $("#sync-note").textContent = "Synkas mellan dina enheter";
       this.db.collection("builds").orderBy("createdAt", "desc").onSnapshot(
-        (snap) => { this.builds = snap.docs.map((d) => ({ id: d.id, ...d.data() })); renderShelf(); },
+        (snap) => { this.builds = snap.docs.map((d) => upgradeBuild({ id: d.id, ...d.data() })).filter(Boolean); renderShelf(); },
         () => { $("#sync-note").textContent = "Kunde inte läsa sparade byggen"; },
       );
-      this.db.doc("inventory/main").onSnapshot((d) => { this.inventory = (d.exists && Array.isArray(d.data().parts)) ? d.data().parts : []; renderInventory(); updateInvToggle(); }, () => {});
+      this.db.doc("inventory/main").onSnapshot((d) => { this.inventory = cleanInventory(d.exists ? d.data().parts : []); renderInventory(); updateInvToggle(); }, () => {});
     } else {
       $("#sync-note").textContent = "Sparas bara på den här enheten";
-      this.builds = lsGet("builds", []); this.inventory = lsGet("inventory", []);
+      this.builds = lsGet("builds", []).map(upgradeBuild).filter(Boolean); this.inventory = cleanInventory(lsGet("inventory", []));
       renderShelf(); renderInventory(); updateInvToggle();
     }
   },
@@ -944,8 +1086,18 @@ const Store = {
     renderInventory(); updateInvToggle();
   },
 };
+/** Builds saved before the parts catalog existed are converted to real parts on load. */
+function upgradeBuild(b) {
+  if (!b || !Array.isArray(b.steps)) return null;
+  if (b.steps.every((s) => (s.parts || []).every((p) => p.id && CAT[p.id]))) return b;
+  const nb = normBuild(b);
+  return nb.steps.length ? { ...b, steps: repairLocally(nb.steps).steps } : null;
+}
+function cleanInventory(list) {
+  return (Array.isArray(list) ? list : []).map((p) => (CAT[p.id] && !CAT[p.id].child ? { id: p.id, c: COLORS[p.c] ? p.c : "lightgray", n: clampInt(p.n, 1, 500, 1) } : null)).filter(Boolean);
+}
 
-/* ---------------------------------------------------------- Claude */
+/* ============================================================= Claude */
 const AI = { sample: null, images: false };
 async function initAI() {
   try {
@@ -974,80 +1126,94 @@ function errText(e) {
     case "session_expired": return "Logga in i Claude igen och försök på nytt.";
     case "sampling_disabled": return "Claude är inte tillgängligt för det här kontot.";
     case "prompt_too_large": return "Det blev för mycket på en gång. Prova en lägre svårighet.";
+    case "empty_build": return "Bygget blev tomt. Tryck på Bygg igen.";
     default: return "Något gick fel på vägen. Försök igen.";
   }
 }
 
-const RULES = `COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is 3 plates tall, a plate is 1). Every part's x,y,z is its MINIMUM corner (lowest x, lowest z, bottom y). w = size along x in studs, d = size along z in studs, h = height in plates.
-PART KINDS ("k"):
-- "brick": h 3. Sizes 1x1 1x2 1x3 1x4 1x6 1x8 2x2 2x3 2x4 2x6 2x8 (either orientation).
-- "plate": h 1. Sizes 1x1 to 2x8 as for bricks, plus 4x4 4x6 4x8 6x6 6x8 8x8 8x16.
-- "tile": h 1, smooth top: NOTHING can be attached on top of it. Sizes 1x1 1x2 1x4 2x2.
-- "slope": a 45 degree roof slope, h 3. Add "dir": the direction it slopes DOWN toward, one of "+x" "-x" "+z" "-z". The size along dir is 2 (or 1 for a small "cheese" slope with h 2), the size across is 1 to 4. Only the 1-stud strip at the high end has studs; nothing attaches to the slanted part.
-- "round": 1x1 round brick (h 3) or round plate (h 1).
-- "wheel": fixed size, 2 studs in diameter, 1 stud thick, h 5. Add "axis": "x" (then w 1, d 2) or "z" (then w 2, d 1). It clips onto the SIDE of a part next to it along its axis, so put it right beside a brick at the same height range.
-BUILDING RULES (critical):
+function catalogText() {
+  const note = (C) => {
+    if (C.shape === "slope") return C.studs === "back" ? "slopes down toward +z; studs only on the row z+0 (the high end)" : "slopes down toward +z; no studs";
+    if (C.shape === "inv") return "underside slopes up toward +z; studs on all of the top; only the row z+0 underneath connects to studs below";
+    if (C.shape === "screen") return "glass leans toward +z; studs only on the back row z+0";
+    if (C.shape === "window" || C.shape === "frame") return "glass/door faces +z; studs on top; 1 deep";
+    if (C.wheels) return "see WHEELS";
+    if (C.studs === "none") return "smooth top, nothing attaches on top";
+    return "";
+  };
+  const groups = {};
+  for (const C of Object.values(CAT)) if (!C.child) (groups[C.group] ||= []).push(`${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}${note(C) ? " (" + note(C) + ")" : ""}`);
+  return Object.values(groups).map((g) => g.join("\n")).join("\n");
+}
+const RULES = () => `PART CATALOG (the ONLY parts that exist; use these ids exactly):
+${catalogText()}
+
+COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative.
+ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
+WHEELS: vehicles use 4600 (2x2 plate with wheel holders; the 2 wheels come with it). Attach it UNDER a chassis plate or brick (its studs go into the part above it). At r=0 its wheels stick out on the left and right (the columns x-1 and x+2, rows z and z+1) and reach from 3 plates below the 4600 to 2 plates above its bottom (y-3 to y+2). Nothing else may be in that wheel space, so anything wider than the 2x2 holder over the wheels must be at least 3 plates above the 4600 (y+3 or higher). Use r=90 to put wheels front and back instead.
+EXTRA COLOR "c2" (optional): hub color for 4600 wheels, door color for 60596.
+
+BUILDING RULES (critical, a checker verifies them):
 1. No two parts may share any space.
-2. Every part must be held by studs: its bottom rests on the top of a part directly below (footprints overlap by at least one stud), or a part directly above presses on its top. Wheels instead touch a part's side.
-3. After every step, everything built so far must be connected to parts standing at y=0. Never place a part in the air expecting later steps to support it.
-4. Build bottom-up like official instructions: 1 to 6 new parts per step, identical parts grouped in the same step. Overlap joints like masonry so the model is strong.
-COLORS ("c"), exact names only: red blue yellow green white black lightgray darkgray orange lime tan brown darkblue darkred pink purple azure transparent.`;
+2. Every part connects with studs: its bottom presses onto studs on the top of a part directly below (footprints overlap by at least one stud with studs there), or its studs press into the bottom of a part directly above. Smooth tops (tiles, slanted slope surfaces) hold nothing.
+3. After every step, everything built so far is ONE connected model, attached to what step 1 started. Never place a part in mid air waiting for later support.
+4. Never squeeze a new part in between parts that are already placed above and below it.
+5. Build like official instructions: 1 to 6 new parts per step, identical parts grouped together, a solid base first. Overlap joints like masonry so the model is strong.
+COLORS ("c"), exact names only: ${Object.keys(COLORS).join(" ")}.
+
+EXAMPLE of a correct small build (a race car facing +z):
+${JSON.stringify({ title: EXAMPLE.title, description: EXAMPLE.description, steps: EXAMPLE.steps })}`;
 const FORMAT = `Reply with ONLY this JSON and nothing else:
-{"title":"Swedish name, max 4 words","description":"one short Swedish sentence for the cover","steps":[{"text":"short Swedish instruction for a 5-year-old, max 10 words","parts":[{"k":"brick","x":0,"y":0,"z":0,"w":2,"d":4,"h":3,"c":"red"}]}]}`;
+{"title":"Swedish name, max 4 words","description":"one short Swedish sentence for the cover","steps":[{"text":"short Swedish instruction for a 5-year-old, max 10 words","parts":[{"id":"3001","x":0,"y":0,"z":0,"r":0,"c":"red"}]}]}`;
 
 function inventoryLine(o) {
-  const inv = Store.inventory, strict = o.strict;
+  const inv = Store.inventory;
   if (!o.useInv || !inv.length) return "";
-  const list = inv.map((p) => `${p.k} ${p.w}x${p.d}${p.k === "round" ? " h" + p.h : ""} ${p.c} x${p.n}`).join("; ");
-  return strict
-    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (kind, size, color, count): ${list}. Use only these pieces and never more of one than its count. Make the model smaller if needed.`
-    : `\nAVAILABLE PIECES: the child owns these pieces (kind, size, color, count): ${list}. Build mostly from them; you may add a few common bricks or plates when really needed.`;
+  const list = inv.map((p) => `${p.id} ${p.c} x${p.n}`).join("; ");
+  return o.strict
+    ? `\nAVAILABLE PIECES: the child owns ONLY these pieces (id, color, count): ${list}. Use only these and never more of one than its count (a 4600 already includes its wheels). Make the model smaller if needed.`
+    : `\nAVAILABLE PIECES: the child owns these pieces (id, color, count): ${list}. Build mostly from them; you may add a few common bricks or plates from the catalog when really needed.`;
 }
 function buildPrompt(o) {
   const L = LEVELS[o.level];
   const what = o.mode === "random"
     ? `Pick ONE of these and design it: ${o.surprise.join(", ")}. Make it fun and recognizable.`
     : o.mode === "photo"
-      ? `Look at the photo. Design a LEGO model of the main thing in it. If the photo shows a LEGO model, recreate it as closely as you can.${o.text ? ` Extra wish from the child: "${o.text}".` : ""}`
+      ? `Look at the photo. Design a LEGO model of the main thing in it. If the photo shows a LEGO model, recreate it as closely as you can with catalog parts.${o.text ? ` Extra wish from the child: "${o.text}".` : ""}`
       : `The child (writing in Swedish) wants to build: "${o.text}".`;
-  return `You are an expert LEGO set designer making official-style building instructions for a 5-year-old Swedish boy who builds at the level of a ${L.age}.
+  return `You are an expert LEGO set designer making official-style building instructions for a 5-year-old Swedish boy who builds at the level of a ${L.age}. Use only real LEGO System parts from the catalog below.
 TASK: ${what}
 SIZE: about ${L.parts} parts in about ${L.steps} steps. The model must clearly look like the subject, with good colors and details (windows, lights, wheels, roofs) where they fit.
-${RULES}${inventoryLine(o)}
+${RULES()}${inventoryLine(o)}
 Before you answer, plan the model layer by layer on the grid and check every part against the rules.
 ${FORMAT}`;
 }
 function fixPrompt(build, problems, o) {
-  return `You designed this LEGO model, but a checker found problems. Fix ALL of them by moving, resizing or adding parts (adding support parts is fine), keep the model looking the same, and keep the step order buildable.
+  return `You designed this LEGO model, but a checker found problems. Fix ALL of them by moving, turning, swapping or adding catalog parts (extra support parts are fine). Keep the model looking the same and keep the step order buildable.
 PROBLEMS:
 ${problems.join("\n")}
-${RULES}${inventoryLine(o)}
-MODEL:
+${RULES()}${inventoryLine(o)}
+MODEL TO FIX:
 ${JSON.stringify({ title: build.title, description: build.description, steps: build.steps })}
 Return the full corrected model. ${FORMAT}`;
 }
 
-/* ---------------------------------------------------------- views */
+/* ============================================================== views */
 const VIEWS = ["#v-home", "#v-create", "#v-working", "#v-inv", "#v-find"];
-function go(view) {
-  for (const v of VIEWS) $(v).hidden = v !== view;
-  window.scrollTo(0, 0);
-}
+function go(view) { for (const v of VIEWS) $(v).hidden = v !== view; window.scrollTo(0, 0); }
 document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => go("#v-home")));
 
 /* home */
 function renderShelf() {
   const shelf = $("#shelf"); shelf.textContent = "";
-  const list = [...Store.builds, EXAMPLE];
-  for (const b of list) {
+  for (const b of [...Store.builds, EXAMPLE]) {
     const card = document.createElement("button"); card.className = "build-card";
     const th = document.createElement("div"); th.className = "thumb";
-    const img = document.createElement("img"); img.alt = ""; img.src = b.thumb || (b.example ? exampleThumb() : ""); th.append(img);
+    const img = document.createElement("img"); img.alt = ""; img.src = b.example ? exampleThumb() : (b.thumb || ""); th.append(img);
     const meta = document.createElement("div"); meta.className = "meta";
     if (b.example) { const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = "Exempel"; meta.append(bd); }
     const t = document.createElement("b"); t.textContent = b.title;
-    const n = (b.steps || []).reduce((a, s) => a + s.parts.length, 0);
-    const s = document.createElement("span"); s.textContent = `${n} bitar · ${(b.steps || []).length} steg`;
+    const s = document.createElement("span"); s.textContent = `${pieceList(b.steps.flatMap((x) => x.parts)).length} bitar · ${b.steps.length} steg`;
     meta.append(t, s); card.append(th, meta);
     card.addEventListener("click", () => openBuild(b));
     shelf.append(card);
@@ -1064,7 +1230,7 @@ function openCreate(mode) {
   $("#create-title").textContent = mode === "photo" ? "Bygg från ett foto" : mode === "random" ? "Överraska mig" : "Vad vill du bygga?";
   $("#photo-pick").innerHTML = "<span><b>Tryck för att ta ett foto</b>eller välj en bild</span>";
   go("#v-create");
-  if (mode === "photo") pickPhoto((f) => setPhoto(f));
+  if (mode === "photo") pickPhoto(setPhoto);
 }
 function setPhoto(f) {
   photoFile = f;
@@ -1082,7 +1248,7 @@ function setLevel(v) {
   const L = LEVELS[v];
   $("#level-num").textContent = v; $("#level-label").textContent = L.label; $("#level-sub").textContent = `Cirka ${L.parts} bitar, ${L.steps} steg`;
 }
-$("#level").value = lsGet("level", 8); setLevel(+$("#level").value);
+$("#level").value = clampInt(lsGet("level", 8), 1, 10, 8); setLevel(+$("#level").value);
 $("#level").addEventListener("input", (e) => { setLevel(+e.target.value); lsSet("level", +e.target.value); });
 function updateInvToggle() {
   const has = Store.inventory.length > 0;
@@ -1101,49 +1267,52 @@ $("#inv-mode").addEventListener("click", (e) => {
 let working = null;
 $("#w-stop").addEventListener("click", () => working?.abort());
 $("#go").addEventListener("click", async () => {
-  const level = +$("#level").value;
-  const o = { mode: createMode, level, strict: invStrict && useInv, useInv };
+  const o = { mode: createMode, level: +$("#level").value, strict: invStrict && useInv, useInv };
   if (createMode === "text") { o.text = $("#prompt").value.trim(); if (!o.text) { toast("Skriv vad du vill bygga först."); $("#prompt").focus(); return; } }
   if (createMode === "photo") { if (!photoFile) { pickPhoto(setPhoto); return; } o.text = $("#photo-note").value.trim(); }
-  if (createMode === "random") { const pool = [...SURPRISES].sort(() => Math.random() - 0.5); o.surprise = pool.slice(0, 3); }
+  if (createMode === "random") o.surprise = [...SURPRISES].sort(() => Math.random() - 0.5).slice(0, 3);
   await generate(o);
 });
 
-function countParts(text) { return (text.match(/"k"\s*:/g) || []).length; }
+function countParts(text) { return (text.match(/"id"\s*:/g) || []).length; }
+function setWorking(title, sub, count) {
+  $("#w-title").textContent = title;
+  if (sub != null) $("#w-sub").textContent = sub;
+  $("#w-count").hidden = count == null; if (count != null) $("#w-count").textContent = count;
+}
+/** The whole generate flow: ask Claude, check the model, ask once for a fix, clean up locally, save, open. */
 async function generate(o) {
-  if (!AI.sample) return;
-  const prompt = buildPrompt(o);
+  if (!AI.sample || working) return;
   const tier = o.level >= 4 ? "complex" : "default";
   working = new AbortController();
   go("#v-working");
-  $("#w-title").textContent = "Klossmästaren tänker…"; $("#w-count").hidden = true;
-  $("#w-sub").textContent = o.level >= 7 ? "Stora byggen kan ta ett par minuter." : "Det här tar en liten stund.";
-  const onText = ({ text }) => { const n = countParts(text); if (n) { $("#w-title").textContent = "Lägger ut bitar"; $("#w-count").hidden = false; $("#w-count").textContent = n; } };
+  setWorking("Klossmästaren tänker…", o.level >= 7 ? "Stora byggen kan ta ett par minuter." : "Det här tar en liten stund.", null);
+  const onText = ({ text }) => { const n = countParts(text); if (n) setWorking("Lägger ut bitar", null, n); };
   try {
     const opts = { signal: working.signal, onText, modelTier: tier, cache: false };
     if (o.mode === "photo" && photoFile) opts.images = [photoFile];
-    let build = normBuild(await AI.sample.json(prompt, opts));
-    if (!build.steps.length) throw { code: "invalid_json" };
-    let a = analyze(build.steps);
-    let problems = problemList(a);
+    let build = normBuild(await AI.sample.json(buildPrompt(o), opts));
+    if (!build.steps.length) throw { code: "empty_build" };
+    let problems = problemList(analyze(build.steps), build.unknown);
     if (problems.length) {
-      $("#w-title").textContent = "Kollar att allt sitter ihop…"; $("#w-count").hidden = true;
-      $("#w-sub").textContent = `Fixar ${problems.length} ${problems.length === 1 ? "bit" : "bitar"} som inte satt fast.`;
+      setWorking("Kollar att allt sitter ihop…", `Rättar ${problems.length} ${problems.length === 1 ? "sak" : "saker"} i bygget.`, null);
       try {
         const fixed = normBuild(await AI.sample.json(fixPrompt(build, problems, o), { signal: working.signal, modelTier: tier, cache: false }));
-        const fa = analyze(fixed.steps);
-        if (fixed.steps.length && problemList(fa).length <= problems.length) { build = fixed; a = fa; }
+        const left = fixed.steps.length ? problemList(analyze(fixed.steps), fixed.unknown) : null;
+        if (left && left.length <= problems.length) { build = fixed; problems = left; }
       } catch (e) { if (e?.code === "cancelled") throw e; }
-      build.steps = dropOverlaps(build.steps, a);
     }
+    const { steps, dropped } = repairLocally(build.steps);
+    if (!steps.length) throw { code: "empty_build" };
     const rec = {
-      id: uid(), title: build.title, description: build.description, steps: build.steps, level: o.level, source: o.mode,
+      id: uid(), title: build.title, description: build.description, steps, level: o.level, source: o.mode,
       request: o.mode === "random" ? "" : (o.text || "").slice(0, 200), createdAt: Date.now(),
     };
     rec.thumb = Snap.model(rec.steps);
     try { await Store.saveBuild(rec); } catch (e) { toast(e?.code === "quota_exceeded" ? "Minnet är fullt. Ta bort några gamla byggen." : "Bygget kunde inte sparas, men du kan bygga det nu."); }
     go("#v-home");
     openBuild(rec);
+    if (dropped) toast(`${dropped} ${dropped === 1 ? "bit satt" : "bitar satt"} inte fast och togs bort.`);
   } catch (e) {
     go("#v-create");
     if (e?.code !== "cancelled") toast(errText(e));
@@ -1155,12 +1324,12 @@ let pickCb = null;
 function pickPhoto(cb) { pickCb = cb; const f = $("#file"); f.value = ""; f.click(); }
 $("#file").addEventListener("change", (e) => { const f = e.target.files && e.target.files[0]; if (f && pickCb) pickCb(f); pickCb = null; });
 
-/* ---------------------------------------------------------- viewer */
+/* ============================================================= viewer */
 let B = null, step = -1, wake = null;
 const speakOn = () => $("#v-speak").getAttribute("aria-pressed") === "true";
 function speak(text) {
   try {
-    if (!("speechSynthesis" in window)) return;
+    if (!("speechSynthesis" in window) || !text) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text); u.lang = "sv-SE"; u.rate = 0.92;
     const v = speechSynthesis.getVoices().find((x) => /^sv/i.test(x.lang)); if (v) u.voice = v;
@@ -1208,7 +1377,7 @@ function setStep(s, animate = true) {
   $("#v-callout").hidden = cover || done; $("#v-stepnum").hidden = cover || done;
   $("#v-prev").disabled = cover; $("#v-next").disabled = done;
   $("#v-prog").style.width = `${cover ? 0 : done ? 100 : ((step + 1) / n) * 100}%`;
-  const total = B.steps.reduce((a, x) => a + x.parts.length, 0);
+  const total = pieceList(B.steps.flatMap((x) => x.parts)).length;
   $("#v-sub").textContent = cover ? `${total} bitar · ${n} steg` : done ? "Färdigt!" : `Steg ${step + 1} av ${n}`;
   Stage.spin = done;
   Stage.target.y = cover || done ? -Stage.radius * 0.3 : 0;
@@ -1280,7 +1449,8 @@ function bomSheet() {
       const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(g.p);
       const b = document.createElement("b"); b.textContent = `${g.n}×`;
       const s = document.createElement("span"); s.textContent = `${partName(g.p)} · ${COLORS[g.p.c].sg}`;
-      it.append(img, b, s); it.addEventListener("click", () => partSheet(g.p)); grid.append(it);
+      const id = document.createElement("span"); id.textContent = g.p.id;
+      it.append(img, b, s, id); it.addEventListener("click", () => partSheet(g.p)); grid.append(it);
     }
     body.append(grid);
   });
@@ -1290,8 +1460,10 @@ function partSheet(p) {
     sheetHeader(body, partName(p));
     const t = document.createElement("div"); t.className = "target";
     const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
-    const d = document.createElement("div"); d.className = "hint"; d.textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
-    t.append(img, d); body.append(t);
+    const d = document.createElement("div");
+    const nm = document.createElement("div"); nm.className = "hint"; nm.textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
+    const no = document.createElement("small"); no.style.color = "var(--ink-soft)"; no.textContent = `Bitnummer ${p.id}`;
+    d.append(nm, no); t.append(img, d); body.append(t);
     const row = document.createElement("div"); row.className = "btn-row";
     const f = document.createElement("button"); f.className = "btn go"; f.textContent = "Hitta den i högen";
     f.disabled = !(AI.sample && AI.images);
@@ -1300,14 +1472,7 @@ function partSheet(p) {
   });
 }
 
-/* ---------------------------------------------------------- inventory */
-function invKey(p) { return `${p.k}:${p.w}x${p.d}:${p.h}:${p.c}`; }
-function canonInv(p) {
-  const q = normPart(p);
-  let w = q.w, d = q.d;
-  if (q.k !== "slope") { w = Math.max(q.w, q.d); d = Math.min(q.w, q.d); }
-  return { k: q.k, w, d, h: q.h, c: q.c, n: clampInt(p.n, 1, 500, 1) };
-}
+/* ========================================================== inventory */
 function renderInventory() {
   const inv = Store.inventory, list = $("#inv-list"); list.textContent = "";
   const total = inv.reduce((a, p) => a + p.n, 0);
@@ -1315,10 +1480,9 @@ function renderInventory() {
   $("#inv-clear").hidden = !total;
   inv.forEach((p, i) => {
     const row = document.createElement("div"); row.className = "inv-row";
-    const img = document.createElement("img"); img.alt = "";
-    img.src = Snap.icon(p.k === "slope" ? { ...p, x: 0, y: 0, z: 0, dir: "+z" } : { ...p, x: 0, y: 0, z: 0, axis: "x", dir: "+z" });
-    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = partName({ ...p, dir: "+z" });
-    const sm = document.createElement("small"); sm.textContent = COLORS[p.c].sg; nm.append(sm);
+    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = partName(p);
+    const sm = document.createElement("small"); sm.textContent = `${COLORS[p.c].sg} · ${p.id}`; nm.append(sm);
     const st = document.createElement("div"); st.className = "stepper";
     const minus = document.createElement("button"); minus.textContent = "−"; minus.setAttribute("aria-label", "En färre");
     const out = document.createElement("output"); out.textContent = p.n;
@@ -1331,8 +1495,7 @@ let invSaveTimer = null;
 function changeInv(i, delta) {
   const inv = Store.inventory.map((p) => ({ ...p }));
   inv[i].n += delta;
-  const next = inv.filter((p) => p.n > 0);
-  Store.inventory = next; renderInventory(); updateInvToggle();
+  Store.inventory = inv.filter((p) => p.n > 0); renderInventory(); updateInvToggle();
   clearTimeout(invSaveTimer); invSaveTimer = setTimeout(() => Store.saveInventory(Store.inventory).catch(() => toast("Kunde inte spara listan.")), 700);
 }
 $("#t-inv").addEventListener("click", () => { renderInventory(); go("#v-inv"); });
@@ -1343,71 +1506,60 @@ $("#inv-scan").addEventListener("click", () => pickPhoto(async (file) => {
   const st = $("#inv-status"); st.hidden = false; st.innerHTML = "<b>Tittar på bilden…</b> Claude räknar dina bitar.";
   $("#inv-scan").disabled = true;
   try {
+    const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
     const res = await AI.sample.json(`Identify every LEGO piece visible in this photo and count identical pieces.
-Use these kinds: "brick" (h 3), "plate" (h 1), "tile" (smooth, h 1), "slope" (45 degree roof slope, h 3; w = size across, d = size along the slope), "round" (1x1, h 3 brick or h 1 plate), "wheel".
-Use only these color names: red blue yellow green white black lightgray darkgray orange lime tan brown darkblue darkred pink purple azure transparent.
-Give your best guess for sizes in studs (w x d). Ignore minifigures, Technic beams and anything that is not a LEGO piece.
-Reply with ONLY JSON: {"parts":[{"k":"brick","w":4,"d":2,"h":3,"c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });
-    const found = (Array.isArray(res?.parts) ? res.parts : []).map(canonInv);
+Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel holder plate with wheels counts as one 4600.
+${list}
+Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
+Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });
+    const found = cleanInventory(res?.parts);
     const merged = Store.inventory.map((p) => ({ ...p }));
-    for (const p of found) { const m = merged.find((q) => invKey(q) === invKey(p)); if (m) m.n += p.n; else merged.push(p); }
-    merged.sort((a, b) => (a.k + a.c).localeCompare(b.k + b.c));
+    for (const p of found) { const m = merged.find((q) => q.id === p.id && q.c === p.c); if (m) m.n += p.n; else merged.push(p); }
+    merged.sort((a, b) => CAT[a.id].group.localeCompare(CAT[b.id].group) || a.id.localeCompare(b.id) || a.c.localeCompare(b.c));
     await Store.saveInventory(merged);
     const n = found.reduce((a, p) => a + p.n, 0);
     st.innerHTML = n ? `<b>${n} bitar hittade</b> och tillagda. Rätta antalet med plus och minus om något blev fel.` : "<b>Hittade inga bitar.</b> Prova att lägga dem glest på ett ljust bord.";
-  } catch (e) { st.innerHTML = ""; st.textContent = errText(e); }
+  } catch (e) { st.textContent = errText(e); }
   finally { $("#inv-scan").disabled = !(AI.sample && AI.images); }
 }));
 
-/* ---------------------------------------------------------- finder */
-let F = { k: "brick", size: "2x4", c: "red" };
-function finderPart() {
-  if (F.k === "wheel") return { k: "wheel", x: 0, y: 0, z: 0, w: 1, d: 2, h: 5, axis: "x", c: F.c };
-  const [a, b] = F.size.split("x").map(Number);
-  if (F.k === "slope") return normPart({ k: "slope", w: b, d: a, h: a === 1 ? 2 : 3, c: F.c, dir: "+z" });
-  return normPart({ k: F.k, w: b, d: a, h: F.k === "round" ? 3 : undefined, c: F.c });
-}
+/* ============================================================= finder */
+let F = { group: "brick", id: "3001", c: "red" };
 function renderFinder() {
-  const mk = (wrap, items, isOn, onPick, render) => {
-    wrap.textContent = "";
-    for (const it of items) {
-      const b = document.createElement("button"); render(b, it); b.setAttribute("aria-pressed", String(isOn(it)));
-      b.addEventListener("click", () => { onPick(it); renderFinder(); }); wrap.append(b);
-    }
-  };
-  mk($("#f-kinds"), Object.keys(KINDS), (k) => k === F.k, (k) => { F.k = k; if (!SIZES[k].includes(F.size)) F.size = SIZES[k][Math.min(SIZES[k].length - 1, 1)] || ""; },
-    (b, k) => { b.className = "chip"; b.textContent = KINDS[k].label; });
-  $("#f-sizes-l").hidden = $("#f-sizes").hidden = !SIZES[F.k].length;
-  mk($("#f-sizes"), SIZES[F.k], (s) => s === F.size, (s) => { F.size = s; }, (b, s) => { b.className = "chip"; b.textContent = s.replace("x", "×"); });
-  mk($("#f-colors"), Object.keys(COLORS), (c) => c === F.c, (c) => { F.c = c; },
-    (b, c) => { b.className = "swatch"; b.style.background = "#" + COLORS[c].hex.toString(16).padStart(6, "0"); if (c === "transparent") b.style.background = "linear-gradient(135deg,#e8f6fc,#9fd0e6)"; b.setAttribute("aria-label", COLORS[c].sg); });
-  const p = finderPart();
+  const groups = $("#f-groups"); groups.textContent = "";
+  for (const [g, label] of Object.entries(GROUPS)) {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(g === F.group));
+    b.addEventListener("click", () => { F.group = g; if (CAT[F.id].group !== g) F.id = Object.values(CAT).find((C) => C.group === g && !C.child).id; renderFinder(); });
+    groups.append(b);
+  }
+  const grid = $("#f-parts"); grid.textContent = "";
+  for (const C of Object.values(CAT)) {
+    if (C.group !== F.group) continue;
+    const b = document.createElement("button"); b.setAttribute("aria-pressed", String(C.id === F.id));
+    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon({ id: C.id, c: F.c });
+    const t = document.createElement("span"); t.textContent = partName({ id: C.id });
+    b.append(img, t); b.addEventListener("click", () => { F.id = C.id; renderFinder(); }); grid.append(b);
+  }
+  const cols = $("#f-colors"); cols.textContent = "";
+  for (const c of Object.keys(COLORS)) {
+    const b = document.createElement("button"); b.className = "swatch"; b.setAttribute("aria-pressed", String(c === F.c)); b.setAttribute("aria-label", COLORS[c].sg);
+    b.style.background = COLORS[c].alpha ? `linear-gradient(135deg,#f4fbff,#${COLORS[c].hex.toString(16).padStart(6, "0")})` : "#" + COLORS[c].hex.toString(16).padStart(6, "0");
+    b.addEventListener("click", () => { F.c = c; renderFinder(); }); cols.append(b);
+  }
+  const p = { id: F.id, c: F.c };
   $("#f-img").src = Snap.icon(p);
   $("#f-name").textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
 }
 function openFinder(p) {
-  if (p) {
-    F = { k: p.k, c: p.c, size: p.k === "slope" ? `${slopeAlong(p)}x${slopeAcross(p)}` : `${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}` };
-    if (!SIZES[F.k].includes(F.size) && SIZES[F.k].length) SIZES[F.k] = [...SIZES[F.k], F.size];
-  }
+  if (p) F = { group: CAT[p.id].group, id: p.id, c: p.c };
   $("#f-result").hidden = true;
   renderFinder(); go("#v-find");
-}
-function describeTarget(p) {
-  const col = p.c === "lightgray" ? "light bluish gray" : p.c === "darkgray" ? "dark bluish gray" : p.c === "azure" ? "medium azure (light blue)" : p.c;
-  if (p.k === "wheel") return `a LEGO wheel with a black tire and a ${col} hub`;
-  if (p.k === "slope") return `a ${col} LEGO 45 degree slope, ${slopeAcross(p)} studs wide and ${slopeAlong(p)} deep`;
-  if (p.k === "round") return `a ${col} LEGO 1x1 round ${p.h === 1 ? "plate" : "brick"}`;
-  const s = `${Math.min(p.w, p.d)}x${Math.max(p.w, p.d)}`, studs = p.w * p.d;
-  if (p.k === "tile") return `a ${col} smooth LEGO tile ${s} (no studs on top)`;
-  if (p.k === "plate") return `a ${col} LEGO plate ${s} (${studs} studs, thin)`;
-  return `a ${col} LEGO brick ${s} (${studs} studs, full height)`;
 }
 let lastHint = "";
 $("#t-find").addEventListener("click", () => openFinder(null));
 $("#f-say").addEventListener("click", () => speak(lastHint));
 const shoot = () => pickPhoto(async (file) => {
-  const p = finderPart();
+  const C = CAT[F.id];
   const res = $("#f-result"); res.hidden = false;
   $("#f-hint").textContent = "Letar…"; lastHint = "";
   const ph = $("#f-photo"); ph.textContent = "";
@@ -1415,8 +1567,8 @@ const shoot = () => pickPhoto(async (file) => {
   $("#f-shoot").disabled = true;
   res.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
-    const r = await AI.sample.json(`This photo shows a pile of LEGO pieces. Find ${describeTarget(p)}.
-Look carefully at size (count studs) and color. Reply with ONLY JSON:
+    const r = await AI.sample.json(`This photo shows a pile of LEGO pieces. Find a ${COLORS[F.c].en} LEGO ${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"}).
+Look carefully at the size (count the studs), the shape and the color. Reply with ONLY JSON:
 {"found":true,"spots":[{"x":0.42,"y":0.63,"r":0.06,"sure":true}],"hint":"..."}
 x and y are the center of the piece as fractions of the image width and height (0 = left/top, 1 = right/bottom), r is a circle radius as a fraction of the image width that covers the piece. Give up to 3 spots, best first; "sure" false for weak guesses.
 "hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces and try again.`, { images: [file], modelTier: "complex", cache: false });
@@ -1425,8 +1577,8 @@ x and y are the center of the piece as fractions of the image width and height (
       const x = Number(s.x), y = Number(s.y); if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) continue;
       const rr = Math.min(0.25, Math.max(0.04, Number(s.r) || 0.07));
       const ring = document.createElement("div"); ring.className = "ring" + (s.sure === false ? " maybe" : "");
-      Object.assign(ring.style, { left: x * 100 + "%", top: y * 100 + "%", width: rr * 200 + "%" });
-      ring.style.aspectRatio = "1"; ph.append(ring);
+      Object.assign(ring.style, { left: x * 100 + "%", top: y * 100 + "%", width: rr * 200 + "%", aspectRatio: "1" });
+      ph.append(ring);
     }
     lastHint = String(r?.hint || (spots.length ? "Titta i ringen!" : "Jag hittade den inte. Sprid ut bitarna och försök igen."));
     $("#f-hint").textContent = lastHint;
@@ -1437,7 +1589,7 @@ x and y are the center of the piece as fractions of the image width and height (
 $("#f-shoot").addEventListener("click", shoot);
 $("#f-again").addEventListener("click", shoot);
 
-/* ---------------------------------------------------------- boot */
+/* =============================================================== boot */
 renderShelf();
 initAI();
 Store.init();
