@@ -113,6 +113,16 @@ Counting your pieces (**Mina bitar**), finding a piece (**Hitta bit**) and build
 
 **Cost:** each extra photo adds roughly the cost of the first one (photos are scaled to about 1.2 megapixels) and a little more waiting. So the app suggests the second photo instead of requiring it. The finder asks for another angle only if the first photo didn't find the piece.
 
+## Tests and catalog audit
+
+Run `tests/run.sh` before publishing. It needs Node and Playwright with Chromium, and it fails on any problem. It runs three checks:
+
+- **Name audit:** compares each part's real name with its size, height, holes and label.
+- **Part geometry:** checks every part in all four rotations.
+- **Full flow:** runs the whole app with a stand-in for Claude on simulated iPhone and iPad screens.
+
+`docs/catalog-audit.md` lists the deviations found when every part was compared with the real part, how each was fixed, and the rules for adding parts.
+
 ## Updating the app
 
 Edit `app/byggboken.html` (the parts catalog is the `CAT` table near the top of the script), then republish it to the same artifact URL from a Claude Code session. The file is the page body only: no `<!doctype>`, `<html>` or `<head>` tags, because the publisher adds them.
