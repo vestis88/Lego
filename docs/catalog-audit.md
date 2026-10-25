@@ -18,8 +18,25 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 | 10 | All studs | Studs were 1.44 mm tall. Real studs are 1.7 mm. | Studs are 0.21 studs (1.7 mm) tall everywhere. |
 | 11 | Technic bricks with holes | Holes were drawn at mid-height. Real Technic brick holes are centered 5.8 mm up. | Holes are 5.8 mm up. |
 
+## Missed by the first audit, found afterwards
+
+| # | Part | What was wrong | Why the audit missed it | Fix |
+|---|---|---|---|---|
+| 12 | 3829c01 steering stand (pointed out by you) | Built 1 brick (9.6 mm) tall. BrickLink measures it at 0.8 × 1.6 × 1.84 cm, so it's 18.4 mm tall, about 2 bricks. | The name has no height, and the audit only checked heights it could read from a name (plates, tiles, bricks). The geometry tests compared the drawing with my own catalog entry, and both were equally wrong. Nothing compared the part with a real measurement. | 6 plates tall: a smooth 1×2 tile base, a column rising from the front stud and leaning back, and the wheel tilted toward the driver. |
+| 13 | 4079 seat | Built 1 brick tall. BrickLink measures it at 1.8 cm, and ToyPro calls it "Seat 2 x 2 x 2". | Same blind spot. Found by the new check. | 6 plates tall with the backrest. |
+| 14 | 3403c01 turntable | Built 2 plates tall. BrickLink lists it as 4 × 4 × 1 studs, 1.15 cm tall including studs: 1 brick. | Same blind spot. Found by the new check. | 3 plates tall. |
+
+**Root cause:** whenever a part's name carried no height, I guessed one. Every check then compared my model with my own guess.
+
+**New checks:**
+
+- `tests/audit.js` keeps a `REAL_SIZE` table of BrickLink measurements, with sources, for every part whose name doesn't give its height. A part missing from the table fails the audit, so it has to be looked up before it's added. The audit compares the height of the drawn part and the catalog height with the measurement (within half a plate), and the footprint too. A part that couldn't be verified (today only the 3741 flower stem) is printed as UNVERIFIED on every run instead of passing silently.
+- The audit now builds its own test page from the app file, so it can audit any version: `node tests/audit.js tests path/to/byggboken.html`. Run against the version before this fix, it fails on 3829c01, 4079 and 3403c01. Run against the fixed version, it passes.
+- `tests/unit.js` also checks that each part's drawing reaches its declared height, not just stays under it.
+
 ## Lessons: rules for adding parts
 
+0. **Never guess a size.** If the name doesn't give the height, take it from BrickLink's measured size and add it to `REAL_SIZE` with the source. If no measurement can be found, mark it unverified so it stays visible.
 1. **Look the part up before adding it.** Confirm the design ID, name and size on BrickLink, Brick Architect or Rebrickable. When sources disagree (for example 3048 and 3049), leave the part out instead of guessing.
 2. **Labels follow LEGO naming.** Plain parts: smaller × larger ("Plate 2 x 4"). Slopes: length down the slope × width (× height). Windows, doors, windscreens and panels: depth × width × height in bricks.
 3. **Use real proportions.** A stud is 8 mm across and 1.7 mm tall; a plate is 3.2 mm and a brick 9.6 mm. Technic holes sit 5.8 mm up. Wheel and tire diameters come from the part name (for example "Tire 15mm D.").
@@ -35,6 +52,12 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 - The 3788 mudguard, the hinged 1×3×1 car doors and wing plates are left out: the grid can't express them yet, or their shape couldn't be confirmed.
 
 ## Sources
+
+- [BrickLink: 3829c01 Steering Stand 1 x 2 (0.8 x 1.6 x 1.84 cm)](https://www.bricklink.com/v2/catalog/catalogitem.page?P=3829c01)
+- [Toysperiod: 3829c01 Tile 1 x 2 with Vehicle Steering Stand](https://www.toysperiod.com/lego-set-reference/parts/tiles/undecorated-tiles/3829c01_tile-specialty-1-x-2-with-vehicle-steering-stand-complete-assembly-with-black-steering-wheel/)
+- [BrickLink: 4079 Seat / Chair 2 x 2](https://www.bricklink.com/v2/catalog/catalogitem.page?P=4079)
+- [ToyPro: 4079 Seat 2 x 2 x 2](https://www.toypro.com/us/product/34624/seat-2-x-2-x-2/black)
+- [BrickLink: 3403c01 Turntable 4 x 4 (3.2 x 3.2 x 1.15 cm)](https://www.bricklink.com/v2/catalog/catalogitem.page?P=3403c01)
 
 - [Brick Architect: 122c01 2×2 Plate w/ 8mm D. Wheels](https://brickarchitect.com/parts/122c01)
 - [BrickLink: 30179 Door Frame 1 x 4 x 6 (fits x39c01 and 60797)](https://www.bricklink.com/v2/catalog/catalogitem.page?P=30179)

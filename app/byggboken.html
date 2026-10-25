@@ -638,15 +638,15 @@ def("30179", { en: "Door Frame 1 x 4 x 6 (comes with door 60797 with 3 panes)", 
   door: "60797", extras: [{ id: "60797", n: 1, color: "c2" }] });
 def("122c01", { en: "Plate 2 x 2 with Red Wheels (small wheels; see WHEELS)", noun: "wplate", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
   wheels: { r: 0.5, width: 0.45, off: 0.24, below: 2, above: 1, hub: 0.32, hubColor: "red" } });
-def("3829c01", { en: "Car Steering Stand with Steering Wheel (1 x 2, wheel toward -z; nothing attaches on top)", noun: "steer", group: "vehicle", shape: "steer", w: 1, d: 2, h: 3, studs: "none", dir: true, size: "1×2" });
-def("3403c01", { en: "Turntable 4 x 4 (square base, round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 2, studs: "round", size: "4×4" });
+def("3829c01", { en: "Car Steering Stand with Steering Wheel (smooth 1 x 2 tile base, 2 bricks tall in total; the wheel leans back toward a driver at -z; nothing attaches on top)", noun: "steer", group: "vehicle", shape: "steer", w: 1, d: 2, h: 6, studs: "none", dir: true, size: "1×2" });
+def("3403c01", { en: "Turntable 4 x 4 (1 brick tall: square base and a round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 3, studs: "round", size: "4×4" });
 def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger wheels 6014 + tires 6015; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
   wheels: { r: 1.31, width: 1.5, off: 0.8, cols: 2, rows: [-1, 2], below: 4, above: 3, hub: 0.72 },
   extras: [{ id: "6014ac01", n: 2, color: "c2", def: "white" }] });
 def("2926", { en: "Plate 1 x 4 with Wheel Holders at both ends (comes with 2 wheels 4624 + tires 3641; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 4, d: 1, h: 1, dir: true, bottom: "none", size: "1×4",
   wheels: { r: 0.94, width: 0.72, off: 0.38, rows: [-1, 1], cz: 0.5, below: 3, above: 2, hub: 0.5 },
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
-def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0, faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 3, studs: "none", dir: true });
+def("4079", { en: "Seat 2 x 2 (2 bricks tall with the backrest; backrest on the back row z+0, faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true });
 def("2432", { en: "Tile 1 x 2 with Bar Handle (smooth; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 1, studs: "none" });
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
   mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
@@ -895,10 +895,18 @@ function shapeLayers(C, p, solo) {
     }
     case "flowerhead": main.push(flowerGeom(1, 0, 1)); break;
     case "glass": L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" }); return L;
-    case "steer":
-      main.push(box(0.05, 0.01, 0.05, 0.95, 0.4, 1.95), box(0.35, 0.4, 0.75, 0.65, 0.95, 1.05));
-      L.push({ geos: [new THREE.TorusGeometry(0.32, 0.05, 8, 24).rotateX(Math.PI / 2.6).translate(0.5, 1.02, 0.7), box(0.46, 0.92, 0.66, 0.54, 1.1, 1.0)], color: p.c2 || "black" });
+    case "steer": {
+      // 18.4 mm tall in all: a smooth 1x2 tile, a column rising from the front stud and leaning back, and the wheel tilted toward the driver.
+      main.push(box(0.02, 0.01, 0.02, 0.98, 0.4, 1.98));
+      const from = new THREE.Vector3(0.5, 0.4, 1.45), to = new THREE.Vector3(0.5, 1.85, 1.0), len = from.distanceTo(to);
+      const col = new THREE.CylinderGeometry(0.13, 0.16, len, 12).translate(0, len / 2, 0);
+      col.applyMatrix4(new THREE.Matrix4().lookAt(new THREE.Vector3(), to.clone().sub(from), new THREE.Vector3(0, 0, 1)).multiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2)));
+      main.push(col.translate(from.x, from.y, from.z));
+      const tilt = -2.5; // wheel faces up and back, toward -z
+      L.push({ geos: [new THREE.TorusGeometry(0.42, 0.06, 8, 28).rotateX(tilt).translate(0.5, 1.95, 0.95), new THREE.CylinderGeometry(0.1, 0.1, 0.12, 12).rotateX(tilt + Math.PI / 2).translate(0.5, 1.95, 0.95),
+        new THREE.BoxGeometry(0.8, 0.05, 0.06).rotateX(tilt + Math.PI / 2).translate(0.5, 1.95, 0.95)], color: p.c2 || "black" });
       break;
+    }
     case "turn": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), new THREE.CylinderGeometry(1.96, 1.96, H - 0.41, 40).translate(W / 2, 0.4 + (H - 0.41) / 2, D / 2)); break;
     case "slope": {
       const top = D >= 2 ? 1 : 0.02, low = D >= 2 ? 0.26 : 0.06;
@@ -953,7 +961,7 @@ function shapeLayers(C, p, solo) {
       break;
     }
     case "panel": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), box(0.02, 0.4, 0.02, W - 0.02, H - 0.01, 0.24), box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
-    case "seat": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.5, D - 0.02), box(0.02, 0.5, 0.02, W - 0.02, H - 0.01, 0.4)); break;
+    case "seat": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.6, D - 0.02), box(0.02, 0.6, 0.02, W - 0.02, H - 0.01, 0.36)); break; // 18 mm tall with the backrest
     case "cutcorner": {
       const sh = new THREE.Shape();
       [[0.02, 0.02], [2.98, 0.02], [2.98, 0.98], [0.98, 2.98], [0.02, 2.98]].forEach(([x, z], i) => (i ? sh.lineTo(x, -z) : sh.moveTo(x, -z)));

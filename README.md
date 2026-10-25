@@ -117,7 +117,7 @@ Counting your pieces (**Mina bitar**), finding a piece (**Hitta bit**) and build
 
 Run `tests/run.sh` before publishing. It needs Node and Playwright with Chromium, and it fails on any problem. It runs three checks:
 
-- **Name audit:** compares each part's real name with its size, height, holes and label.
+- **Name audit:** compares each part's real name with its size, height, holes and label, and compares parts whose name gives no height with BrickLink's measured size.
 - **Part geometry:** checks every part in all four rotations.
 - **Full flow:** runs the whole app with a stand-in for Claude on simulated iPhone and iPad screens.
 

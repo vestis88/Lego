@@ -16,6 +16,7 @@ window.__unit = () => {
         ok(Math.abs(b.min.x - p.x) < tol && Math.abs(b.max.x - (p.x + I.w)) < tol, `${tag} x ${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)} vs ${p.x}..${p.x + I.w}`);
         ok(Math.abs(b.min.z - p.z) < tol && Math.abs(b.max.z - (p.z + I.d)) < tol, `${tag} z ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} vs ${p.z}..${p.z + I.d}`);
       }
+      ok(b.max.y >= (p.y + C.h) * PH - 0.48, `${tag} drawn top ${b.max.y.toFixed(2)} falls short of its height ${((p.y + C.h) * PH).toFixed(2)}`);
       ok(b.min.x > p.x - tol && b.max.x < p.x + I.w + tol && b.min.z > p.z - tol && b.max.z < p.z + I.d + tol && b.min.y > p.y * PH - 0.01 && b.max.y < (p.y + C.h) * PH + 0.25, `${tag} shape leaves its space`);
       const xs = I.cells.map((c) => c[0]), zs = I.cells.map((c) => c[1]);
       ok(I.cells.length === canonCells(C).length && Math.min(...xs) === p.x && Math.max(...xs) === p.x + I.w - 1 && Math.min(...zs) === p.z && Math.max(...zs) === p.z + I.d - 1, `${tag} cells`);
