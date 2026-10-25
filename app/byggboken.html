@@ -536,6 +536,12 @@ const NOUNS = {
   qtile:  { name: "Kvartscirkel",      sg: "kvartscirkel",      pl: "kvartscirklar",       g: "en" },
   sbrick: { name: "Kloss med sidoknopp", sg: "kloss med sidoknopp", pl: "klossar med sidoknopp", g: "en" },
   panel:  { name: "Vägg",              sg: "vägg",              pl: "väggar",              g: "en" },
+  ridge:  { name: "Takås",             sg: "takås",             pl: "takåsar",             g: "en" },
+  rcorner:{ name: "Takhörn",           sg: "takhörn",           pl: "takhörn",             g: "ett" },
+  log:    { name: "Stockkloss",        sg: "stockkloss",        pl: "stockklossar",        g: "en" },
+  ctile:  { name: "Slät hörnplatta",   sg: "slät hörnplatta",   pl: "släta hörnplattor",   g: "en" },
+  rounded:{ name: "Rundad platta",     sg: "rundad platta",     pl: "rundade plattor",     g: "en" },
+  rail:   { name: "Platta med skena",  sg: "platta med skena",  pl: "plattor med skena",   g: "en" },
   wplate: { name: "Hjulplatta",        sg: "hjulplatta",        pl: "hjulplattor",         g: "en" },
   window: { name: "Fönster",           sg: "fönster",           pl: "fönster",             g: "ett" },
   frame:  { name: "Dörrkarm",          sg: "dörrkarm",          pl: "dörrkarmar",          g: "en" },
@@ -658,6 +664,19 @@ def("15068", { en: "Slope Curved 2 x 2 x 2/3 (curves down toward +z; no studs)",
 def("25269", { en: "Tile 1 x 1 Quarter Circle (round edge toward +x and +z at r=0; smooth)", noun: "qtile", group: "tile", shape: "quarter", w: 1, d: 1, h: 1, studs: "none", dir: true });
 def("4865", { en: "Panel 1 x 2 x 1 (thin wall on the back row z+0 with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 3, dir: true, size: "1×2×1" });
 def("4864", { en: "Panel 1 x 2 x 2 (thin wall with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
+def("3043", { en: "Slope 45 2 x 2 Double (roof ridge: slopes down toward -z and +z, sharp top, no studs)", noun: "ridge", group: "slope", shape: "ridge", w: 2, d: 2, h: 3, studs: "none" });
+def("3044", { en: "Slope 45 1 x 2 Double (roof ridge: slopes down toward -z and +z, no studs)", noun: "ridge", group: "slope", shape: "ridge", w: 1, d: 2, h: 3, studs: "none" });
+def("3045", { en: "Slope 45 2 x 2 Double Convex (outside roof corner: one stud on the back-left cell (0,0), slopes down toward +x and +z)", noun: "rcorner", group: "slope", shape: "convex", w: 2, d: 2, h: 3, studs: "list", studList: [[0, 0]], dir: true });
+def("3046", { en: "Slope 45 2 x 2 Double Concave (inside roof corner: studs on (0,0), (1,0) and (0,1), the front-right corner slopes down)", noun: "rcorner", group: "slope", shape: "concave", w: 2, d: 2, h: 3, studs: "list", studList: [[0, 0], [1, 0], [0, 1]], dir: true });
+def("60481", { en: "Slope 65 2 x 1 x 2 (steep; one stud on the high end)", noun: "slope", group: "slope", shape: "slope", w: 1, d: 2, h: 6, studs: "back", dir: true, size: "1×2×2" });
+def("3065", { en: "Brick 1 x 2 without Bottom Tube (often transparent, for windows and lights)", noun: "brick", group: "brick", shape: "box", w: 1, d: 2, h: 3 });
+def("30136", { en: "Brick 1 x 2 Log / Palisade (log-cabin walls)", noun: "log", group: "brick", shape: "box", deco: "log", w: 1, d: 2, h: 3 });
+def("30414", { en: "Brick 1 x 4 with 4 Studs on 1 Side (side studs toward +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", deco: "side1", w: 4, d: 1, h: 3, dir: true, size: "1×4" });
+def("14719", { en: "Tile 2 x 2 Corner (L-shape like 2420; smooth)", noun: "ctile", group: "tile", shape: "box", w: 2, d: 2, h: 1, mask: [[0, 0], [1, 0], [0, 1]], studs: "none", size: "2×2" });
+def("87580", { en: "Plate 2 x 2 with 1 Stud in the center (jumper; treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 2, d: 2, h: 1, studs: "none" });
+def("35480", { en: "Plate 1 x 2 with Rounded Ends", noun: "rounded", group: "plate", shape: "roundedplate", w: 1, d: 2, h: 1 });
+def("32028", { en: "Plate 1 x 2 with Door Rail", noun: "rail", group: "plate", shape: "box", deco: "rail", w: 1, d: 2, h: 1 });
+def("60474", { en: "Plate Round 4 x 4 with Pin Hole (8 studs in a ring; the corners are empty)", noun: "rplate", group: "round", shape: "cyl", w: 4, d: 4, h: 1, mask: "round", studs: "ring", bottom: "round" });
 // Pieces that come along with the parts above.
 def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
 def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
@@ -751,7 +770,11 @@ function normBuild(raw) {
 /* ======================================================= part geometry */
 /** Cells a part covers at r=0 (most parts fill their w x d rectangle; corner pieces leave one out). */
 function canonCells(C) {
+  if (C.mask === "round") return fullCells(C).filter(([cx, cz]) => !((cx === 0 || cx === C.w - 1) && (cz === 0 || cz === C.d - 1)));
   if (C.mask) return C.mask;
+  return fullCells(C);
+}
+function fullCells(C) {
   const all = [];
   for (let cx = 0; cx < C.w; cx++) for (let cz = 0; cz < C.d; cz++) all.push([cx, cz]);
   return all;
@@ -766,6 +789,7 @@ function ruleCells(C, rule) {
     case "center": return all.filter(([cx, cz]) => cx >= 1 && cx <= C.w - 2 && cz >= 1 && cz <= C.d - 2);
     case "round": return all.filter(([cx, cz]) => !((cx === 0 || cx === C.w - 1) && (cz === 0 || cz === C.d - 1)));
     case "list": return C.studList;
+    case "ring": return all.filter(([cx, cz]) => cx === 0 || cz === 0 || cx === C.w - 1 || cz === C.d - 1);
     default: return [];
   }
 }
@@ -827,7 +851,7 @@ function shapeLayers(C, p, solo) {
   const main = [];
   switch (C.shape) {
     case "box":
-      if (C.mask) for (const [cx, cz] of C.mask) main.push(box(cx + 0.02, 0.01, cz + 0.02, cx + 0.98, H - 0.01, cz + 0.98));
+      if (Array.isArray(C.mask)) for (const [cx, cz] of C.mask) main.push(box(cx + 0.02, 0.01, cz + 0.02, cx + 0.98, H - 0.01, cz + 0.98));
       else main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02));
       decoLayers(C, H, W, D, main, L);
       break;
@@ -889,6 +913,11 @@ function shapeLayers(C, p, solo) {
     case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
     case "wheel": return wheelLayers({ r: 0.94, width: 0.72, hub: 0.5 }, 0.5, 0.94, col);
     case "bigwheel": return wheelLayers({ r: 1.31, width: 1.5, hub: 0.72 }, 1, 1.31, col, 1.5);
+    case "ridge": main.push(heightField(W, D, (x, z) => 0.26 + (H - 0.27) * (1 - Math.abs(z - D / 2) / (D / 2)))); break;
+    case "convex": main.push(heightField(W, D, (x, z) => H - 0.01 - Math.max(0, Math.max(x, z) - 1) * (H - 0.27))); break;
+    case "concave": main.push(heightField(W, D, (x, z) => H - 0.01 - Math.max(0, Math.min(x, z) - 1) * (H - 0.27))); break;
+    case "roundedplate": main.push(box(0.02, 0.01, 0.5, W - 0.02, H - 0.01, D - 0.5),
+      new THREE.CylinderGeometry(0.48, 0.48, H - 0.02, 20).translate(0.5, H / 2, 0.5), new THREE.CylinderGeometry(0.48, 0.48, H - 0.02, 20).translate(0.5, H / 2, D - 0.5)); break;
     case "curve": {
       const pts = [[0.02, 0.01], [D - 0.02, 0.01], [D - 0.02, 0.08]];
       for (let i = 1; i <= 10; i++) { const t = 1 - i / 10; pts.push([0.02 + (D - 0.04) * t, 0.08 + (H - 0.09) * Math.cos((t * Math.PI) / 2)]); }
@@ -918,6 +947,26 @@ function shapeLayers(C, p, solo) {
   }
   return L;
 }
+/** A solid whose top follows height(x, z): roof corners and ridges. Walls and bottom close it. */
+function heightField(W, D, height, n = 8) {
+  const pos = [];
+  const v = (x, z) => [x, height(x, z), z];
+  const tri = (a, b, c) => pos.push(...a, ...b, ...c);
+  const X = (i) => 0.02 + ((W - 0.04) * i) / n, Z = (j) => 0.02 + ((D - 0.04) * j) / n;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const a = v(X(i), Z(j)), b = v(X(i), Z(j + 1)), c = v(X(i + 1), Z(j + 1)), d = v(X(i + 1), Z(j));
+    tri(a, b, c); tri(a, c, d);
+  }
+  const edge = (pts) => { for (let k = 0; k < pts.length - 1; k++) { const [p, q] = [pts[k], pts[k + 1]]; const p0 = [p[0], 0.01, p[2]], q0 = [q[0], 0.01, q[2]]; tri(p0, q, p); tri(p0, q0, q); } };
+  const line = (f) => [...Array(n + 1).keys()].map(f);
+  edge(line((k) => v(X(k), Z(0)))); edge(line((k) => v(X(n), Z(k)))); edge(line((k) => v(X(n - k), Z(n)))); edge(line((k) => v(X(0), Z(n - k))));
+  tri([X(0), 0.01, Z(0)], [X(n), 0.01, Z(n)], [X(0), 0.01, Z(n)]); tri([X(0), 0.01, Z(0)], [X(n), 0.01, Z(0)], [X(n), 0.01, Z(n)]);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  g.userData.doubleSided = true;
+  return g;
+}
 const STEMS = [[-0.25, 0, 2.3], [0.22, -0.18, 1.9], [0.15, 0.25, 1.6]];
 function wheelLayers(Wh, cx, cy, hub, cz = 1) {
   return [
@@ -934,6 +983,8 @@ function decoLayers(C, H, W, D, main, L) {
     case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, H * 0.5, k + 1)), color: "black" }); break;
     case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
     case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
+    case "log": for (const y of [0.4, 0.8]) main.push(box(-0.03, y - 0.03, 0.05, W + 0.03, y + 0.03, D - 0.05)); break;
+    case "rail": main.push(box(0.02, H - 0.01, 0.02, 0.14, H + 0.12, D - 0.02), box(W - 0.14, H - 0.01, 0.02, W - 0.02, H + 0.12, D - 0.02)); break;
     case "jumper": main.push(stud(W / 2 - 0.5, D / 2 - 0.5, H)); break;
     case "side1": for (let i = 0; i < W; i++) main.push(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(i + 0.5, H / 2, D + 0.09)); break;
     case "side4":
@@ -958,7 +1009,7 @@ function buildPart(p, solo = false) {
   for (const layer of shapeLayers(C, p, solo)) {
     const colr = COLORS[layer.color];
     const geo = mergeGeoms(layer.geos).applyMatrix4(m);
-    const mat = new THREE.MeshLambertMaterial({ color: colr.hex, transparent: !!colr.alpha, opacity: colr.alpha || 1, emissive: 0x000000 });
+    const mat = new THREE.MeshLambertMaterial({ side: layer.geos.some((x) => x.userData?.doubleSided) ? THREE.DoubleSide : THREE.FrontSide, color: colr.hex, transparent: !!colr.alpha, opacity: colr.alpha || 1, emissive: 0x000000 });
     const edges = mergeGeoms(layer.geos.map((x) => new THREE.EdgesGeometry(x, 28)), false).applyMatrix4(m);
     g.add(new THREE.Mesh(geo, mat), new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor(layer.color), transparent: true, opacity: colr.alpha ? 0.6 : 1 })));
     g.userData.mats.push(mat);

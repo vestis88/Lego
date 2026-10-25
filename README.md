@@ -42,7 +42,7 @@ In the instruction viewer:
 
 ### Parts catalog
 
-About 140 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+About 155 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
 
 | Group | Parts (design IDs) |
 |---|---|
@@ -58,6 +58,8 @@ About 140 real System parts, focused on the classic 1990s range (Town, Castle, S
 | Windows & doors | 2377 1×2×2 plane window, 3853 1×4×3 window + 3855 glass, 4132 2×4×3 window + 4133 pane, 4130 2×4×5 door frame + 4131 door, 30179 1×4×6 door frame + 60623 4-pane door; newer 60592, 60593, 60594, 60596 + 60616 |
 | Vehicles | Wheel plates: 4600 + 2× 4624/3641 wheels, 122c01 with small red wheels, 6157 wide holder + 2× 6014/6015 big wheels, 2926 1×4 with a wheel at each end. Also 3829c01 steering wheel stand, 4079 seat, 3823 windscreen, 2450 3×3 cut-corner wedge plate, 2432 tile with handle (bumpers) |
 | Special | 3403c01 turntable 4×4 |
+| Roofs | 3043 / 3044 ridges, 3045 outside corner, 3046 inside corner, 60481 65° slope |
+| More common parts | 3065 brick without bottom tube (transparent windows), 30136 log brick, 30414 brick 1×4 with side studs, 14719 corner tile, 87580 2×2 jumper, 35480 plate with rounded ends, 32028 plate with door rail, 60474 round plate 4×4 |
 | Most common today | 15573 / 3794 jumper plates, 11212 plate 3×3, 14716 / 22886 bricks ×3 tall, 87087 / 11211 / 4733 bricks with side studs, 11477 / 15068 curved slopes, 25269 quarter-circle tile, 4865 / 4864 panels |
 
 The checker knows each part's special rules:
