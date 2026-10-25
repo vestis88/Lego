@@ -1554,7 +1554,7 @@ function catalogText() {
   const note = (C) => {
     if (C.shape === "slope") return C.studs === "back" ? "slopes down toward +z; studs only on the row z+0 (the high end)" : "slopes down toward +z; no studs";
     if (C.shape === "inv") return "underside slopes up toward +z; studs on all of the top; only the row z+0 underneath connects to studs below";
-    if (C.shape === "screen") return "glass leans toward +z; studs only on the back row z+0";
+    if (C.shape === "screen") return "glass leans toward +z; only the 2 studs at the ends of the back row z+0";
     if (C.shape === "window" || C.shape === "frame") return "glass/door faces +z; studs on top; 1 deep";
     if (C.wheels) return "see WHEELS";
     if (C.mask || C.shape === "arch" || C.bottom === "center" || C.studs === "round" || C.bottom === "none") return "";
