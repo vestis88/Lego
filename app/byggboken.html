@@ -241,6 +241,15 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 .stepper button { width: 40px; height: 40px; border-radius: 12px; background: var(--card); font-weight: 800; font-size: 1.3rem; }
 .stepper output { min-width: 2.2em; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
 
+.tray { display: flex; flex-wrap: wrap; gap: 10px; }
+.tray-tip { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+.tray figure { margin: 0; position: relative; width: 104px; display: flex; flex-direction: column; gap: 4px; }
+.tray figure img { width: 104px; height: 104px; object-fit: cover; border-radius: 14px; display: block; }
+.tray figcaption { font-size: .75rem; font-weight: 800; color: var(--ink-soft); text-align: center; line-height: 1.1; }
+.tray .rm { position: absolute; top: -8px; right: -8px; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--page); font-weight: 800; font-size: 1.1rem; }
+.tray .add { width: 104px; height: 104px; border-radius: 14px; border: 3px dashed var(--line); background: var(--page); color: var(--ink); font-weight: 800; font-size: .85rem; line-height: 1.15; padding: 6px; }
+.tray .add b { display: block; font-family: var(--display); font-size: 2rem; line-height: 1; }
+.finder-photo + .finder-photo { margin-top: 10px; }
 .finder-photo { position: relative; border-radius: var(--r); overflow: hidden; background: #000; }
 .finder-photo img { display: block; width: 100%; height: auto; }
 .ring {
@@ -333,7 +342,8 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 
     <div class="panel" id="c-photo" hidden>
       <label class="lbl">Foto</label>
-      <button class="photo-drop" id="photo-pick"><span><b>Tryck för att ta ett foto</b>eller välj en bild</span></button>
+      <p class="tray-tip">Ett foto räcker. Med ett foto till från sidan blir bygget mer likt.</p>
+      <div class="tray" id="c-tray"></div>
       <label class="lbl" for="photo-note">Något mer? (valfritt)</label>
       <textarea id="photo-note" style="min-height:64px" placeholder="Till exempel: gör den röd"></textarea>
     </div>
@@ -379,9 +389,10 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
       <button class="iconbtn" data-back aria-label="Tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <h2>Mina bitar</h2>
     </div>
-    <p style="margin:0;color:var(--ink-soft)">Lägg ut klossarna på ett bord så att de inte ligger på varandra, och ta ett foto. Ta flera foton om du har många bitar. Varje foto läggs till i listan.</p>
+    <p style="margin:0;color:var(--ink-soft)">Lägg ut klossarna glest på ett ljust bord. Ta första fotot rakt ovanifrån. Ta sedan gärna ett foto snett från sidan av samma hög, utan att flytta något: då syns skillnad på plattor och klossar, och bitar som gömmer sig.</p>
+    <div class="tray" id="inv-tray"></div>
     <div class="btn-row">
-      <button class="btn go" id="inv-scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-3h3L15 7"/></svg>Fota bitar</button>
+      <button class="btn go" id="inv-scan">Räkna bitarna</button>
     </div>
     <div class="notice" id="inv-status" hidden></div>
     <div class="section-h"><h2 id="inv-count">Inga bitar än</h2><button class="btn small danger" id="inv-clear" hidden>Töm listan</button></div>
@@ -402,10 +413,11 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
       <label class="lbl">Färg</label><div class="chips" id="f-colors"></div>
     </div>
     <button class="btn go" id="f-shoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-3h3L15 7"/></svg>Fota högen</button>
+    <div class="tray" id="f-tray"></div>
     <div class="panel" id="f-result" hidden>
       <div class="hint" id="f-hint"></div>
-      <div class="finder-photo" id="f-photo"></div>
-      <div class="btn-row"><button class="btn small" id="f-say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 010 8"/></svg>Läs upp</button><button class="btn small" id="f-again">Fota igen</button></div>
+      <div id="f-photo"></div>
+      <div class="btn-row"><button class="btn small" id="f-say"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 010 8"/></svg>Läs upp</button><button class="btn small" id="f-more">Fota från ett annat håll</button><button class="btn small" id="f-again">Börja om</button></div>
     </div>
   </section>
 </div>
@@ -519,6 +531,11 @@ const NOUNS = {
   seat:   { name: "Stol",              sg: "stol",              pl: "stolar",              g: "en" },
   wedge:  { name: "Kilplatta",         sg: "kilplatta",         pl: "kilplattor",          g: "en" },
   htile:  { name: "Slät platta med handtag", sg: "slät platta med handtag", pl: "släta plattor med handtag", g: "en" },
+  jumper: { name: "Platta med en knopp", sg: "platta med en knopp", pl: "plattor med en knopp", g: "en" },
+  curve:  { name: "Böjd lutning",      sg: "böjd lutning",      pl: "böjda lutningar",     g: "en" },
+  qtile:  { name: "Kvartscirkel",      sg: "kvartscirkel",      pl: "kvartscirklar",       g: "en" },
+  sbrick: { name: "Kloss med sidoknopp", sg: "kloss med sidoknopp", pl: "klossar med sidoknopp", g: "en" },
+  panel:  { name: "Vägg",              sg: "vägg",              pl: "väggar",              g: "en" },
   wplate: { name: "Hjulplatta",        sg: "hjulplatta",        pl: "hjulplattor",         g: "en" },
   window: { name: "Fönster",           sg: "fönster",           pl: "fönster",             g: "ett" },
   frame:  { name: "Dörrkarm",          sg: "dörrkarm",          pl: "dörrkarmar",          g: "en" },
@@ -627,6 +644,20 @@ def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0, faces +z; nothing a
 def("2432", { en: "Tile 1 x 2 with Bar Handle (smooth; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 1, studs: "none" });
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
   mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
+/* The most common parts in today's sets (Brick Architect's ranking), plus their 1990s equivalents. */
+def("15573", { en: "Plate 1 x 2 with 1 Stud in the center (jumper; its single stud sits between grid positions, so treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
+def("3794", { en: "Plate 1 x 2 with 1 Stud in the center (classic 1990s jumper; treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
+def("11212", { en: "Plate 3 x 3", noun: "plate", group: "plate", shape: "box", w: 3, d: 3, h: 1 });
+def("14716", { en: "Brick 1 x 1 x 3", noun: "brick", group: "brick", shape: "box", w: 1, d: 1, h: 9, size: "1×1×3" });
+def("22886", { en: "Brick 1 x 2 x 3", noun: "brick", group: "brick", shape: "box", w: 1, d: 2, h: 9, size: "1×2×3" });
+def("87087", { en: "Brick 1 x 1 with Stud on 1 Side (side stud toward +z is decoration only)", noun: "sbrick", group: "brick", shape: "box", deco: "side1", w: 1, d: 1, h: 3, dir: true });
+def("11211", { en: "Brick 1 x 2 with 2 Studs on 1 Side (side studs toward +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", deco: "side1", w: 2, d: 1, h: 3, dir: true, size: "1×2" });
+def("4733", { en: "Brick 1 x 1 with Studs on 4 Sides (side studs are decoration only)", noun: "sbrick", group: "brick", shape: "box", deco: "side4", w: 1, d: 1, h: 3 });
+def("11477", { en: "Slope Curved 2 x 1 x 2/3 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 1, d: 2, h: 2, studs: "none", dir: true, size: "1×2" });
+def("15068", { en: "Slope Curved 2 x 2 x 2/3 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 2, d: 2, h: 2, studs: "none", dir: true, size: "2×2" });
+def("25269", { en: "Tile 1 x 1 Quarter Circle (round edge toward +x and +z at r=0; smooth)", noun: "qtile", group: "tile", shape: "quarter", w: 1, d: 1, h: 1, studs: "none", dir: true });
+def("4865", { en: "Panel 1 x 2 x 1 (thin wall on the back row z+0 with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 3, dir: true, size: "1×2×1" });
+def("4864", { en: "Panel 1 x 2 x 2 (thin wall with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
 // Pieces that come along with the parts above.
 def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
 def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
@@ -858,6 +889,18 @@ function shapeLayers(C, p, solo) {
     case "holder": main.push(box(0.02, 0.01, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
     case "wheel": return wheelLayers({ r: 0.94, width: 0.72, hub: 0.5 }, 0.5, 0.94, col);
     case "bigwheel": return wheelLayers({ r: 1.31, width: 1.5, hub: 0.72 }, 1, 1.31, col, 1.5);
+    case "curve": {
+      const pts = [[0.02, 0.01], [D - 0.02, 0.01], [D - 0.02, 0.08]];
+      for (let i = 1; i <= 10; i++) { const t = 1 - i / 10; pts.push([0.02 + (D - 0.04) * t, 0.08 + (H - 0.09) * Math.cos((t * Math.PI) / 2)]); }
+      main.push(profile(pts, W)); break;
+    }
+    case "quarter": {
+      const sh = new THREE.Shape();
+      sh.moveTo(0.02, -0.02); sh.lineTo(0.98, -0.02); sh.absarc(0.02, -0.02, 0.96, 0, -Math.PI / 2, true); sh.lineTo(0.02, -0.02);
+      main.push(new THREE.ExtrudeGeometry(sh, { depth: H - 0.02, bevelEnabled: false, curveSegments: 12 }).rotateX(-Math.PI / 2).translate(0, 0.01, 0));
+      break;
+    }
+    case "panel": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), box(0.02, 0.4, 0.02, W - 0.02, H - 0.01, 0.24), box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
     case "seat": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.5, D - 0.02), box(0.02, 0.5, 0.02, W - 0.02, H - 0.01, 0.4)); break;
     case "cutcorner": {
       const sh = new THREE.Shape();
@@ -891,6 +934,12 @@ function decoLayers(C, H, W, D, main, L) {
     case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, H * 0.5, k + 1)), color: "black" }); break;
     case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
     case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
+    case "jumper": main.push(stud(W / 2 - 0.5, D / 2 - 0.5, H)); break;
+    case "side1": for (let i = 0; i < W; i++) main.push(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(i + 0.5, H / 2, D + 0.09)); break;
+    case "side4":
+      main.push(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(0.5, H / 2, D + 0.09), new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(0.5, H / 2, -0.09),
+        new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateZ(Math.PI / 2).translate(W + 0.09, H / 2, 0.5), new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateZ(Math.PI / 2).translate(-0.09, H / 2, 0.5));
+      break;
     case "tilehandle": main.push(box(0.4, H - 0.01, 0.25, 0.6, H + 0.12, 0.4), box(0.4, H - 0.01, D - 0.4, 0.6, H + 0.12, D - 0.25), new THREE.CylinderGeometry(0.06, 0.06, D - 0.5, 8).rotateX(Math.PI / 2).translate(0.5, H + 0.12, D / 2)); break;
     case "handle": main.push(new THREE.CylinderGeometry(0.08, 0.08, W - 0.5, 10).rotateZ(Math.PI / 2).translate(W / 2, 0.2, D - 0.1)); break;
   }
@@ -1357,11 +1406,11 @@ function cleanInventory(list) {
 }
 
 /* ============================================================= Claude */
-const AI = { sample: null, images: false };
+const AI = { sample: null, images: false, maxImages: 1 };
 async function initAI() {
   try {
     AI.sample = window.claude?.use ? await window.claude.use("sample") : null;
-    if (AI.sample) { const lim = await AI.sample.limits().catch(() => null); AI.images = !!lim?.images; }
+    if (AI.sample) { const lim = await AI.sample.limits().catch(() => null); AI.images = !!lim?.images; AI.maxImages = Math.max(1, Math.min(3, lim?.images?.maxCount || 1)); }
   } catch { AI.sample = null; }
   const n = $("#ai-notice");
   if (!AI.sample) {
@@ -1445,7 +1494,7 @@ function buildPrompt(o) {
   const what = o.mode === "random"
     ? `Pick ONE of these and design it: ${o.surprise.join(", ")}. Make it fun and recognizable.`
     : o.mode === "photo"
-      ? `Look at the photo. Design a LEGO model of the main thing in it. If the photo shows a LEGO model, recreate it as closely as you can with catalog parts.${o.text ? ` Extra wish from the child: "${o.text}".` : ""}`
+      ? `Look at the ${o.photos?.length > 1 ? `${o.photos.length} photos; they show the SAME thing from different sides, so use them together to understand its 3D shape` : "photo"}. Design a LEGO model of the main thing in it. If it is a LEGO model, recreate it as closely as you can with catalog parts.${o.text ? ` Extra wish from the child: "${o.text}".` : ""}`
       : `The child (writing in Swedish) wants to build: "${o.text}".`;
   return `You are an expert LEGO set designer making official-style building instructions for a 5-year-old Swedish boy who builds at the level of a ${L.age}. Use only real LEGO System parts from the catalog below.
 TASK: ${what}
@@ -1462,6 +1511,39 @@ ${RULES()}${inventoryLine(o)}
 MODEL TO FIX:
 ${JSON.stringify({ title: build.title, description: build.description, steps: build.steps })}
 Return the full corrected model. ${FORMAT}`;
+}
+
+/** A row of photos of the same pile or object, with an "add another angle" tile. */
+class PhotoTray {
+  constructor(el, labels, onChange, { show = true } = {}) { this.el = el; this.labels = labels; this.onChange = onChange; this.show = show; this.files = []; this.render(); }
+  get max() { return Math.min(AI.maxImages, this.labels.length); }
+  add(f) { if (this.files.length < this.max) { this.files.push(f); this.render(); } }
+  clear() { this.files = []; this.render(); }
+  render() {
+    this.el.textContent = "";
+    this.files.forEach((f, i) => {
+      const fig = document.createElement("figure");
+      const img = new Image(); img.alt = `Foto ${i + 1}`; img.src = URL.createObjectURL(f);
+      const cap = document.createElement("figcaption"); cap.textContent = this.labels[i];
+      const rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "×"; rm.setAttribute("aria-label", `Ta bort foto ${i + 1}`);
+      rm.addEventListener("click", () => { this.files.splice(i, 1); this.render(); });
+      fig.append(img, cap, rm); this.el.append(fig);
+    });
+    if (this.files.length && this.files.length < this.max) {
+      const add = document.createElement("button"); add.className = "add";
+      add.innerHTML = `<b>+</b>${this.labels[this.files.length]}`;
+      add.addEventListener("click", () => pickPhoto((f) => this.add(f)));
+      this.el.append(add);
+    }
+    this.el.hidden = !this.show || !this.files.length;
+    this.onChange?.(this.files);
+  }
+}
+/** What every multi-photo prompt says about several photos of one subject. */
+function anglesNote(n, what) {
+  return n > 1
+    ? `There are ${n} photos of the SAME ${what}, taken from different angles; nothing moved between them. Photo 1 is the main view (usually from above). Match each piece across the photos by color, position and neighbors, and count every physical piece only ONCE. Use the view from above to count studs and footprints, and the angled view(s) to tell plates, tiles and bricks apart by height, to read the profile of slopes, and to find pieces hidden in photo 1.`
+    : `There is one photo, probably taken from above. Count studs for footprints. When height is unclear (plate or brick), use shadows and side faces, and if still unsure pick the more common piece.`;
 }
 
 /* ============================================================== views */
@@ -1489,22 +1571,16 @@ const exThumbs = {};
 function exampleThumb(b) { return (exThumbs[b.id] ||= Snap.model(b.steps)); }
 
 /* create */
-let createMode = "text", photoFile = null, invStrict = true, useInv = false;
+let createMode = "text", invStrict = true, useInv = false;
+const buildTray = new PhotoTray($("#c-tray"), ["Huvudfoto", "Från sidan", "Från ett tredje håll"]);
 function openCreate(mode) {
-  createMode = mode; photoFile = null;
+  createMode = mode; buildTray.clear();
   $("#c-text").hidden = mode !== "text"; $("#c-photo").hidden = mode !== "photo"; $("#c-random").hidden = mode !== "random";
   $("#create-title").textContent = mode === "photo" ? "Bygg från ett foto" : mode === "random" ? "Överraska mig" : "Vad vill du bygga?";
-  $("#photo-pick").innerHTML = "<span><b>Tryck för att ta ett foto</b>eller välj en bild</span>";
   go("#v-create");
-  if (mode === "photo") pickPhoto(setPhoto);
-}
-function setPhoto(f) {
-  photoFile = f;
-  const img = new Image(); img.alt = "Ditt foto"; img.src = URL.createObjectURL(f);
-  const box = $("#photo-pick"); box.textContent = ""; box.append(img);
+  if (mode === "photo") pickPhoto((f) => buildTray.add(f));
 }
 ["#t-text", "#t-photo", "#t-random"].forEach((id) => $(id).addEventListener("click", (e) => openCreate(e.currentTarget.dataset.mode)));
-$("#photo-pick").addEventListener("click", () => pickPhoto(setPhoto));
 for (const idea of IDEAS) {
   const c = document.createElement("button"); c.className = "chip"; c.textContent = idea;
   c.addEventListener("click", () => { $("#prompt").value = idea; });
@@ -1535,7 +1611,7 @@ $("#w-stop").addEventListener("click", () => working?.abort());
 $("#go").addEventListener("click", async () => {
   const o = { mode: createMode, level: +$("#level").value, strict: invStrict && useInv, useInv };
   if (createMode === "text") { o.text = $("#prompt").value.trim(); if (!o.text) { toast("Skriv vad du vill bygga först."); $("#prompt").focus(); return; } }
-  if (createMode === "photo") { if (!photoFile) { pickPhoto(setPhoto); return; } o.text = $("#photo-note").value.trim(); }
+  if (createMode === "photo") { if (!buildTray.files.length) { pickPhoto((f) => buildTray.add(f)); return; } o.text = $("#photo-note").value.trim(); o.photos = buildTray.files.slice(); }
   if (createMode === "random") o.surprise = [...SURPRISES].sort(() => Math.random() - 0.5).slice(0, 3);
   await generate(o);
 });
@@ -1557,7 +1633,7 @@ async function generate(o) {
   const onText = ({ text }) => { const n = countParts(text); if (n) setWorking("Lägger ut bitar", null, n); };
   try {
     const opts = { signal: working.signal, onText, modelTier: tier, cache: false };
-    if (o.mode === "photo" && photoFile) opts.images = [photoFile];
+    if (o.mode === "photo" && o.photos?.length) opts.images = o.photos;
     let build = normBuild(await AI.sample.json(buildPrompt(o), opts));
     if (!build.steps.length) throw { code: "empty_build" };
     let problems = problemList(analyze(build.steps), build.unknown);
@@ -1769,16 +1845,23 @@ $("#t-inv").addEventListener("click", () => { renderInventory(); go("#v-inv"); }
 $("#inv-clear").addEventListener("click", () => { $("#inv-clear-confirm").hidden = false; });
 $("#inv-clear-no").addEventListener("click", () => { $("#inv-clear-confirm").hidden = true; });
 $("#inv-clear-yes").addEventListener("click", async () => { $("#inv-clear-confirm").hidden = true; try { await Store.saveInventory([]); } catch { toast("Kunde inte tömma listan."); } });
-$("#inv-scan").addEventListener("click", () => pickPhoto(async (file) => {
-  const st = $("#inv-status"); st.hidden = false; st.innerHTML = "<b>Tittar på bilden…</b> Claude räknar dina bitar.";
+const invTray = new PhotoTray($("#inv-tray"), ["Ovanifrån", "Snett från sidan", "Från andra sidan"], (files) => {
+  $("#inv-scan").innerHTML = files.length ? `Räkna bitarna (${files.length} ${files.length === 1 ? "foto" : "foton"})` : "Fota bitar";
+});
+$("#inv-scan").addEventListener("click", async () => {
+  if (!invTray.files.length) { pickPhoto((f) => invTray.add(f)); return; }
+  const files = invTray.files.slice();
+  const st = $("#inv-status"); st.hidden = false;
+  st.innerHTML = `<b>Tittar på ${files.length === 1 ? "bilden" : "bilderna"}…</b> Claude räknar dina bitar.`;
   $("#inv-scan").disabled = true;
   try {
     const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
-    const res = await AI.sample.json(`Identify every LEGO piece visible in this photo and count identical pieces.
-Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic, minifigures, special parts). A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end).
+    const res = await AI.sample.json(`Identify every LEGO piece in the pile and count identical pieces.
+${anglesNote(files.length, "pile")}
+Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic beams, gears, axles and pins, minifigures, special parts). A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end). Parts that come apart in the box but belong together (a window and its glass, a door frame and its door, a flower stem and its flowers) count as the main part.
 ${list}
 Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
-Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}]}`, { images: [file], modelTier: "complex", cache: false });
+Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}],"unsure":"one short Swedish sentence about pieces you could not identify, or empty"}`, { images: files, modelTier: "complex", cache: false });
     const found = cleanInventory(res?.parts);
     const merged = Store.inventory.map((p) => ({ ...p }));
     for (const p of found) { const m = merged.find((q) => q.id === p.id && q.c === p.c); if (m) m.n += p.n; else merged.push(p); }
@@ -1786,9 +1869,12 @@ Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}]}`, { images: [fil
     await Store.saveInventory(merged);
     const n = found.reduce((a, p) => a + p.n, 0);
     st.innerHTML = n ? `<b>${n} bitar hittade</b> och tillagda. Rätta antalet med plus och minus om något blev fel.` : "<b>Hittade inga bitar.</b> Prova att lägga dem glest på ett ljust bord.";
+    if (n && res?.unsure) { const u = document.createElement("div"); u.textContent = String(res.unsure).slice(0, 200); st.append(u); }
+    if (n && files.length === 1 && AI.maxImages > 1) { const t = document.createElement("div"); t.textContent = "Tips: ett foto till snett från sidan gör räkningen säkrare nästa gång."; st.append(t); }
+    invTray.clear();
   } catch (e) { st.textContent = errText(e); }
   finally { $("#inv-scan").disabled = !(AI.sample && AI.images); }
-}));
+});
 
 /* ============================================================= finder */
 let F = { group: "brick", id: "3001", c: "red" };
@@ -1819,42 +1905,56 @@ function renderFinder() {
 }
 function openFinder(p) {
   if (p) F = { group: CAT[p.id].group, id: p.id, c: p.c };
-  $("#f-result").hidden = true;
+  $("#f-result").hidden = true; findTray.clear();
   renderFinder(); go("#v-find");
 }
 let lastHint = "";
 $("#t-find").addEventListener("click", () => openFinder(null));
 $("#f-say").addEventListener("click", () => speak(lastHint));
-const shoot = () => pickPhoto(async (file) => {
+const findTray = new PhotoTray($("#f-tray"), ["Ovanifrån", "Från ett annat håll"], (files) => {
+  $("#f-shoot").hidden = files.length > 0;
+}, { show: false });
+/** Looks for the chosen piece in every photo of the pile and circles it where it is seen. */
+async function findPiece() {
+  const files = findTray.files.slice();
+  if (!files.length) return;
   const C = CAT[F.id];
   const res = $("#f-result"); res.hidden = false;
   $("#f-hint").textContent = "Letar…"; lastHint = "";
-  const ph = $("#f-photo"); ph.textContent = "";
-  const img = new Image(); img.alt = "Din hög med bitar"; img.src = URL.createObjectURL(file); ph.append(img);
-  $("#f-shoot").disabled = true;
+  const holder = $("#f-photo"); holder.textContent = "";
+  const boxes = files.map((f, i) => {
+    const ph = document.createElement("div"); ph.className = "finder-photo";
+    const img = new Image(); img.alt = `Foto ${i + 1} av högen`; img.src = URL.createObjectURL(f); ph.append(img);
+    holder.append(ph); return ph;
+  });
+  $("#f-more").hidden = files.length >= findTray.max;
+  for (const b of ["#f-more", "#f-again"]) $(b).disabled = true;
   res.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
-    const r = await AI.sample.json(`This photo shows a pile of LEGO pieces. Find a ${COLORS[F.c].en} LEGO ${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"}).
-Look carefully at the size (count the studs), the shape and the color. Reply with ONLY JSON:
-{"found":true,"spots":[{"x":0.42,"y":0.63,"r":0.06,"sure":true}],"hint":"..."}
-x and y are the center of the piece as fractions of the image width and height (0 = left/top, 1 = right/bottom), r is a circle radius as a fraction of the image width that covers the piece. Give up to 3 spots, best first; "sure" false for weak guesses.
-"hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces and try again.`, { images: [file], modelTier: "complex", cache: false });
-    const spots = (Array.isArray(r?.spots) ? r.spots : []).slice(0, 3);
+    const r = await AI.sample.json(`These photos show a pile of LEGO pieces. Find a ${COLORS[F.c].en} LEGO ${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"}).
+${anglesNote(files.length, "pile")}
+Look carefully at the size (count the studs), the height, the shape and the color. Reply with ONLY JSON:
+{"found":true,"spots":[{"photo":1,"x":0.42,"y":0.63,"r":0.06,"sure":true}],"hint":"..."}
+"photo" is which photo the spot is in (1${files.length > 1 ? " to " + files.length : ""}); if the piece is visible in several photos, give a spot in each. x and y are the center of the piece as fractions of that photo's width and height (0 = left/top, 1 = right/bottom), r is a circle radius as a fraction of the photo width that covers the piece. Give up to 4 spots, best first; "sure" false for weak guesses.
+"hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look in the pile, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces${files.length < findTray.max ? " or take a photo from another angle" : ""}.`, { images: files, modelTier: "complex", cache: false });
+    const spots = (Array.isArray(r?.spots) ? r.spots : []).slice(0, 4);
     for (const s of spots) {
-      const x = Number(s.x), y = Number(s.y); if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) continue;
+      const x = Number(s.x), y = Number(s.y), k = clampInt(s.photo, 1, files.length, 1) - 1;
+      if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) continue;
       const rr = Math.min(0.25, Math.max(0.04, Number(s.r) || 0.07));
       const ring = document.createElement("div"); ring.className = "ring" + (s.sure === false ? " maybe" : "");
       Object.assign(ring.style, { left: x * 100 + "%", top: y * 100 + "%", width: rr * 200 + "%", aspectRatio: "1" });
-      ph.append(ring);
+      boxes[k].append(ring);
     }
     lastHint = String(r?.hint || (spots.length ? "Titta i ringen!" : "Jag hittade den inte. Sprid ut bitarna och försök igen."));
     $("#f-hint").textContent = lastHint;
     speak(lastHint);
   } catch (e) { $("#f-hint").textContent = errText(e); }
-  finally { $("#f-shoot").disabled = false; }
-});
-$("#f-shoot").addEventListener("click", shoot);
-$("#f-again").addEventListener("click", shoot);
+  finally { for (const b of ["#f-more", "#f-again"]) $(b).disabled = false; }
+}
+$("#f-shoot").addEventListener("click", () => pickPhoto((f) => { findTray.add(f); findPiece(); }));
+$("#f-more").addEventListener("click", () => pickPhoto((f) => { findTray.add(f); findPiece(); }));
+$("#f-again").addEventListener("click", () => { findTray.clear(); $("#f-result").hidden = true; });
 
 /* =============================================================== boot */
 renderShelf();

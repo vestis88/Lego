@@ -42,7 +42,7 @@ In the instruction viewer:
 
 ### Parts catalog
 
-About 125 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+About 140 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
 
 | Group | Parts (design IDs) |
 |---|---|
@@ -58,6 +58,7 @@ About 125 real System parts, focused on the classic 1990s range (Town, Castle, S
 | Windows & doors | 2377 1×2×2 plane window, 3853 1×4×3 window + 3855 glass, 4132 2×4×3 window + 4133 pane, 4130 2×4×5 door frame + 4131 door, 30179 1×4×6 door frame + 60623 4-pane door; newer 60592, 60593, 60594, 60596 + 60616 |
 | Vehicles | Wheel plates: 4600 + 2× 4624/3641 wheels, 122c01 with small red wheels, 6157 wide holder + 2× 6014/6015 big wheels, 2926 1×4 with a wheel at each end. Also 3829c01 steering wheel stand, 4079 seat, 3823 windscreen, 2450 3×3 cut-corner wedge plate, 2432 tile with handle (bumpers) |
 | Special | 3403c01 turntable 4×4 |
+| Most common today | 15573 / 3794 jumper plates, 11212 plate 3×3, 14716 / 22886 bricks ×3 tall, 87087 / 11211 / 4733 bricks with side studs, 11477 / 15068 curved slopes, 25269 quarter-circle tile, 4865 / 4864 panels |
 
 The checker knows each part's special rules:
 
@@ -96,6 +97,19 @@ Coordinates use a stud grid: `x` (right) and `z` (toward the viewer) are in stud
 ```
 
 `c2` is the wheel hub color on a 4600, or the door color on a 60596. Builds saved in the older format are converted to catalog parts when they load. Technic parts are planned for later.
+
+## Photos from several angles
+
+Counting your pieces (**Mina bitar**), finding a piece (**Hitta bit**) and building from a photo (**Foto**) can each use up to 3 photos of the same subject. That's limited by how many images the viewer's Claude app accepts per request. All photos go to Claude in one request with instructions to:
+
+- treat them as the same pile or object, with nothing moved between photos;
+- count every piece only once;
+- use the view from above for stud counts and footprints;
+- use the angled views to tell plates, tiles and bricks apart by height, read slope profiles and find hidden pieces.
+
+**Why:** a photo straight from above shows the studs but not the height. A 1×4 plate, a 1×4 brick and a 1×4 tile with studs out of view all look alike, and pieces under other pieces are hidden. Research on LEGO recognition describes the same problem: pieces look the same from some angles, and changing the viewpoint resolves it. Apps like Brickit get around it by asking for spread-out pieces.
+
+**Cost:** each extra photo adds roughly the cost of the first one (photos are scaled to about 1.2 megapixels) and a little more waiting. So the app suggests the second photo instead of requiring it. The finder asks for another angle only if the first photo didn't find the piece.
 
 ## Updating the app
 
