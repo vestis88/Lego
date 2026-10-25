@@ -26,6 +26,11 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 | 13 | 4079 seat | Built 1 brick tall. BrickLink measures it at 1.8 cm, and ToyPro calls it "Seat 2 x 2 x 2". | Same blind spot. Found by the new check. | 6 plates tall with the backrest. |
 | 14 | 3403c01 turntable | Built 2 plates tall. BrickLink lists it as 4 × 4 × 1 studs, 1.15 cm tall including studs: 1 brick. | Same blind spot. Found by the new check. | 3 plates tall. |
 
+| 15 | 3829c01 steering stand (pointed out by you, second time) | **Rotated 90° and the wrong shape.** In the real part the 1×2 tile lies *across* the car, a flat grooved column stands straight up from the *middle* of the long side, and a wheel about 11 mm across sits on top, tilted toward the driver, hanging over the space behind. I had the base running along the car, a thin rod on one end stud leaning back, and a small wheel. | I never looked at the real part. I drew it from memory, and every "visual check" compared my render with my own idea of the part. The height check (fix 12) only compared one number. | Base across (w2 × d1), a straight slab column in the middle, a larger tilted wheel, and the space it hangs over counts as filled (only up high). Compared side by side with two steering stands in your photo. |
+| 16 | 122c01 plate with red wheels | **My earlier fix 2 was wrong.** I shrank the wheels to 8 mm, but "8 mm D." in Brick Architect's name is the red *hub*. Your photo shows black treaded tires about 15 mm across, on a metal axle a little outside the plate. | I read a measurement without checking which part of the wheel it described, and didn't compare with a photo. | Tires 14.4 mm across on red 8 mm hubs, set slightly outside the plate. Wider parts start 3 plates above the plate. |
+| 17 | 2412b grille tile | Slots ran along the tile. On the real tile (your photo) they run across it. | Drawn from memory. | Five bars across the tile. |
+| 18 | 4079 seat (follow-up) | The whole 2×2 counted as 2 bricks tall, so a steering wheel couldn't hang over the seat as it does in real cars. | The space a part fills was always its full box. | Only the backrest row is full height; the front row is seat height. |
+
 **Root cause:** whenever a part's name carried no height, I guessed one. Every check then compared my model with my own guess.
 
 **New checks:**
@@ -34,8 +39,16 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 - The audit now builds its own test page from the app file, so it can audit any version: `node tests/audit.js tests path/to/byggboken.html`. Run against the version before this fix, it fails on 3829c01, 4079 and 3403c01. Run against the fixed version, it passes.
 - `tests/unit.js` also checks that each part's drawing reaches its declared height, not just stays under it.
 
+**After the second 3829c01 report:**
+
+- **Orientation rule (`tests/audit.js`):** a directional part one stud deep must face across its long side, as real windows, panels, grille bricks and the steering stand do. Run against the previous version, it flags the steering stand: "faces along its long side (w1 d2)".
+- **Overhang check (`tests/unit.js`):** a drawing may only stick out where the part really fills space (for example the steering wheel above the row behind it). The filled space can now be lower than the part in some rows (the seat's front row) or reach beyond it up high (the steering wheel).
+- **New tests:** a seat with a steering stand in front fits together, and a tall stack behind the stand collides with the wheel.
+- **Photo check list:** `PHOTO_CHECKED` in the audit lists the parts compared side by side with a photo of the real part. 9 are done (3829c01, 3403c01, 122c01, 2412b, 4070, 3853, 4032, 2432, 4460); every run lists the parts not yet compared. A photo of more of your pieces would let me check the rest.
+
 ## Lessons: rules for adding parts
 
+00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.
 0. **Never guess a size.** If the name doesn't give the height, take it from BrickLink's measured size and add it to `REAL_SIZE` with the source. If no measurement can be found, mark it unverified so it stays visible.
 1. **Look the part up before adding it.** Confirm the design ID, name and size on BrickLink, Brick Architect or Rebrickable. When sources disagree (for example 3048 and 3049), leave the part out instead of guessing.
 2. **Labels follow LEGO naming.** Plain parts: smaller × larger ("Plate 2 x 4"). Slopes: length down the slope × width (× height). Windows, doors, windscreens and panels: depth × width × height in bricks.

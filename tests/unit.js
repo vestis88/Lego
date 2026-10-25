@@ -17,7 +17,10 @@ window.__unit = () => {
         ok(Math.abs(b.min.z - p.z) < tol && Math.abs(b.max.z - (p.z + I.d)) < tol, `${tag} z ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} vs ${p.z}..${p.z + I.d}`);
       }
       ok(b.max.y >= (p.y + C.h) * PH - 0.48, `${tag} drawn top ${b.max.y.toFixed(2)} falls short of its height ${((p.y + C.h) * PH).toFixed(2)}`);
-      ok(b.min.x > p.x - tol && b.max.x < p.x + I.w + tol && b.min.z > p.z - tol && b.max.z < p.z + I.d + tol && b.min.y > p.y * PH - 0.01 && b.max.y < (p.y + C.h) * PH + 0.25, `${tag} shape leaves its space`);
+      // The drawing may only stick out where the part really fills space (its occupied cells), never elsewhere.
+      const ox = I.occ.map((c) => c[0]), oz = I.occ.map((c) => c[2]);
+      const [x0, x1, z0, z1] = [Math.min(...ox), Math.max(...ox) + 1, Math.min(...oz), Math.max(...oz) + 1];
+      ok(b.min.x > x0 - tol && b.max.x < x1 + tol && b.min.z > z0 - tol && b.max.z < z1 + tol && b.min.y > p.y * PH - 0.01 && b.max.y < (p.y + C.h) * PH + 0.25, `${tag} shape leaves its space (${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)}, ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} vs ${x0}..${x1}, ${z0}..${z1})`);
       const xs = I.cells.map((c) => c[0]), zs = I.cells.map((c) => c[1]);
       ok(I.cells.length === canonCells(C).length && Math.min(...xs) === p.x && Math.max(...xs) === p.x + I.w - 1 && Math.min(...zs) === p.z && Math.max(...zs) === p.z + I.d - 1, `${tag} cells`);
     }
@@ -91,8 +94,8 @@ window.__unit = () => {
   ok(analyze(bp.steps).floats.length === 1, "nothing attaches under a baseplate");
   const tt = info({ id: "3403c01", x: 0, y: 0, z: 0, r: 0 });
   ok(tt.studs.length === 12, "turntable studs " + tt.studs.length);
-  const rw = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 1, z: 0 }] }] });
-  ok(analyze(rw.steps).overlaps.length === 0, "122c01 wheels clear at y+2");
+  const rw = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -1, z: 0 }] }, { parts: [{ id: "2456", x: 1, y: 1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 4, z: 0 }] }] });
+  ok(analyze(rw.steps).overlaps.length === 0, "122c01 wheels clear at y+3 and above");
   const rw2 = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 0, z: 0 }] }] });
   ok(analyze(rw2.steps).overlaps.length > 0, "122c01 wheels block a low plate");
   ok(JSON.stringify(groupParts([{ id: "3853", c: "white" }, { id: "3741", c: "green", c2: "yellow" }]).map((g) => g.n + "x" + g.p.id + ":" + g.p.c).sort()) === JSON.stringify(["1x3741:green", "1x3853:white", "1x3855:transparent", "3x3742:yellow"]), "window glass + flowers listed");
@@ -108,6 +111,13 @@ window.__unit = () => {
   const cc = info({ id: "2450", x: 0, y: 0, z: 0, r: 0 });
   ok(cc.studs.length === 6 && cc.cells.length === 8, "2450 cells");
   ok(JSON.stringify(groupParts([{ id: "6157", c: "black" }, { id: "2926", c: "red", c2: "white" }]).map((g) => g.n + "x" + g.p.id + ":" + g.p.c).sort()) === JSON.stringify(["1x2926:red", "1x6157:black", "2x4624c01:white", "2x6014ac01:white"]), "wheel extras listed");
+  // 12. Steering stand: across the car, in front of a seat, wheel over the seat's low front row.
+  const st = info({ id: "3829c01", x: 0, y: 0, z: 0, r: 0 });
+  ok(st.cells.length === 2 && st.cells.every(([x, z]) => z === 0), "steering base lies across (x)");
+  const cab = normBuild({ steps: [{ parts: [{ id: "3021", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "4079", x: 0, y: 1, z: 0 }, { id: "3829c01", x: 0, y: 1, z: 2 }] }] });
+  ok(problemList(analyze(cab.steps)).length === 0, "seat + steering stand fit together " + problemList(analyze(cab.steps)));
+  const cab2 = normBuild({ steps: [{ parts: [{ id: "3021", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "3004", x: 0, y: 1, z: 1, r: 90 }, { id: "3004", x: 0, y: 4, z: 1, r: 90 }, { id: "3829c01", x: 0, y: 1, z: 2 }] }] });
+  ok(analyze(cab2.steps).overlaps.length === 1, "steering wheel collides with a tall brick behind it");
   // 11. Roof pieces and round plates.
   ok(info({ id: "3046", x: 0, y: 0, z: 0, r: 0 }).studs.length === 3, "3046 studs");
   const rp = info({ id: "60474", x: 0, y: 0, z: 0, r: 0 });

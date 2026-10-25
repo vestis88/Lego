@@ -636,9 +636,10 @@ def("4130", { en: "Door Frame 2 x 4 x 5 (comes with door 4131)", noun: "frame", 
   door: "4131", extras: [{ id: "4131", n: 1, color: "c2" }] });
 def("30179", { en: "Door Frame 1 x 4 x 6 (comes with door 60797 with 3 panes)", noun: "frame", group: "window", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
   door: "60797", extras: [{ id: "60797", n: 1, color: "c2" }] });
-def("122c01", { en: "Plate 2 x 2 with Red Wheels (small wheels; see WHEELS)", noun: "wplate", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
-  wheels: { r: 0.5, width: 0.45, off: 0.24, below: 2, above: 1, hub: 0.32, hubColor: "red" } });
-def("3829c01", { en: "Car Steering Stand with Steering Wheel (smooth 1 x 2 tile base, 2 bricks tall in total; the wheel leans back toward a driver at -z; nothing attaches on top)", noun: "steer", group: "vehicle", shape: "steer", w: 1, d: 2, h: 6, studs: "none", dir: true, size: "1×2" });
+def("122c01", { en: "Plate 2 x 2 with Red Wheels (red 8 mm hubs with black tires on a metal axle; see WHEELS)", noun: "wplate", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
+  wheels: { r: 0.9, width: 0.8, off: 0.55, below: 3, above: 2, hub: 0.5, hubColor: "red" } });
+def("3829c01", { en: "Car Steering Stand with Steering Wheel (smooth 1 x 2 tile base lying ACROSS the car at r=0; a flat column stands straight up from the middle of its long side and the wheel on top tilts back toward the driver at -z, hanging over the row behind it high up; 2 bricks tall; put it right in front of a seat 4079)", noun: "steer", group: "vehicle", shape: "steer", w: 2, d: 1, h: 6, studs: "none", dir: true, size: "1×2",
+  occExtra: [{ cell: [0, -1], lo: 3 }, { cell: [1, -1], lo: 3 }] });
 def("3403c01", { en: "Turntable 4 x 4 (1 brick tall: square base and a round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 3, studs: "round", size: "4×4" });
 def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger wheels 6014 + tires 6015; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
   wheels: { r: 1.31, width: 1.5, off: 0.8, cols: 2, rows: [-1, 2], below: 4, above: 3, hub: 0.72 },
@@ -646,7 +647,8 @@ def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger whee
 def("2926", { en: "Plate 1 x 4 with Wheel Holders at both ends (comes with 2 wheels 4624 + tires 3641; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 4, d: 1, h: 1, dir: true, bottom: "none", size: "1×4",
   wheels: { r: 0.94, width: 0.72, off: 0.38, rows: [-1, 1], cz: 0.5, below: 3, above: 2, hub: 0.5 },
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
-def("4079", { en: "Seat 2 x 2 (2 bricks tall with the backrest; backrest on the back row z+0, faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true });
+def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0 is 2 bricks tall; the front row is only the low seat, so a steering wheel may hang over it; faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true,
+  occRows: { 1: [0, 1] } });
 def("2432", { en: "Tile 1 x 2 with Bar Handle (smooth; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 1, studs: "none" });
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
   mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
@@ -812,6 +814,13 @@ function info(p) {
     if (C.occTop && !center.has(x + "," + z) && y < p.y + C.h - C.occTop) continue;
     occ.push([x, y, z]);
   }
+  // Rows that are lower than the part (the seat's front row) and space above neighbouring cells (the steering wheel).
+  if (C.occRows) {
+    const low = new Set();
+    for (const [cz, [lo, hi]] of Object.entries(C.occRows)) for (let cx = 0; cx < C.w; cx++) { const [x, z] = tc(cx, Number(cz)); for (let y = p.y; y < p.y + C.h; y++) if (y < p.y + lo || y > p.y + hi) low.add(`${x},${y},${z}`); }
+    for (let i = occ.length - 1; i >= 0; i--) if (low.has(occ[i].join(","))) occ.splice(i, 1);
+  }
+  for (const e of C.occExtra || []) { const [x, z] = tc(...e.cell); for (let y = p.y + e.lo; y < p.y + C.h; y++) occ.push([x, y, z]); }
   const W = C.wheels;
   if (W) {
     const [z0, z1] = W.rows || [0, C.d - 1];
@@ -896,15 +905,16 @@ function shapeLayers(C, p, solo) {
     case "flowerhead": main.push(flowerGeom(1, 0, 1)); break;
     case "glass": L.push({ geos: [box(0.2, 0.4, 0.62, W - 0.2, H - 0.4, 0.7)], color: "transparent" }); return L;
     case "steer": {
-      // 18.4 mm tall in all: a smooth 1x2 tile, a column rising from the front stud and leaning back, and the wheel tilted toward the driver.
-      main.push(box(0.02, 0.01, 0.02, 0.98, 0.4, 1.98));
-      const from = new THREE.Vector3(0.5, 0.4, 1.45), to = new THREE.Vector3(0.5, 1.85, 1.0), len = from.distanceTo(to);
-      const col = new THREE.CylinderGeometry(0.13, 0.16, len, 12).translate(0, len / 2, 0);
-      col.applyMatrix4(new THREE.Matrix4().lookAt(new THREE.Vector3(), to.clone().sub(from), new THREE.Vector3(0, 0, 1)).multiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2)));
-      main.push(col.translate(from.x, from.y, from.z));
-      const tilt = -2.5; // wheel faces up and back, toward -z
-      L.push({ geos: [new THREE.TorusGeometry(0.42, 0.06, 8, 28).rotateX(tilt).translate(0.5, 1.95, 0.95), new THREE.CylinderGeometry(0.1, 0.1, 0.12, 12).rotateX(tilt + Math.PI / 2).translate(0.5, 1.95, 0.95),
-        new THREE.BoxGeometry(0.8, 0.05, 0.06).rotateX(tilt + Math.PI / 2).translate(0.5, 1.95, 0.95)], color: p.c2 || "black" });
+      // 18.4 mm tall: a smooth 1x2 tile lying across the car, a flat grooved column rising from the middle of the long side
+      // and leaning back, and a steering wheel (about 11 mm) tilted up toward the driver behind it.
+      main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02));
+      // The column stands straight up from the middle of the base: a flat slab with grooves on its front.
+      main.push(box(0.6, 0.4, 0.38, 1.4, 1.72, 0.62));
+      for (const x0 of [0.72, 1.0, 1.28]) main.push(new THREE.CylinderGeometry(0.1, 0.1, 1.32, 10).translate(x0, 1.06, 0.64));
+      const cy = 1.86, cz = 0.32, tilt = -2.4; // wheel center on top of the column, facing up and back toward -z
+      L.push({ geos: [new THREE.TorusGeometry(0.62, 0.07, 8, 32).rotateX(tilt).translate(1, cy, cz),
+        new THREE.BoxGeometry(1.2, 0.05, 0.08).rotateX(tilt + Math.PI / 2).translate(1, cy, cz), new THREE.BoxGeometry(0.08, 0.05, 1.2).rotateX(tilt + Math.PI / 2).translate(1, cy, cz)], color: p.c2 || "black" });
+      main.push(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 14).rotateX(tilt + Math.PI / 2).translate(1, cy, cz)); // hub in the stand's own color
       break;
     }
     case "turn": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), new THREE.CylinderGeometry(1.96, 1.96, H - 0.41, 40).translate(W / 2, 0.4 + (H - 0.41) / 2, D / 2)); break;
@@ -1024,7 +1034,7 @@ function decoLayers(C, H, W, D, main, L) {
       break;
     }
     case "grille": for (const y of [0.3, 0.55, 0.8]) main.push(box(0.15, y, D - 0.06, W - 0.15, y + 0.1, D + 0.02)); break;
-    case "gtile": for (let i = 0; i < 4; i++) main.push(box(0.14 + i * 0.2, H - 0.01, 0.15, 0.24 + i * 0.2, H + 0.04, D - 0.15)); break;
+    case "gtile": for (let i = 0; i < 5; i++) main.push(box(0.15, H - 0.01, 0.18 + i * 0.4, W - 0.15, H + 0.04, 0.26 + i * 0.4)); break; // slots run across the tile
     case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, 0.725, k + 1)), color: "black" }); break; // hole centers 5.8 mm up
     case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
     case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
@@ -1557,7 +1567,7 @@ COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes
 ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
 WHEELS: the wheels come with their plate. Attach the wheel plate UNDER a chassis plate or brick (its studs go into the part above it); nothing attaches under it. At r=0 the wheels stick out on the left and right. Nothing else may be in the wheel space:
 - 4600 (2x2, normal wheels): columns x-1 and x+2, rows z..z+1, from y-3 to y+2. Parts wider than 2 over the wheels need y+3 or higher.
-- 122c01 (2x2, small red wheels, classic 1990s): columns x-1 and x+2, rows z..z+1, from y-2 to y+1. Parts wider than 2 over the wheels need y+2 or higher.
+- 122c01 (2x2, red-hub wheels on a metal axle, classic 1980s-90s): columns x-1 and x+2, rows z..z+1, from y-3 to y+2. Parts wider than 2 over the wheels need y+3 or higher.
 - 6157 (2x2, big wide wheels for buggies and trucks): columns x-2, x-1, x+2 and x+3, rows z-1..z+2, from y-4 to y+3. Parts wider than 2 over the wheels need y+4 or higher.
 - 2926 (1x4 plate across the car, one normal wheel at each end): columns x-1 and x+4, rows z-1..z+1, from y-3 to y+2. Build the body 4 wide right above it, or go wider only at y+3 or higher.
 Use r=90 to turn a wheel plate so the wheels point front and back instead.
