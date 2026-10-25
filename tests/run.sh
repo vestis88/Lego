@@ -9,3 +9,4 @@ if [ ! -f .cache/three.min.js ]; then
 fi
 node e2e.js "$PWD"
 node audit.js "$PWD"
+node ldraw-check.js

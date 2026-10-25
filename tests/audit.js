@@ -20,8 +20,9 @@ fs.writeFileSync(S + '/audit-harness.html', page);
   };
   // Parts compared side by side with a photo of the real part (source in brackets). Everything else is listed as not photo-checked.
   const PHOTO_CHECKED = {
-    "3829c01": "family photo 2026-10-24", "3403c01": "family photo", "122c01": "family photo", "2412b": "family photo",
-    "4070": "family photo", "3853": "family photo", "4032": "family photo", "2432": "family photo", "4460": "family photo",
+    "3829c01": "family photo 2026-10-24", "3403c01": "family photo", "122c01": "family photo", "2412b": "BrickLink + Brick Architect photos, LDraw",
+    "4070": "family photo", "3853": "family photo", "4032": "family photo", "2432": "BrickLink + Brick Architect photos, LDraw", "4460": "family photo", "3823": "BrickLink photo, LDraw", "4865": "BrickLink + Brick Architect photos, LDraw", "60474": "BrickLink photo, LDraw", "3470": "BrickLink photo, LDraw",
+    "60594": "BrickLink photo", "60596": "BrickLink photo", "30179": "BrickLink photo", "4079": "BrickLink photo",
   };
   const out = await p.evaluate(([REAL_SIZE, PHOTO_CHECKED]) => {
     const res = [];
@@ -88,6 +89,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
     '6014ac01': 'wheels are sized in millimetres, not studs',
     '11477': 'the 2/3 height is left out of the label for the child',
     '85984': 'the 2/3 height is left out of the label for the child',
+    '2432': 'the bar handle rises 3 plates above the tile (LDraw 2432 and Brick Architect: 4 plates tall in all)',
   };
   const warn = out.filter((l) => l.includes("UNVERIFIED") || l.startsWith("PHOTO-CHECK"));
   if (warn.length) console.log("WARNINGS (not yet verified against a real measurement):\n" + warn.join("\n"));

@@ -46,6 +46,32 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 - **New tests:** a seat with a steering stand in front fits together, and a tall stack behind the stand collides with the wheel.
 - **Photo check list:** `PHOTO_CHECKED` in the audit lists the parts compared side by side with a photo of the real part. 9 are done (3829c01, 3403c01, 122c01, 2412b, 4070, 3853, 4032, 2432, 4460); every run lists the parts not yet compared. A photo of more of your pieces would let me check the rest.
 
+## Cross-check against LDraw CAD geometry (2026-10-25)
+
+[LDraw](https://library.ldraw.org) is the community CAD library of real LEGO parts, modelled to the exact LEGO unit (1 stud = 20 LDU, 1 plate = 8 LDU). For every part in the catalog I measured the LDraw model's footprint, height and the position of every stud on top, and compared them with the app. I also rendered each part next to the app's drawing, and checked BrickLink and Brick Architect photos wherever the two disagreed.
+
+135 of 164 parts match LDraw exactly: footprint, height and every stud position. Six were wrong, and five of them could make the app accept builds that don't fit in real life:
+
+| # | Part | What was wrong | Fix |
+|---|---|---|---|
+| 19 | 3823 windscreen | The app put 4 studs along the top. The real part has only 2, one at each end; the middle of the top is smooth. Bricks could be placed on studs that don't exist. | Only the two end studs connect. |
+| 20 | 4865 panel 1×2×1 | The app gave it 2 studs on top of the wall, drawn on a top frame. The real panel is a plain L (a floor plate and a thin wall) with no studs at all. Things could be stacked on a 1.6 mm wall. | No studs, no top frame. (The 1×2×2 panel 4864 does have a top frame with 2 studs, and still does.) |
+| 21 | 2432 tile with handle | Counted as 1 plate tall. The handle rises 3 plates above the tile, so the part is 4 plates tall. Parts could be placed through the handle. | 4 plates tall, drawn with end walls and a bar on top. |
+| 22 | 3470 fruit tree | 14 plates (4⅔ bricks) tall. LDraw and Brick Owl (1.4" × 1.4" × 2.3") give 18 plates, 6 bricks. Parts could be placed inside the crown. | 18 plates, label 4×4×6, crown drawn as an oval on a thin trunk and round foot. |
+| 23 | 60474 round plate 4×4 | Only the 8 outer studs connected. The real plate has 12 studs: every cell except the corners, with the pin hole between the 4 middle studs. | All 12 studs connect. |
+| 24 | 2412b grille tile | Fix 17 above turned the slots across the tile. BrickLink's photo, Brick Architect's drawing and LDraw all show 3 bars and 2 slots running **along** the tile. | Slots run along the tile again. If the tile in your photo had slots across it, it may have been a different part; please send it again. |
+
+The 29 parts that still differ from LDraw are listed with their reasons in `ACCEPTED` in `tests/ldraw-check.js`. Each is a real difference the stud grid can't express, for example:
+
+- handles, clips, rails and wheel pins that stick out beside a part;
+- the single center stud of jumper plates;
+- baseplates, which are half a plate thick;
+- the 2 studs on the seat 4079, which sit lower than the top of the part.
+
+Three of them are LDraw quirks, checked against BrickLink photos: the windows 3853 and 60594 and the door frame 60596 do have 4 studs on top, but LDraw draws the end studs as part of the frame.
+
+**New check (`tests/ldraw-check.js`, run by `run.sh`):** compares every catalog part with `tests/ldraw-ref.json`, the LDraw measurements, and fails on any difference that isn't accepted. An accepted part may only differ in the ways its reason names (footprint, height or studs), and an exception that stops being needed also fails, so the list stays honest. It works offline. After adding a part, run `node tests/ldraw-update.js` (needs internet) to measure it from LDraw. Run against the version before this fix, the check flags 3823, 4865, 2432, 3470 and 60474.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.
@@ -56,6 +82,7 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 4. **Draw what the part is.** Hollow parts are hollow, recessed studs are recessed, and logs run the right way. A detail that sticks out (a handle, side studs) should stick out.
 5. **Pieces that come together must match.** Check BrickLink's "fits with" lists for frames and doors, windows and glass, and wheel plates and wheels. A piece that comes along gets its real size, even when only its icon is shown.
 6. **Model how it connects, not just how it looks.** List studs on top, connections underneath (arches only at the ends, trees at the center, nothing under baseplates and wheel plates), cells that stay empty (corner pieces), and wheel space.
+6b. **Measure it in LDraw.** Run `node tests/ldraw-update.js` and then `tests/run.sh`. The LDraw check compares the footprint, height and studs with the real CAD model. Don't add an exception unless a photo shows the grid can't express the difference.
 7. **Run the tests before publishing:** `tests/run.sh`. It runs the name-against-size audit (`tests/audit.js`) and checks every part in all four rotations: shape inside its space, studs where the checker expects them, wheels inside their reserved space (`tests/unit.js`). It also runs the full app flow on simulated iPhone and iPad screens (`tests/e2e.js`). The audit fails on any deviation that isn't on its short list of accepted exceptions, each with its reason.
 
 ## Known simplifications (not errors)
@@ -78,3 +105,6 @@ This compares every part in the catalog with the real LEGO part: its size, heigh
 - [Brick Architect: 4070 1×1 Brick, Headlight](https://brickarchitect.com/parts/4070)
 - [Brick Owl: 3823 Windscreen 2 x 4 x 2](https://www.brickowl.com/us/catalog/lego-windscreen-2-x-4-x-2-3823-35260)
 - [BrickLink: 3043 Slope 45 2 x 2 Double](https://www.bricklink.com/v2/catalog/catalogitem.page?P=3043)
+- [LDraw parts library](https://library.ldraw.org) (CAD models measured for every part; see `tests/ldraw-ref.json`)
+- [Brick Owl: 3470 Fruit Tree (1.4" x 1.4" x 2.3")](https://brickowl.com/catalog/901226)
+- [Brick Architect: 2412 Tile 1×2 Grille](https://brickarchitect.com/parts/2412), [2432 Tile 1×2 with Handle](https://brickarchitect.com/parts/2432), [4865 Panel 1×2×1](https://brickarchitect.com/parts/4865)

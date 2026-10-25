@@ -583,7 +583,7 @@ def("60593", { en: "Window 1 x 2 x 3 with glass", noun: "window", group: "window
 def("60594", { en: "Window 1 x 4 x 3 with glass", noun: "window", group: "window", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3" });
 def("60596", { en: "Door Frame 1 x 4 x 6 (comes with door 60616)", noun: "frame", group: "window", shape: "frame", w: 4, d: 1, h: 18, dir: true, size: "1×4×6",
   door: "60616", extras: [{ id: "60616", n: 1, color: "c2" }] });
-def("3823",  { en: "Windscreen 2 x 4 x 2", noun: "screen", group: "vehicle", shape: "screen", w: 4, d: 2, h: 6, studs: "back", dir: true, size: "2×4×2" });
+def("3823",  { en: "Windscreen 2 x 4 x 2 (only 2 studs on top, one at each end of the back row; the middle of the top is smooth)", noun: "screen", group: "vehicle", shape: "screen", w: 4, d: 2, h: 6, studs: "list", studList: [[0, 0], [3, 0]], dir: true, size: "2×4×2" });
 def("4600",  { en: "Plate 2 x 2 with Wheel Holders (comes with 2 wheels 4624 + tires 3641)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
   wheels: { r: 0.94, width: 0.72, off: 0.38, below: 3, above: 2, hub: 0.5 },
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
@@ -608,7 +608,7 @@ def("2540", { en: "Plate 1 x 2 with Bar Handle on Side (handle toward +z)", noun
 def("4081b", { en: "Plate 1 x 1 with Clip Light (lamp ring toward +z)", noun: "clip", group: "plate", shape: "box", deco: "clip", w: 1, d: 1, h: 1, dir: true });
 for (const [id, w, d] of [["3867",16,16],["3857",16,32],["3811",32,32]])
   def(id, { en: `Baseplate ${w} x ${d} (thin ground plate; nothing attaches underneath)`, noun: "base", group: "plate", shape: "baseplate", w, d, h: 1, bottom: "none" });
-def("2412b", { en: "Tile 1 x 2 Grille (smooth, nothing attaches on top)", noun: "gtile", group: "tile", shape: "box", deco: "gtile", w: 1, d: 2, h: 1, studs: "none" });
+def("2412b", { en: "Tile 1 x 2 Grille (slots run along the tile; nothing attaches on top)", noun: "gtile", group: "tile", shape: "box", deco: "gtile", w: 1, d: 2, h: 1, studs: "none" });
 def("4162", { en: "Tile 1 x 8 (smooth, no studs)", noun: "tile", group: "tile", shape: "box", w: 1, d: 8, h: 1, studs: "none" });
 def("4286", { en: "Slope 33 3 x 1", noun: "slope", group: "slope", shape: "slope", w: 1, d: 3, h: 3, studs: "back", dir: true, size: "1×3" });
 def("3298", { en: "Slope 33 3 x 2", noun: "slope", group: "slope", shape: "slope", w: 2, d: 3, h: 3, studs: "back", dir: true, size: "2×3" });
@@ -624,7 +624,7 @@ def("3307", { en: "Arch 1 x 6 x 2 (only the two end columns connect underneath; 
 def("3942c", { en: "Cone 2 x 2 x 2 (nose cone; nothing attaches on top)", noun: "cone", group: "round", shape: "cone2", w: 2, d: 2, h: 6, studs: "none", size: "2×2×2" });
 def("3957", { en: "Antenna 1 x 4 (thin rod; nothing attaches on top)", noun: "antenna", group: "round", shape: "antenna", w: 1, d: 1, h: 12, studs: "none", size: "1×4" });
 def("3471", { en: "Plant Tree Pine Large 4 x 4 x 6 2/3 (attaches with the 2x2 center underneath)", noun: "pine", group: "nature", shape: "pine", w: 4, d: 4, h: 20, studs: "none", bottom: "center", size: "4×4×6" });
-def("3470", { en: "Plant Tree Fruit 4 x 4 x 4 2/3 (attaches with the 2x2 center underneath)", noun: "tree", group: "nature", shape: "fruit", w: 4, d: 4, h: 14, studs: "none", bottom: "center", size: "4×4×4" });
+def("3470", { en: "Plant Tree Fruit 4 x 4 x 6 (attaches with the 2x2 center underneath)", noun: "tree", group: "nature", shape: "fruit", w: 4, d: 4, h: 18, studs: "none", bottom: "center", size: "4×4×6" });
 def("3741", { en: "Plant Flower Stem with 3 Stems (stands on the center cell of a 3 x 3 area; the 3 flowers 3742 spread over the top of that area; flower color c2)", noun: "stem", group: "nature", shape: "stem", w: 3, d: 3, h: 6, studs: "none", bottom: "center", occTop: 3, size: "",
   extras: [{ id: "3742", n: 3, color: "c2", def: "red" }] });
 def("2377", { en: "Window 1 x 2 x 2 Plane (glass built in)", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
@@ -649,7 +649,7 @@ def("2926", { en: "Plate 1 x 4 with Wheel Holders at both ends (comes with 2 whe
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
 def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0 is 2 bricks tall; the front row is only the low seat, so a steering wheel may hang over it; faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true,
   occRows: { 1: [0, 1] } });
-def("2432", { en: "Tile 1 x 2 with Bar Handle (smooth; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 1, studs: "none" });
+def("2432", { en: "Tile 1 x 2 with Bar Handle (the handle rises 3 plates above the tile, so the part is 4 plates tall; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 4, studs: "none" });
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
   mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
 /* The most common parts in today's sets (Brick Architect's ranking), plus their 1990s equivalents. */
@@ -664,7 +664,7 @@ def("4733", { en: "Brick 1 x 1 with Studs on 4 Sides (side studs are decoration 
 def("11477", { en: "Slope Curved 2 x 1 x 2/3 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 1, d: 2, h: 2, studs: "none", dir: true, size: "1×2" });
 def("15068", { en: "Slope Curved 2 x 2 x 2/3 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 2, d: 2, h: 2, studs: "none", dir: true, size: "2×2" });
 def("25269", { en: "Tile 1 x 1 Quarter Circle (round edge toward +x and +z at r=0; smooth)", noun: "qtile", group: "tile", shape: "quarter", w: 1, d: 1, h: 1, studs: "none", dir: true });
-def("4865", { en: "Panel 1 x 2 x 1 (thin wall on the back row z+0 with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 3, dir: true, size: "1×2×1" });
+def("4865", { en: "Panel 1 x 2 x 1 (L-shape: a floor plate and a thin wall along the back edge; no studs anywhere, nothing attaches on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 3, studs: "none", dir: true, size: "1×2×1" });
 def("4864", { en: "Panel 1 x 2 x 2 (thin wall with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
 def("3043", { en: "Slope 45 2 x 2 Double (roof ridge: slopes down toward -z and +z, sharp top, no studs)", noun: "ridge", group: "slope", shape: "ridge", w: 2, d: 2, h: 3, studs: "none" });
 def("3044", { en: "Slope 45 2 x 1 Double (roof ridge: slopes down toward -z and +z, no studs)", noun: "ridge", group: "slope", shape: "ridge", w: 1, d: 2, h: 3, studs: "none", size: "2×1" });
@@ -678,7 +678,7 @@ def("14719", { en: "Tile 2 x 2 Corner (L-shape like 2420; smooth)", noun: "ctile
 def("87580", { en: "Plate 2 x 2 with 1 Stud in the center (jumper; treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 2, d: 2, h: 1, studs: "none" });
 def("35480", { en: "Plate 1 x 2 with Rounded Ends", noun: "rounded", group: "plate", shape: "roundedplate", w: 1, d: 2, h: 1 });
 def("32028", { en: "Plate 1 x 2 with Door Rail", noun: "rail", group: "plate", shape: "box", deco: "rail", w: 1, d: 2, h: 1 });
-def("60474", { en: "Plate Round 4 x 4 with Pin Hole (8 studs in a ring; the corners are empty)", noun: "rplate", group: "round", shape: "cyl", w: 4, d: 4, h: 1, mask: "round", studs: "ring", bottom: "round" });
+def("60474", { en: "Plate Round 4 x 4 with Pin Hole (12 studs: every cell except the 4 corners; the pin hole sits between the 4 middle studs)", noun: "rplate", group: "round", shape: "cyl", w: 4, d: 4, h: 1, mask: "round", studs: "round", bottom: "round" });
 // Pieces that come along with the parts above.
 def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
 def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
@@ -891,7 +891,8 @@ function shapeLayers(C, p, solo) {
       main.push(box(1.1, 0.01, 1.1, 2.9, 0.6, 2.9));
       for (const [y0, y1, r] of [[0.6, 4.2, 1.96], [3.0, 6.2, 1.55], [5.0, 7.98, 1.05]]) main.push(new THREE.CylinderGeometry(0.05, r, y1 - y0, 10).translate(2, (y0 + y1) / 2, 2));
       break;
-    case "fruit": main.push(new THREE.CylinderGeometry(0.35, 0.45, 2.6, 12).translate(2, 1.3, 2), new THREE.SphereGeometry(1.9, 16, 12).translate(2, H - 1.92, 2)); break;
+    // Round foot, a short trunk and an oval crown filling the top two thirds (LDraw 3470: 6 bricks tall).
+    case "fruit": main.push(new THREE.CylinderGeometry(0.75, 0.75, 0.3, 18).translate(2, 0.15, 2), new THREE.CylinderGeometry(0.22, 0.22, 2.6, 12).translate(2, 1.3, 2), new THREE.SphereGeometry(1.9, 16, 12).scale(1, 1.25, 1).translate(2, H - 2.4, 2)); break;
     case "stem": {
       main.push(new THREE.CylinderGeometry(0.46, 0.46, 0.38, 18).translate(1.5, 0.2, 1.5));
       for (const [dx, dz, hh] of STEMS) {
@@ -970,7 +971,10 @@ function shapeLayers(C, p, solo) {
       main.push(new THREE.ExtrudeGeometry(sh, { depth: H - 0.02, bevelEnabled: false, curveSegments: 12 }).rotateX(-Math.PI / 2).translate(0, 0.01, 0));
       break;
     }
-    case "panel": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), box(0.02, 0.4, 0.02, W - 0.02, H - 0.01, 0.24), box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
+    // Floor plate and back wall; only panels with studs (1 x 2 x 2) have a top frame. 1 x 2 x 1 is a plain L.
+    case "panel": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.4, D - 0.02), box(0.02, 0.4, 0.02, W - 0.02, H - 0.01, 0.24));
+      if (C.studs !== "none") main.push(box(0.02, H - 0.4, 0.02, W - 0.02, H - 0.01, D - 0.02));
+      break;
     case "seat": main.push(box(0.02, 0.01, 0.02, W - 0.02, 0.6, D - 0.02), box(0.02, 0.6, 0.02, W - 0.02, H - 0.01, 0.36)); break; // 18 mm tall with the backrest
     case "cutcorner": {
       const sh = new THREE.Shape();
@@ -1034,7 +1038,7 @@ function decoLayers(C, H, W, D, main, L) {
       break;
     }
     case "grille": for (const y of [0.3, 0.55, 0.8]) main.push(box(0.15, y, D - 0.06, W - 0.15, y + 0.1, D + 0.02)); break;
-    case "gtile": for (let i = 0; i < 5; i++) main.push(box(0.15, H - 0.01, 0.18 + i * 0.4, W - 0.15, H + 0.04, 0.26 + i * 0.4)); break; // slots run across the tile
+    case "gtile": for (let i = 0; i < 3; i++) main.push(box(0.14 + i * 0.3, H - 0.01, 0.12, 0.26 + i * 0.3, H + 0.04, D - 0.12)); break; // 3 bars and 2 slots run along the tile (BrickLink, Brick Architect, LDraw 2412b)
     case "holes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.24, 0.24, 1.0, 16).rotateZ(Math.PI / 2).translate(0.5, 0.725, k + 1)), color: "black" }); break; // hole centers 5.8 mm up
     case "tholes": L.push({ geos: [...Array(D - 1).keys()].map((k) => new THREE.CylinderGeometry(0.22, 0.22, 0.02, 16).translate(W / 2, H + 0.005, k + 1)), color: "black" }); break;
     case "clip": main.push(new THREE.TorusGeometry(0.16, 0.05, 8, 16).translate(0.5, 0.26, D - 0.06)); break;
@@ -1046,7 +1050,8 @@ function decoLayers(C, H, W, D, main, L) {
       main.push(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(0.5, H / 2, D + 0.09), new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateX(Math.PI / 2).translate(0.5, H / 2, -0.09),
         new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateZ(Math.PI / 2).translate(W + 0.09, H / 2, 0.5), new THREE.CylinderGeometry(0.3, 0.3, 0.18, 18).rotateZ(Math.PI / 2).translate(-0.09, H / 2, 0.5));
       break;
-    case "tilehandle": main.push(box(0.4, H - 0.01, 0.25, 0.6, H + 0.12, 0.4), box(0.4, H - 0.01, D - 0.4, 0.6, H + 0.12, D - 0.25), new THREE.CylinderGeometry(0.06, 0.06, D - 0.5, 8).rotateX(Math.PI / 2).translate(0.5, H + 0.12, D / 2)); break;
+    // A 1-plate tile with a handle frame on top: a wall at each end and a bar along the top, open front and back (LDraw 2432: 4 plates tall).
+    case "tilehandle": main.length = 0; main.push(box(0.02, 0.01, 0.02, W - 0.02, PH, D - 0.02), box(0.02, PH, 0.02, W - 0.02, H - 0.01, 0.2), box(0.02, PH, D - 0.2, W - 0.02, H - 0.01, D - 0.02), box(0.02, H - 0.16, 0.02, W - 0.02, H - 0.01, D - 0.02)); break;
     case "handle": main.push(new THREE.CylinderGeometry(0.08, 0.08, W - 0.5, 10).rotateZ(Math.PI / 2).translate(W / 2, 0.2, D + 0.24), box(0.2, 0.12, D - 0.02, 0.32, 0.28, D + 0.3), box(W - 0.32, 0.12, D - 0.02, W - 0.2, 0.28, D + 0.3)); break;
   }
 }

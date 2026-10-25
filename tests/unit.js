@@ -121,7 +121,7 @@ window.__unit = () => {
   // 11. Roof pieces and round plates.
   ok(info({ id: "3046", x: 0, y: 0, z: 0, r: 0 }).studs.length === 3, "3046 studs");
   const rp = info({ id: "60474", x: 0, y: 0, z: 0, r: 0 });
-  ok(rp.studs.length === 8 && rp.cells.length === 12, "60474 cells " + rp.studs.length + "/" + rp.cells.length);
+  ok(rp.studs.length === 12 && rp.cells.length === 12, "60474 cells " + rp.studs.length + "/" + rp.cells.length);
   const ridge = normBuild({ steps: [{ parts: [{ id: "3043", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });
   ok(analyze(ridge.steps).floats.length === 1, "nothing holds on a ridge");
   const cvx = normBuild({ steps: [{ parts: [{ id: "3045", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });

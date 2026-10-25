@@ -115,9 +115,10 @@ Counting your pieces (**Mina bitar**), finding a piece (**Hitta bit**) and build
 
 ## Tests and catalog audit
 
-Run `tests/run.sh` before publishing. It needs Node and Playwright with Chromium, and it fails on any problem. It runs three checks:
+Run `tests/run.sh` before publishing. It needs Node and Playwright with Chromium, and it fails on any problem. It runs four checks:
 
 - **Name audit:** compares each part's real name with its size, height, holes and label, and compares parts whose name gives no height with BrickLink's measured size.
+- **LDraw check:** compares each part's footprint, height and stud positions with the real part's CAD model from the [LDraw library](https://library.ldraw.org), stored in `tests/ldraw-ref.json`. After adding a part, run `node tests/ldraw-update.js` (needs internet) to measure it.
 - **Part geometry:** checks every part in all four rotations.
 - **Full flow:** runs the whole app with a stand-in for Claude on simulated iPhone and iPad screens.
 
