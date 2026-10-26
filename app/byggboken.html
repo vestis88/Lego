@@ -2074,6 +2074,7 @@ async function openSet(e) {
 }
 function openSets(mine) {
   SV.mine = !!mine && Store.inventory.length > 0; SV.shown = 40;
+  if (mine) { SV.q = ""; $("#s-q").value = ""; SV.group = "Alla"; } // from Mina bitar: look through every set
   go("#v-sets"); renderSets();
 }
 $("#t-sets").addEventListener("click", () => openSets(false));
