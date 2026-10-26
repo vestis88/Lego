@@ -383,6 +383,7 @@ a.btn { text-decoration: none; color: var(--go-ink); }
       </div>
     </div>
 
+    <div class="notice" id="c-err" role="alert" hidden></div>
     <button class="btn go" id="go"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>Bygg!</button>
   </section>
 
@@ -1817,6 +1818,7 @@ function openCreate(mode) {
   createMode = mode; buildTray.clear();
   $("#c-text").hidden = mode !== "text"; $("#c-photo").hidden = mode !== "photo"; $("#c-random").hidden = mode !== "random";
   $("#create-title").textContent = mode === "photo" ? "Bygg från ett foto" : mode === "random" ? "Överraska mig" : "Vad vill du bygga?";
+  $("#c-err").hidden = true;
   go("#v-create");
   if (mode === "photo") pickPhoto((f) => buildTray.add(f));
 }
@@ -1867,9 +1869,15 @@ async function generate(o) {
   if (!AI.sample || working) return;
   const tier = o.level >= 4 ? "complex" : "default";
   working = new AbortController();
+  $("#c-err").hidden = true;
   go("#v-working");
   Loader.start();
-  setWorking("Klossmästaren tänker…", o.level >= 7 ? "Stora byggen kan ta ett par minuter." : "Det här tar en liten stund.", null);
+  setWorking("Klossmästaren tänker…", (o.level >= 7 ? "Stora byggen kan ta ett par minuter." : "Det här tar en liten stund.") + " Låt skärmen vara tänd så länge.", null);
+  // A phone that locks its screen or leaves the app while Claude thinks may reload the page and drop the answer.
+  // Keep the screen awake, and note the request so a reload can say what happened instead of just showing home.
+  let lock = null;
+  try { lock = await navigator.wakeLock?.request("screen"); } catch {}
+  lsSet("pending", { mode: o.mode, text: o.text || "", level: o.level, at: Date.now() });
   const onText = ({ text }) => { const n = countParts(text); if (n) setWorking("Lägger ut bitar", null, n); };
   try {
     const opts = { signal: working.signal, onText, modelTier: tier, cache: false };
@@ -1894,12 +1902,28 @@ async function generate(o) {
     rec.thumb = Snap.model(rec.steps);
     try { await Store.saveBuild(rec); } catch (e) { toast(e?.code === "quota_exceeded" ? "Minnet är fullt. Ta bort några gamla byggen." : "Bygget kunde inte sparas, men du kan bygga det nu."); }
     go("#v-home");
-    openBuild(rec);
+    openBuild(rec).catch(() => toast("Bygget är sparat men kunde inte visas. Öppna det från Sparade byggen."));
     if (dropped) toast(`${dropped} ${dropped === 1 ? "bit satt" : "bitar satt"} inte fast och togs bort.`);
   } catch (e) {
     go("#v-create");
-    if (e?.code !== "cancelled") toast(errText(e));
-  } finally { working = null; Loader.stop(); }
+    // The message stays on the create screen (a toast is easy to miss after waiting minutes).
+    if (e?.code !== "cancelled") {
+      $("#c-err").textContent = errText(e) + (o.level >= 7 && (!e?.code || e.code === "upstream_error") ? " Stora byggen tar lång tid. Händer det igen, prova en lägre svårighet." : "");
+      $("#c-err").hidden = false;
+    }
+  } finally { working = null; Loader.stop(); lsSet("pending", null); try { lock?.release(); } catch {} }
+}
+/** After a reload in the middle of a build: back to the same request, with what happened and how to try again. */
+function resumeInterrupted() {
+  const p = lsGet("pending", null);
+  lsSet("pending", null);
+  if (!p || !AI.sample || Date.now() - p.at > 30 * 60 * 1000 || !["text", "photo", "random"].includes(p.mode)) return;
+  if (p.mode === "photo" && !AI.images) return;
+  openCreate(p.mode === "photo" ? "text" : p.mode);
+  if (p.text) $("#prompt").value = p.text;
+  if (p.level) { $("#level").value = clampInt(p.level, 1, 10, 8); setLevel(+$("#level").value); }
+  $("#c-err").textContent = "Bygget blev inte klart: appen startade om medan Claude tänkte. Det händer om skärmen släcks eller om du byter till en annan app. Tryck på Bygg! för att försöka igen.";
+  $("#c-err").hidden = false;
 }
 
 /* photo picking */
@@ -2358,5 +2382,5 @@ $("#f-again").addEventListener("click", () => { findTray.clear(); $("#f-result")
 
 /* =============================================================== boot */
 loadLibrary();
-loadParts().then((ok) => { if (!ok) toast("Bitarna kunde inte laddas. Ladda om sidan."); renderShelf(); initAI(); Store.init(); });
+loadParts().then((ok) => { if (!ok) toast("Bitarna kunde inte laddas. Ladda om sidan."); renderShelf(); initAI().then(resumeInterrupted); Store.init(); });
 </script>

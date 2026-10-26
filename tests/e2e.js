@@ -134,6 +134,17 @@ fs.writeFileSync(S + '/harness.html', html);
     } else { console.log(name, 'no sets without steps listed'); process.exitCode = 1; }
     await page.click('#v-sets [data-back]');
     }
+    // A failed build keeps its message on the create screen; a reload mid-build comes back to the request and says why.
+    await page.evaluate(() => { window.__realSample = AI.sample; AI.sample = Object.assign(() => {}, AI.sample, { json: async () => { throw { code: 'upstream_error' }; } }); });
+    await page.click('#t-text'); await page.fill('#prompt', 'en brandbil'); await page.click('#go'); await page.waitForTimeout(4500);
+    const failed = await page.evaluate(() => [$('#v-create').hidden, $('#c-err').hidden, $('#c-err').textContent]);
+    await page.evaluate(() => { AI.sample = Object.assign(() => {}, window.__realSample, { json: () => new Promise(() => {}) }); });
+    await page.click('#go'); await page.waitForTimeout(300);
+    await page.reload(); await page.waitForFunction(() => LD.parts && AI.sample); await page.waitForTimeout(800);
+    const resumed = await page.evaluate(() => [$('#v-create').hidden, $('#prompt').value, $('#c-err').hidden ? '' : $('#c-err').textContent]);
+    console.log(name, 'build failure', JSON.stringify(failed), JSON.stringify(resumed));
+    if (failed[0] || failed[1] || resumed[0] || resumed[1] !== 'en brandbil' || !/startade om/.test(resumed[2])) process.exitCode = 1;
+    await page.click('#v-create [data-back]');
     const hscroll = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
     const realErrs = errs.filter((e) => !e.includes('net::ERR_FAILED')); console.log(name, 'hscroll', hscroll, 'errors:', JSON.stringify(realErrs)); if (hscroll || realErrs.length) process.exitCode = 1;
     await page.close();
