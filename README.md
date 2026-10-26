@@ -16,7 +16,7 @@ The app runs inside Claude (the Claude app on iPhone or iPad, or claude.ai in a 
 | **Mina bitar** | Photograph your loose pieces. Claude counts them into a list you can correct with + and −. Builds can then use *only* those pieces, or those pieces plus a few extras. |
 | **Hitta bit** | Pick a piece (or tap one in a build step), photograph the pile, and the app circles where it is and reads a hint aloud. |
 | **Riktiga set** | Step-by-step instructions for 913 real LEGO sets from 1955 to today (Town, Space, Castle, trains, racers, Creator and more). Search by the number on the box or by name, or browse by theme. |
-| **Vilka set kan jag bygga?** | From *Mina bitar*: lists the real sets you have the most pieces for, with how many you have in the right color and in any color. |
+| **Vilka set kan jag bygga?** | From *Mina bitar*: lists the real sets you have the most pieces for, with how many you have in the right color and in any color. It looks through the 913 sets with steps and 6,660 more official sets from Rebrickable's parts lists. For those, a sheet shows the pieces you're missing, with pictures, and links to LEGO's own instructions. |
 | **Svårighet** slider | 1–10, from "like a 3-year-old" (~8 pieces) to "expert" (~140 pieces). The default is "like a 10-year-old" (~90 pieces). |
 
 In the instruction viewer:
@@ -67,7 +67,7 @@ In the instruction viewer:
 
 ### Parts catalog
 
-About 190 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+About 230 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
 
 | Group | Parts (design IDs) |
 |---|---|
@@ -86,6 +86,7 @@ About 190 real System parts, focused on the classic 1990s range (Town, Castle, S
 | Roofs | 3043 / 3044 ridges, 3045 outside corner, 3046 inside corner, 60481 65° slope |
 | More common parts | 3065 brick without bottom tube (transparent windows), 30136 log brick, 30414 brick 1×4 with side studs, 14719 corner tile, 87580 2×2 jumper, 35480 plate with rounded ends, 32028 plate with door rail, 60474 round plate 4×4 |
 | From real sets (most used in OMR sets and fitting the grid) | 6091 / 6081 / 6215 curved-top bricks, 50950 / 61678 curved slopes, 4445 slope 2×8, 30363 slope 18° 4×2, 61409 grille slope, 3048 triple slope, 3676 inverted corner, 43722 / 43723 / 41769 / 41770 wedge plates, 2419 plate 3×6 without corners, 91405 / 92438 big plates, 11213 round plate 6×6, 87081 round brick 4×4, 3943 cone 4×4×2, 59900 cone 1×1, 4215 / 87544 / 30413 / 6231 panels, 3633 fence, 3308 / 4490 arches, 98283 masonry brick, 6541 / 32000 Technic bricks, 2921 brick with handle, 4085 plate with clip, 60478 plate with end handle, 4862 glass for window 2377 |
+| Most used across all sets (Rebrickable) | 78329 plate 1×5, 91988 plate 2×14, 26603 / 69729 tiles 2×3 and 2×6, 15535 round tile with hole, 99563 gold bar, 24246 / 1748 rounded tiles, 27925 macaroni tile, 27263 / 35787 corner and triangle tiles, 22385 angled tile, 26601 / 30503 plates without corner, 30357 / 30565 / 18980 round-corner plates, 32607 leaf plate, 24866 flower plate, 51739 / 24307 / 24299 / 54383 / 54384 wedge plates, 93273 / 93606 / 88930 / 47457 / 30602 curved slopes, 60477 slope 18° 4×1, 3678 slope 65° 2×2×2, 49307 / 37352 curved-top bricks, 32952 / 47905 / 26604 / 52107 bricks with side studs, 92947 round grille brick, 3063 round corner brick, 92950 raised arch, 23969 corner panel. Newer molds of catalog pieces (`tools/part-aliases.json`) count as the same piece. |
 | Most common today | 15573 / 3794 jumper plates, 11212 plate 3×3, 14716 / 22886 bricks ×3 tall, 87087 / 11211 / 4733 bricks with side studs, 11477 / 15068 curved slopes, 25269 quarter-circle tile, 4865 / 4864 panels |
 
 The checker knows each part's special rules:
@@ -163,7 +164,7 @@ To add a part:
 3. Check the picture of the new part. The facing it got is saved in `tools/ldraw-turns.json`; fix it in `TURN` in the packer if it's wrong.
 4. Run `tests/run.sh`.
 
-To rebuild the real sets (after adding catalog pieces, so *Vilka set kan jag bygga?* counts them): `node tools/omr-build.js && node tools/omr-thumbs.js`. The first run downloads the OMR models (120 MB) into `tests/.cache/omr`. For speed, also unpack LDraw's `complete.zip` and `ldrawunf.zip` into `tests/.cache/ldraw` (file names lowercased, `/` as `__`) and create `tests/.cache/ldraw/.complete`. With that marker the part loader works offline. The generated set files are not in git (they're about 60 MB); publish them with the app as supporting files.
+To rebuild the real sets (after adding catalog pieces, so *Vilka set kan jag bygga?* counts them): `node tools/omr-build.js && node tools/omr-thumbs.js && node tools/rb-build.js`. `rb-build.js` reads Rebrickable's free CSV downloads (17 MB, cached in `tests/.cache/rb`) and keeps the System sets of 10 to 1,500 pieces where at least 60% of the pieces are catalog pieces (`MIN_COVER`). The result is `rb-index.json`, 3 MB, loaded only when searching or matching. The first run downloads the OMR models (120 MB) into `tests/.cache/omr`. For speed, also unpack LDraw's `complete.zip` and `ldrawunf.zip` into `tests/.cache/ldraw` (file names lowercased, `/` as `__`) and create `tests/.cache/ldraw/.complete`. With that marker the part loader works offline. The generated set files are not in git (they're about 60 MB); publish them with the app as supporting files.
 
 ## Known limits
 

@@ -59,6 +59,8 @@ const CATALOG = {}; // normalized LDraw name -> catalog id
 const appHtml = fs.readFileSync(path.join(APP, 'byggboken.html'), 'utf8');
 const childIds = new Set([...appHtml.matchAll(/def\("([^"]+)",[^\n]*child: true/g)].map((m) => m[1]));
 for (const [id, r] of Object.entries(ref)) if (!childIds.has(id)) { CATALOG[norm(id)] = id; CATALOG[norm(r.file)] = id; }
+// Newer molds of catalog pieces count as that piece.
+for (const [a, id] of Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'part-aliases.json'), 'utf8')))) if (ref[id]) CATALOG[norm(a)] = id;
 // Pieces that come with another piece in the app (wheels and tires with their plate, glass with its window, doors, flowers):
 // the sets list them on their own, but they never count as a piece to find.
 const COMES_WITH = new Set(['4624', '3641', '6014', '6015', '4862', '3742', '3855', '4133', '4131', '60616', '60623', '60797', '60601', '60602', '60603', '73312', '4181', '4182', '4183', '73194']);

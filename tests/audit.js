@@ -87,6 +87,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
     '85984': 'the 2/3 height is left out of the label for the child',
     '61409': 'the 2/3 height is left out of the label for the child',
     '60478': 'its handle is on the short end, so it faces along its length',
+    '22385': 'its pointed end is a short end, so it faces along its length',
     '2432': 'the bar handle rises 3 plates above the tile (LDraw 2432 and Brick Architect: 4 plates tall in all)',
   };
   const warn = out.filter((l) => l.includes("UNVERIFIED"));

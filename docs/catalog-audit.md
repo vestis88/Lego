@@ -100,6 +100,18 @@ Measuring first caught things a name doesn't tell:
 - **3676, the inverted corner, connects underneath only at its back-left cell.** The other three corners start 2.5 plates up. This needed a separate list of underside cells (`bottomList`).
 - **Left out because they don't fit the grid:** 3063 (LDraw shows 2 studs where photos suggest 3; to check), 2444 (2.4 plates tall with ribs), 3839 and 4599 (studs off the grid), 4175 and 2555 (rise far above their plate), and 2458 (the pin sticks out a full stud). Hinges, brackets, clips on bars, dishes on a single stud and car mudguards still need connections the grid can't express.
 
+## Third batch: the most used pieces across all official sets (2026-10-26)
+
+Rebrickable's parts lists cover all 11,340 System sets, not just the 913 with models. I ranked the pieces the catalog lacked by how many sets use them, and added the 41 most used that fit the grid. Newer molds of catalog pieces (for example 85861, the 1×1 round plate with an open stud) count as the same piece through `tools/part-aliases.json`. The sets with steps that are 90% or more catalog pieces went from 76 to 87.
+
+Facing was checked by measuring, not by eye. A script sampled which cells each part's top surface covers and which end of each curve is higher. That caught:
+
+- **27263 and 35787 were turned 90° wrong.** Footprint and studs can't tell (they have none), so the turn is now set in the packer's `TURN` table. It also corrected my description of 27263: it's an L-shaped tile whose outer corner is cut on a slant.
+- **3063, the round corner brick, has its empty notch in the inner corner (0,0)** and its rounded side at the outer corner (1,1), the other way round from my first entry.
+- **32607, the leaf plate, spreads its 3 leaves up to 0.9 studs to one side.** That's recorded as a known overhang.
+
+Left out because of the grid: inverted curves with studs at two heights (24201, 32803, 13547), cutout slopes (15672, 28192, 29119, 29120), dishes on one center stud (4740, 2654, 3960), parts with clips or bars on top (15712, 20482, 2555), and SNOT bricks whose side studs would need to connect (22885).
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

@@ -109,6 +109,16 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.click('#v-find [data-back]'); await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
     await page.click('#v-sets [data-back]'); await page.click('#t-inv'); await page.click('#inv-sets'); await page.waitForSelector('#s-list .build-card .have');
     console.log(name, 'can build', JSON.stringify(await page.$$eval('#s-list .build-card', (c) => c.slice(0, 3).map((x) => x.querySelector('b').textContent + ': ' + x.querySelector('.have').textContent))));
+    // a set without steps (Rebrickable parts list): the sheet shows what is missing and LEGO's own instructions
+    const rbCards = await page.$$('#s-list .build-card >> text=bitlista');
+    if (rbCards.length) {
+      await rbCards[0].click(); await page.waitForSelector('#sheet:not([hidden])');
+      const sheet = await page.evaluate(() => [document.querySelector('#sheet-body h3').textContent, document.querySelectorAll('#sheet-body .bom-item').length, document.querySelector('#sheet-body a.btn').href]);
+      console.log(name, 'set without steps', JSON.stringify(sheet));
+      if (!/lego\.com/.test(sheet[2])) process.exitCode = 1;
+      await page.screenshot({ path: `${S}/shots/${name}-rb-sheet.png` });
+      await page.click('#sheet', { position: { x: 5, y: 5 } });
+    } else { console.log(name, 'no sets without steps listed'); process.exitCode = 1; }
     await page.click('#v-sets [data-back]');
     }
     const hscroll = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);

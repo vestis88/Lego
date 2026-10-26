@@ -16,6 +16,7 @@ const FILE = { '60797': '60797c01' };
 const TURN = {
   '4070': 0, // the side stud faces +z; the square hole is at the back
   '4600': 0, '6157': 0, '122c01': 0, // wheel pins point left and right (x) at r=0
+  '27263': 90, '35787': 90, // checked by measuring which cells their top covers
 };
 // Wheels, packed on their own: axle along x, centered at the origin. 3641 is the bare tire for the red hubs of 122c01.
 const WHEELS = ['4624c01', '6014ac01', '3641'];

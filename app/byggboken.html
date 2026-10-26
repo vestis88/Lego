@@ -264,6 +264,9 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 
 .search { width: 100%; box-sizing: border-box; border-radius: 14px; border: 2px solid var(--line); background: var(--card); padding: 12px 14px; font-size: 1.15rem; }
 .build-card .have { color: var(--ink); font-weight: 800; }
+.rb-thumb { border-radius: 14px; overflow: hidden; background: #f4f7fa; display: grid; place-items: center; min-height: 0; }
+.rb-thumb img { max-height: 200px; }
+a.btn { text-decoration: none; color: var(--go-ink); }
 .credit { margin: 0; color: var(--ink-soft); font-size: .75rem; }
 .credit a { color: inherit; }
 .toast {
@@ -426,7 +429,7 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
     <div class="notice" id="s-status" hidden></div>
     <div class="shelf" id="s-list"></div>
     <button class="btn small" id="s-more" hidden>Visa fler</button>
-    <p class="credit">Modellerna är ritade av LDraw-entusiaster i <a href="https://library.ldraw.org/omr" target="_blank" rel="noopener">LDraw Official Model Repository</a> (CC BY 2.0). Upphovsperson står på varje set.</p>
+    <p class="credit">Modellerna är ritade av LDraw-entusiaster i <a href="https://library.ldraw.org/omr" target="_blank" rel="noopener">LDraw Official Model Repository</a> (CC BY 2.0). Upphovsperson står på varje set. Bitlistor för andra set kommer från <a href="https://rebrickable.com" target="_blank" rel="noopener">Rebrickable</a>.</p>
   </section>
 
   <!-- FINDER -->
@@ -584,6 +587,8 @@ const NOUNS = {
   clipplate:  { name: "Platta med klämma", sg: "platta med klämma", pl: "plattor med klämma",  g: "en" },
   wall:   { name: "Murkloss",          sg: "murkloss",          pl: "murklossar",          g: "en" },
   peak:   { name: "Takspets",          sg: "takspets",          pl: "takspetsar",          g: "en" },
+  leaf:   { name: "Bladplatta",        sg: "bladplatta",        pl: "bladplattor",         g: "en" },
+  gold:   { name: "Guldtacka",         sg: "guldtacka",         pl: "guldtackor",          g: "en" },
 };
 const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special" };
 
@@ -752,6 +757,53 @@ def("32000", { en: "Technic Brick 1 x 2 with Holes (2 holes across; studs on top
 def("2921", { en: "Brick 1 x 1 with Handle (the handle sticks out toward +z; decoration only)", noun: "hbrick", group: "brick", shape: "box", w: 1, d: 1, h: 3, dir: true });
 def("4085", { en: "Plate 1 x 1 with Clip Vertical (the clip sticks out toward +z; decoration only)", noun: "clipplate", group: "plate", shape: "box", w: 1, d: 1, h: 1, dir: true });
 def("60478", { en: "Plate 1 x 2 with Handle on End (the bar sticks out at the +z end; decoration only)", noun: "handle", group: "plate", shape: "box", w: 1, d: 2, h: 1, dir: true });
+/* Third batch: the most used pieces across all 11,000 System sets in Rebrickable's parts lists, measured in LDraw first. */
+for (const [id, w, d] of [["78329", 1, 5], ["91988", 2, 14]]) def(id, { en: `Plate ${w} x ${d}`, noun: "plate", group: "plate", shape: "box", w, d, h: 1 });
+for (const [id, w, d] of [["26603", 2, 3], ["69729", 2, 6]]) def(id, { en: `Tile ${w} x ${d} (smooth, no studs)`, noun: "tile", group: "tile", shape: "box", w, d, h: 1, studs: "none" });
+def("15535", { en: "Tile 2 x 2 Round with Hole (smooth)", noun: "rtile", group: "round", shape: "cyl", w: 2, d: 2, h: 1, studs: "none" });
+def("99563", { en: "Tile 1 x 2 Chamfered (gold bar; smooth)", noun: "gold", group: "tile", shape: "box", w: 2, d: 1, h: 1, studs: "none", size: "1×2" });
+def("24246", { en: "Tile 1 x 1 with Rounded End (rounded toward +z; smooth)", noun: "qtile", group: "tile", shape: "quarter", w: 1, d: 1, h: 1, studs: "none", dir: true });
+def("1748", { en: "Tile 1 x 2 Half Round (rounded side toward +z; smooth)", noun: "rtile", group: "tile", shape: "quarter", w: 2, d: 1, h: 1, studs: "none", dir: true, size: "1×2" });
+def("27925", { en: "Tile 2 x 2 Corner Round (macaroni: a curved band through (1,0), (1,1) and (0,1); the inner cell (0,0) is empty; smooth)", noun: "ctile", group: "tile", shape: "box", w: 2, d: 2, h: 1, studs: "none", mask: [[1, 0], [0, 1], [1, 1]], dir: true });
+def("27263", { en: "Tile 2 x 2 Corner with Cut Corner (L-shape like 2420, the outer corner (0,0) cut on a slant, the cell (1,1) empty; smooth)", noun: "ctile", group: "tile", shape: "box", w: 2, d: 2, h: 1, studs: "none", mask: [[0, 0], [1, 0], [0, 1]], dir: true });
+def("35787", { en: "Tile 2 x 2 Triangle (the right angle at (0,0); smooth)", noun: "ctile", group: "tile", shape: "box", w: 2, d: 2, h: 1, studs: "none", mask: [[0, 0], [1, 0], [0, 1]], dir: true });
+def("22385", { en: "Tile 3 x 2 with Angled End (the end toward +z is pointed; smooth)", noun: "tile", group: "tile", shape: "box", w: 2, d: 3, h: 1, studs: "none", dir: true });
+def("26601", { en: "Plate 2 x 2 without Corner (studs on (0,0), (1,0) and (0,1); the corner (1,1) is cut on a slant)", noun: "cplate", group: "plate", shape: "box", w: 2, d: 2, h: 1, mask: [[0, 0], [1, 0], [0, 1]], dir: true });
+def("30503", { en: "Plate 4 x 4 without Corner (a staircase of 10 studs; the corner toward +x +z is cut on a slant)", noun: "cplate", group: "plate", shape: "box", w: 4, d: 4, h: 1,
+  mask: [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [0, 3]], dir: true });
+def("30357", { en: "Plate 3 x 3 Round Corner (8 studs; the corner (2,0) is rounded)", noun: "cplate", group: "plate", shape: "box", w: 3, d: 3, h: 1,
+  mask: [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]], dir: true });
+def("30565", { en: "Plate 4 x 4 Round Corner (a quarter circle: 11 studs, rounded toward +x +z)", noun: "cplate", group: "plate", shape: "box", w: 4, d: 4, h: 1,
+  mask: [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2], [0, 3]], dir: true });
+def("18980", { en: "Plate 2 x 6 with Two Rounded Corners (6 studs on the back row, 4 on the front row; the front corners are rounded)", noun: "plate", group: "plate", shape: "box", w: 6, d: 2, h: 1,
+  mask: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [1, 1], [2, 1], [3, 1], [4, 1]], dir: true });
+def("32607", { en: "Plate Round 1 x 1 with 3 Leaves (the leaves spread up to almost a stud over the neighbors toward +x and +z, just above the plate)", noun: "leaf", group: "nature", shape: "flower", w: 1, d: 1, h: 1 });
+def("24866", { en: "Plate Round 1 x 1 with Flower Petals", noun: "fplate", group: "nature", shape: "flower", w: 1, d: 1, h: 1 });
+def("51739", { en: "Wedge Plate 4 x 2 (a trapezoid: studs on the 2 x 2 middle; both ends cut on a slant)", noun: "wedge", group: "plate", shape: "wedge", w: 4, d: 2, h: 1, studs: "list", bottom: "list", studList: [[1, 0], [2, 0], [1, 1], [2, 1]], dir: true });
+def("24307", { en: "Wedge Plate 2 x 2 Right (studs on the right column x+1)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 2, h: 1, studs: "list", bottom: "list", studList: [[1, 0], [1, 1]], dir: true });
+def("24299", { en: "Wedge Plate 2 x 2 Left (studs on the left column x+0)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 2, h: 1, studs: "list", bottom: "list", studList: [[0, 0], [0, 1]], dir: true });
+def("54383", { en: "Wedge Plate 6 x 3 Right (studs on the right column x+2 and on x+1 for the first 3 rows)", noun: "wedge", group: "plate", shape: "wedge", w: 3, d: 6, h: 1, studs: "list", bottom: "list",
+  studList: [[2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [1, 0], [1, 1], [1, 2]], dir: true });
+def("54384", { en: "Wedge Plate 6 x 3 Left (studs on the left column x+0 and on x+1 for the first 3 rows)", noun: "wedge", group: "plate", shape: "wedge", w: 3, d: 6, h: 1, studs: "list", bottom: "list",
+  studList: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [1, 0], [1, 1], [1, 2]], dir: true });
+def("93273", { en: "Slope Curved 4 x 1 Double (curves down at both ends; no studs)", noun: "curve", group: "slope", shape: "curve", w: 1, d: 4, h: 2, studs: "none" });
+def("93606", { en: "Slope Curved 4 x 2 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 2, d: 4, h: 3, studs: "none", dir: true });
+def("88930", { en: "Slope Curved 2 x 4 (2 plates tall; curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 4, d: 2, h: 2, studs: "none", dir: true });
+def("47457", { en: "Slope Curved 2 x 2 with 2 Studs (2 plates tall; studs on the back row z+0; curves down toward +z and to both sides)", noun: "curve", group: "slope", shape: "curve", w: 2, d: 2, h: 2, studs: "back", dir: true });
+def("30602", { en: "Slope Curved 2 x 2 x 1 with Lip (no studs; the lip sticks out a little toward +z)", noun: "curve", group: "slope", shape: "curve", w: 2, d: 2, h: 3, studs: "none", dir: true });
+def("60477", { en: "Slope 18 4 x 1 (one stud on the back cell z+0)", noun: "slope", group: "slope", shape: "slope", w: 1, d: 4, h: 3, studs: "back", dir: true });
+def("3678", { en: "Slope 65 2 x 2 x 2 (steep; studs on the back row z+0)", noun: "slope", group: "slope", shape: "slope", w: 2, d: 2, h: 6, studs: "back", dir: true, size: "2×2×2" });
+def("49307", { en: "Brick 1 x 1 x 2/3 with Curved Top (no studs)", noun: "bow", group: "brick", shape: "bow", w: 1, d: 1, h: 2, studs: "none" });
+def("37352", { en: "Brick 1 x 2 with Curved Top (no studs)", noun: "bow", group: "brick", shape: "bow", w: 1, d: 2, h: 3, studs: "none" });
+def("32952", { en: "Brick 1 x 1 x 1 2/3 with Studs on 1 Side (side studs toward +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", w: 1, d: 1, h: 5, dir: true });
+def("47905", { en: "Brick 1 x 1 with Studs on 2 Opposite Sides (side studs toward -z and +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", w: 1, d: 1, h: 3, dir: true });
+def("26604", { en: "Brick 1 x 1 with Studs on 2 Adjacent Sides (side studs toward +x and +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", w: 1, d: 1, h: 3, dir: true });
+def("52107", { en: "Brick 1 x 2 with Studs on 2 Sides (side studs on both long sides are decoration only)", noun: "sbrick", group: "brick", shape: "box", w: 2, d: 1, h: 3, dir: true, size: "1×2" });
+def("92947", { en: "Brick Round 2 x 2 with Grille", noun: "rbrick", group: "round", shape: "cyl", w: 2, d: 2, h: 3 });
+def("3063", { en: "Brick 2 x 2 Round Corner (a quarter ring: studs on (1,0) and (0,1), the outer corner (1,1) is rounded, the inner corner (0,0) is an empty notch)", noun: "cbrick", group: "brick", shape: "box", w: 2, d: 2, h: 3,
+  mask: [[1, 0], [0, 1], [1, 1]], studs: "list", bottom: "list", studList: [[1, 0], [0, 1]], dir: true });
+def("92950", { en: "Arch 1 x 6 Raised (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 6, d: 1, h: 3, bottom: "ends", size: "1×6" });
+def("23969", { en: "Panel 1 x 2 x 1 Double Corner (thin walls on the back and both short sides; no studs; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 3, studs: "none", dir: true, size: "1×2×1" });
 // Pieces that come along with the parts above.
 def("4862", { en: "Glass for Window 1 x 2 x 2 Plane", noun: "glass", group: "window", shape: "glass", w: 2, d: 1, h: 6, studs: "none", size: "1×2×2", child: true });
 def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
@@ -1032,6 +1084,16 @@ async function loadSetShapes(k) {
     if (!SETS.loaded.has(f)) SETS.loaded.set(f, fetchJson(f).then((S) => { for (const key of ["names", "cat", "parts", "_prims"]) Object.assign(SETS.shapes[key], S[key]); }));
     await SETS.loaded.get(f);
   }
+}
+/** Every official set's parts list (Rebrickable, made by tools/rb-build.js), for sets without steps in the app. Loaded when needed. */
+async function loadRb() {
+  return (SETS.rb ||= fetchJson("rb-index.json").then(({ ids, colors, sets }) => {
+    const have = new Set((SETS.index || []).map((e) => e.num));
+    return sets.filter(([num]) => !have.has(num)).map(([num, name, year, theme, parts, figs, other, flat, img]) => {
+      const need = []; for (let i = 0; i < flat.length; i += 3) need.push([ids[flat[i]], colors[flat[i + 1]], flat[i + 2]]);
+      return { key: "rb:" + num, rb: true, num, name, year, theme, parts, figs, other, need, img };
+    });
+  }).catch(() => []));
 }
 async function loadThumbs(k) { if (!SETS.thumbs.has(k)) SETS.thumbs.set(k, fetchJson(`sets-thumbs-${k}.json`).catch(() => ({}))); return SETS.thumbs.get(k); }
 async function loadChunk(k) { if (!SETS.chunks.has(k)) SETS.chunks.set(k, await fetchJson(`sets-${k}.json`)); return SETS.chunks.get(k); }
@@ -2035,7 +2097,9 @@ async function renderSets() {
   const hasInv = Store.inventory.length > 0;
   $("#s-mine").disabled = !hasInv; $("#s-mine").setAttribute("aria-checked", String(SV.mine && hasInv));
   $("#s-mine-sub").textContent = hasInv ? "Visar först de set du har flest bitar till" : "Fota dina bitar under Mina bitar först";
-  let rows = index.filter(setMatches).map((e) => ({ e, cov: hasInv ? setCoverage(e) : null }));
+  // Sets without steps (Rebrickable) come along when searching or looking for what the child can build.
+  const all = SV.q.trim() || (SV.mine && hasInv) ? index.concat(await loadRb()) : index;
+  let rows = all.filter(setMatches).map((e) => ({ e, cov: hasInv ? setCoverage(e) : null }));
   if (SV.mine && hasInv) rows.sort((a, b) => b.cov.have / b.cov.total - a.cov.have / a.cov.total || b.cov.any / b.cov.total - a.cov.any / a.cov.total);
   st.hidden = rows.length > 0; st.textContent = "Inga set hittades. Prova ett annat nummer eller namn.";
   list.textContent = "";
@@ -2047,11 +2111,12 @@ async function renderSets() {
     const meta = document.createElement("div"); meta.className = "meta";
     const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = `${e.num} · ${e.year || ""}`;
     const t = document.createElement("b"); t.textContent = e.name;
-    const s = document.createElement("span"); s.textContent = `${e.parts} bitar · ${e.steps} steg`;
+    const s = document.createElement("span"); s.textContent = e.rb ? `${e.parts} bitar · bitlista` : `${e.parts} bitar · ${e.steps} steg`;
     meta.append(bd, t, s);
     if (cov) { const h = document.createElement("span"); h.className = "have"; h.textContent = `Du har ${cov.have} av ${cov.total}` + (cov.any > cov.have ? ` (${cov.any} i någon färg)` : ""); meta.append(h); }
-    card.append(th, meta); card.addEventListener("click", () => openSet(e));
-    list.append(card); thumbObserver.observe(th);
+    card.append(th, meta); card.addEventListener("click", () => (e.rb ? rbSheet(e) : openSet(e)));
+    list.append(card);
+    if (e.rb) setImage(th, e); else thumbObserver.observe(th);
   }
   $("#s-more").hidden = rows.length <= SV.shown;
 }
@@ -2059,6 +2124,48 @@ async function renderSets() {
 async function setThumb(th) {
   const src = (await loadThumbs(Number(th.dataset.chunk)))[th.dataset.key];
   if (src) { const img = new Image(); img.alt = ""; img.src = src; th.append(img); }
+}
+/** A set picture from Rebrickable's image server, if the page may load it. */
+function setImage(th, e) {
+  if (!e.img) return;
+  const img = new Image(); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+  img.onerror = () => img.remove(); img.src = "https://cdn.rebrickable.com/media/sets/" + e.img; th.append(img);
+}
+/** A set the app has no steps for: what the child has, what is missing, and LEGO's own instructions. */
+function rbSheet(e) {
+  openSheet((body) => {
+    sheetHeader(body, e.name);
+    const th = document.createElement("div"); th.className = "thumb rb-thumb"; setImage(th, e); body.append(th);
+    const info = document.createElement("p"); info.style.margin = "0";
+    info.textContent = `Set ${e.num} från ${e.year}, ${e.parts} bitar${e.figs ? ` och ${e.figs} ${e.figs === 1 ? "minifigur" : "minifigurer"}` : ""}. Appen har ingen byggbeskrivning för det här setet, men LEGO har.`;
+    body.append(info);
+    if (Store.inventory.length) {
+      const c = setCoverage(e), h = document.createElement("div"); h.className = "hint";
+      h.textContent = `Du har ${c.have} av ${c.total} bitar` + (c.any > c.have ? ` (${c.any} om färgen inte spelar roll)` : "") + ".";
+      body.append(h);
+    }
+    // The catalog pieces missing, with pictures; pieces the app doesn't know are only counted.
+    const byKey = new Map(); for (const p of Store.inventory) byKey.set(p.id + ":" + p.c, (byKey.get(p.id + ":" + p.c) || 0) + p.n);
+    const miss = e.need.map(([id, c, n]) => ({ p: { id, c }, n: n - Math.min(n, byKey.get(id + ":" + c) || 0) })).filter((m) => m.n > 0 && CAT[m.p.id]).sort((a, b) => b.n - a.n);
+    if (miss.length) {
+      const t = document.createElement("label"); t.className = "lbl"; t.textContent = Store.inventory.length ? "Bitar du saknar" : "Bitar i setet"; body.append(t);
+      const grid = document.createElement("div"); grid.className = "bom";
+      for (const m of miss.slice(0, 40)) {
+        const it = document.createElement("button"); it.className = "bom-item";
+        const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(m.p);
+        const b = document.createElement("b"); b.textContent = `${m.n}×`;
+        const sp = document.createElement("span"); sp.textContent = `${partName(m.p)} · ${COLORS[m.p.c].sg}`;
+        it.append(img, b, sp); it.addEventListener("click", () => partSheet(m.p)); grid.append(it);
+      }
+      body.append(grid);
+    }
+    if (e.other) { const o = document.createElement("p"); o.className = "tray-tip"; o.textContent = `Plus ${e.other} bitar som appen inte känner till än.`; body.append(o); }
+    const row = document.createElement("div"); row.className = "btn-row";
+    const a = document.createElement("a"); a.className = "btn go"; a.target = "_blank"; a.rel = "noopener";
+    a.href = "https://www.lego.com/sv-se/service/building-instructions/" + e.num.replace(/-1$/, ""); a.textContent = "Byggbeskrivning hos LEGO";
+    row.append(a); body.append(row);
+    const cr = document.createElement("p"); cr.className = "credit"; cr.textContent = "Bitlista från Rebrickable."; body.append(cr);
+  });
 }
 const setSteps = (d) => d.steps.map((s) => ({ text: "", parts: s.map(([fi, c, ...m]) => ({ id: d.files[fi], c, m })) }));
 async function openSet(e) {
