@@ -2,6 +2,7 @@
 // of every official LEGO set, so "Vilka set kan jag bygga?" can look through all of them, not only the sets with steps.
 // Usage: node tools/rb-build.js   (downloads about 17 MB into tests/.cache/rb the first time)
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), { execFileSync } = require('child_process');
+const { keyOf } = require('./library-keys.js');
 const ROOT = path.join(__dirname, '..'), APP = path.join(ROOT, 'app'), CACHE = path.join(ROOT, 'tests', '.cache', 'rb');
 // Themes left out: not System bricks, or not sets one builds.
 const SKIP = /^(Technic|Duplo|Bionicle|Gear|Books|Collectible Minifigures|Key Chains|Magnets|Mindstorms|Znap|Primo|Baby|Quatro|Clikits|Scala|Belville|Fabuland Bulk|Service Packs|Bulk Bricks|Supplemental|Dimensions|Power Functions|Educational and Dacta|HO 1:87 Vehicles|Galidor|Jack Stone|4 Juniors|Explore|Promotional|Dots|Vidiyo|Brick Sketches|Mosaic|Art)$/;
@@ -65,17 +66,17 @@ for (const s of table('sets')) {
     const k = norm(num);
     if (COMES_WITH.has(k)) continue;
     n += q;
-    const cat = CATALOG[k];
+    const cat = CATALOG[k] || keyOf(num);
     if (cat) { const key = cat + ':' + colorOf[color]; need.set(key, (need.get(key) || 0) + q); } else other += q;
   }
   if (n < 10 || n > 1500) continue;
   total++;
-  // Only sets the catalog covers well enough to be worth suggesting.
+  // Only sets the library covers well enough to be worth suggesting.
   if (other / n > 1 - MIN_COVER) continue;
-  // Pieces as a flat list of numbers: catalog piece (index into ids), color (index into colors), count.
+  // Pieces as a flat list of numbers: library piece (index into ids), color (index into colors), count.
   const flat = [];
   for (const [k, q] of need) { const [id, c] = k.split(':'); flat.push(ix(ids, id), ix(colors, c), q); }
   out.push([s.set_num, s.name, Number(s.year), theme, n, figs[s.set_num] || 0, other, flat, s.img_url.replace('https://cdn.rebrickable.com/media/sets/', '')]);
 }
 fs.writeFileSync(path.join(APP, 'rb-index.json'), JSON.stringify({ ids, colors, sets: out }));
-console.log(`${total} System sets of 10-1500 pieces; ${out.length} are at least ${MIN_COVER * 100}% catalog pieces; rb-index.json ${(fs.statSync(path.join(APP, 'rb-index.json')).size / 1024 / 1024).toFixed(1)} MB`);
+console.log(`${total} System sets of 10-1500 pieces; ${out.length} are at least ${MIN_COVER * 100}% library pieces; rb-index.json ${(fs.statSync(path.join(APP, 'rb-index.json')).size / 1024 / 1024).toFixed(1)} MB`);

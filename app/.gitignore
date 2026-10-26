@@ -3,3 +3,6 @@ sets-index.json
 sets-*.json
 set-parts-*.json
 rb-index.json
+# The piece library made by tools/library-build.js and tools/library-icons.js (about 8 MB)
+library.json
+lib-icons-*.json

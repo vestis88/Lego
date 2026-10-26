@@ -14,9 +14,9 @@ The app runs inside Claude (the Claude app on iPhone or iPad, or claude.ai in a 
 | **Foto** | Photograph a thing (or a finished model) and get a buildable version of it. |
 | **Överraska** | One tap for a surprise build. The app picks three random themes and Claude chooses one. |
 | **Mina bitar** | Photograph your loose pieces. Claude counts them into a list you can correct with + and −. Builds can then use *only* those pieces, or those pieces plus a few extras. |
-| **Hitta bit** | Pick a piece (or tap one in a build step), photograph the pile, and the app circles where it is and reads a hint aloud. |
+| **Hitta bit** | Pick any of the 4,305 pieces in the library (search by name or number, or browse by sort), or tap one in a build step. Photograph the pile, and the app circles where it is and reads a hint aloud. |
 | **Riktiga set** | Step-by-step instructions for 913 real LEGO sets from 1955 to today (Town, Space, Castle, trains, racers, Creator and more). Search by the number on the box or by name, or browse by theme. |
-| **Vilka set kan jag bygga?** | From *Mina bitar*: lists the real sets you have the most pieces for, with how many you have in the right color and in any color. It looks through the 913 sets with steps and 6,660 more official sets from Rebrickable's parts lists. For those, a sheet shows the pieces you're missing, with pictures, and links to LEGO's own instructions. |
+| **Vilka set kan jag bygga?** | From *Mina bitar*: lists the real sets you have the most pieces for, with how many you have in the right color and in any color. It looks through the 913 sets with steps and 11,107 more official sets from Rebrickable's parts lists. For those, a sheet shows the pieces you're missing, with pictures, and links to LEGO's own instructions. |
 | **Svårighet** slider | 1–10, from "like a 3-year-old" (~8 pieces) to "expert" (~140 pieces). The default is "like a 10-year-old" (~90 pieces). |
 
 In the instruction viewer:
@@ -42,19 +42,20 @@ In the instruction viewer:
   - It keeps System sets of 10 to 400 pieces whose parts are all in LDraw: 913 models.
   - It splits them into steps at the models' STEP marks, at most 8 new pieces per step. Sets without STEP marks are built in layers from the bottom up.
   - Printed parts are drawn as the plain part, and LDraw colors become the app's named colors, so read-aloud still works.
-  - Pieces that are also in the catalog keep their Swedish names and can be looked for with *Hitta bit*.
+  - Every piece is in the piece library (below), so it has a name, a picture and can be looked for with *Hitta bit*.
 
   The data is split so a phone only downloads what it opens:
 
   | File | What it holds | Size |
   |---|---|---|
-  | `sets-index.json` | the list, with the catalog pieces each set needs | 0.6 MB |
+  | `sets-index.json` | the list, with the library pieces each set needs | 0.9 MB |
   | `sets-N.json` | the steps of 25 sets | 5.5 MB in all |
   | `sets-thumbs-N.json` | their pictures, drawn ahead by `tools/omr-thumbs.js` | 3.7 MB in all |
   | `set-parts-common.json` | shapes of the parts 10+ sets use, downloaded once | 4.2 MB |
   | `set-parts-N.json` | the rest of a chunk's parts | 0.1–3.9 MB |
 
   Set parts use LDraw's low-detail circle primitives.
+- **One piece library:** `app/library.json` lists every piece the app knows, all drawn from LDraw CAD: the builder's catalog, every part of the sets with steps, and every part used in 3 or more official System sets (Rebrickable). That is 4,305 pieces. Each has its LDraw file, a Swedish name where one can be made from its English name, its sort, its measured size, how many sets use it, and a flag for the 240 pieces the builder can connect on its stud grid. Part numbers of other molds and of printed versions point at the same piece. *Mina bitar*, *Hitta bit*, the sets' parts lists and the missing-pieces sheet all use this one library; the flag only decides which pieces Claude may place in a new design. `tools/library-icons.js` draws every piece in white (`lib-icons-N.json`, 500 per file, 7.6 MB); the app tints the picture to the piece's color. A piece goes into the library automatically when a set that uses it is added; to make one buildable, add it to the catalog (below).
 - **Sync:** the Artifact `db` capability takes the place of Firebase. Saved builds (`builds/<id>`) and the piece list (`inventory/main`) sync to every device signed in to the same Claude account.
 - **Real parts only:** Claude may use only parts from the built-in catalog of real LEGO System parts, by design ID (the number molded on the part). The app throws away any other part and asks Claude to fix it.
 - **Structure checker:** every model is checked on a stud grid against how the parts really connect. Each part knows which of its cells have studs on top and which accept studs underneath. After Claude answers, the app checks four things:
@@ -164,11 +165,11 @@ To add a part:
 3. Check the picture of the new part. The facing it got is saved in `tools/ldraw-turns.json`; fix it in `TURN` in the packer if it's wrong.
 4. Run `tests/run.sh`.
 
-To rebuild the real sets (after adding catalog pieces, so *Vilka set kan jag bygga?* counts them): `node tools/omr-build.js && node tools/omr-thumbs.js && node tools/rb-build.js`. `rb-build.js` reads Rebrickable's free CSV downloads (17 MB, cached in `tests/.cache/rb`) and keeps the System sets of 10 to 1,500 pieces where at least 60% of the pieces are catalog pieces (`MIN_COVER`). The result is `rb-index.json`, 3 MB, loaded only when searching or matching. The first run downloads the OMR models (120 MB) into `tests/.cache/omr`. For speed, also unpack LDraw's `complete.zip` and `ldrawunf.zip` into `tests/.cache/ldraw` (file names lowercased, `/` as `__`) and create `tests/.cache/ldraw/.complete`. With that marker the part loader works offline. The generated set files are not in git (they're about 60 MB); publish them with the app as supporting files.
+To rebuild the piece library and the real sets (after adding catalog pieces): `tools/build-data.sh`. It runs the set, library and Rebrickable builders in order. `rb-build.js` reads Rebrickable's free CSV downloads (17 MB, cached in `tests/.cache/rb`) and keeps the System sets of 10 to 1,500 pieces where at least 60% of the pieces are library pieces (`MIN_COVER`). The result is `rb-index.json`, 7.6 MB (2.5 MB compressed), loaded only when searching or matching. The first run downloads the OMR models (120 MB) into `tests/.cache/omr`. For speed, also unpack LDraw's `complete.zip` and `ldrawunf.zip` into `tests/.cache/ldraw` (file names lowercased, `/` as `__`) and create `tests/.cache/ldraw/.complete`. With that marker the part loader works offline. The generated set and library files are not in git (they're about 70 MB); publish them with the app as supporting files.
 
 ## Known limits
 
 - The parts are exact, but the pictures are still not an official booklet: no part callout arrows or sub-assemblies yet.
-- Real sets: printed details (faces, signs, stickers) are drawn as the plain part. Minifigures are built in place like the rest. Part names that aren't in the catalog are LDraw's English names; read-aloud then just says "bit".
+- Real sets: printed details (faces, signs, stickers) are drawn as the plain part. Minifigures are built in place like the rest. Library pieces whose name can't be put into Swedish (animals, Technic parts and other unusual pieces: about half of the library) show their English name; read-aloud then just says "bit".
 - Claude's spatial accuracy drops on very large models. The checker catches loose and overlapping pieces, but it can't judge whether the model looks good.
 - Piece counting and the piece finder use still photos, not a live camera, and can miss small or hidden pieces.

@@ -9,6 +9,7 @@
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const { find, load } = require('../tests/ldraw-lib.js');
 const { walk, pack, PRIMS, COLORS: LDCOLORS, packMesh } = require('./ldraw-pack.js');
+const { keyOf } = require('./library-keys.js');
 const ROOT = path.join(__dirname, '..');
 const CACHE = path.join(ROOT, 'tests', '.cache', 'omr');
 const APP = path.join(ROOT, 'app');
@@ -164,10 +165,10 @@ models.forEach((m, i) => {
   };
   const st = kidSteps(m.st.steps).map((s) => s.map(place));
   (chunks[k] ||= {})[key] = { files, steps: st };
-  // What the set needs from "Mina bitar": catalog pieces by color; the rest counted apart.
+  // What the set needs from "Mina bitar": library pieces by color; pieces the library lacks counted apart.
   const need = new Map(); let other = 0, figs = 0;
   for (const p of m.parts) {
-    const n = norm(p.file), cat = CATALOG[n];
+    const n = norm(p.file), cat = CATALOG[n] || keyOf(p.file);
     if (COMES_WITH.has(n)) continue;
     if (/^Minifig/i.test(title(p.file))) { figs++; continue; }
     if (cat) { const kk = cat + ':' + appColor(p.code); need.set(kk, (need.get(kk) || 0) + 1); } else other++;

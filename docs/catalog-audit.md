@@ -112,6 +112,20 @@ Facing was checked by measuring, not by eye. A script sampled which cells each p
 
 Left out because of the grid: inverted curves with studs at two heights (24201, 32803, 13547), cutout slopes (15672, 28192, 29119, 29120), dishes on one center stud (4740, 2654, 3960), parts with clips or bars on top (15712, 20482, 2555), and SNOT bricks whose side studs would need to connect (22885).
 
+## One piece library instead of separate lists (2026-10-26)
+
+There used to be two lists: the builder's catalog, and "other parts" known only to the real sets. They are now one library, `app/library.json` (4,305 pieces, all from LDraw CAD). It holds every catalog piece, every part of the sets with steps, and every part used in 3 or more official System sets. Being in the catalog is now only a flag on a library piece: it means the builder knows how the piece connects on its stud grid. Every piece, flagged or not, can be counted in *Mina bitar*, looked for with *Hitta bit*, and matched against sets. With that, 11,107 official sets are 60% or more library pieces, up from 6,660.
+
+How the library resolves part numbers:
+
+- Prints and patterns count as their plain part (Rebrickable's P relation).
+- Other molds and alternates count as one piece (its M and A relations).
+- Shortcuts that LDraw has moved point at the new file.
+
+947 part numbers have no LDraw model; sets count them as "other" pieces.
+
+Swedish names are made from the English name: a noun, the size, and known features. If words are left untranslated, the piece is marked "special" (for example "Specialplatta 2×2 med hjulfäste"), so it never gets the same name as the plain piece. Catch-all nouns ("Djur", "Teknikbit") with more to say keep their English name instead.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

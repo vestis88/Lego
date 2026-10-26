@@ -440,6 +440,7 @@ a.btn { text-decoration: none; color: var(--go-ink); }
     </div>
     <div class="panel">
       <div class="target"><img id="f-img" alt=""><div><label class="lbl">Jag letar efter</label><div class="hint" id="f-name"></div></div></div>
+      <input type="search" id="f-q" class="search" placeholder="Sök bit: namn eller nummer" aria-label="Sök bit" autocomplete="off">
       <label class="lbl">Sort</label><div class="chips" id="f-groups"></div>
       <div class="partgrid" id="f-parts"></div>
       <label class="lbl">Färg</label><div class="chips" id="f-colors"></div>
@@ -590,7 +591,7 @@ const NOUNS = {
   leaf:   { name: "Bladplatta",        sg: "bladplatta",        pl: "bladplattor",         g: "en" },
   gold:   { name: "Guldtacka",         sg: "guldtacka",         pl: "guldtackor",          g: "en" },
 };
-const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special" };
+const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special", technic: "Teknik", figure: "Minifigurer" };
 
 /* The catalog: real LEGO design IDs only. w x d is the footprint at r=0 (w along x, d along z), h is height in plates.
    Directional parts face (or slope down toward) +z at r=0. studs/bottom: which cells connect ("all", "none", "back" = row z=0). */
@@ -1069,6 +1070,61 @@ function shapeLayers(C, p, solo) {
   }
   return L;
 }
+/* ================================================ the piece library */
+/* library.json (made by tools/library-build.js) is one library of every real piece the app knows (about 4,300), all from
+   LDraw CAD models: the pieces the builder can connect on its grid (CAT), every part of the step-by-step sets, and every
+   part used in 3+ official sets. parts: key -> [ldraw file, Swedish name, English name, group, w, d, h, sets, flags];
+   alias: any part number or LDraw file -> key. Pictures are white renders in lib-icons-N.json, tinted to any color here. */
+const LIB = { parts: null, alias: {}, icons: new Map(), tinted: new Map() };
+const LIB_FIELDS = { file: 0, sv: 1, en: 2, group: 3, w: 4, d: 5, h: 6, sets: 7, flags: 8 };
+async function loadLibrary() {
+  try { const r = await fetch("library.json"); if (r.ok) { const L = await r.json(); LIB.parts = L.parts; LIB.alias = L.alias; LIB.order = Object.keys(L.parts); } } catch {}
+  return !!LIB.parts;
+}
+const normNum = (n) => String(n).toLowerCase().replace(/\.dat$/, "").replace(/(pr?[0-9]{2,}[a-z0-9]*|pat[0-9]+)$/, "").replace(/([0-9])[a-d]$/, "$1");
+/** The library key of a part number or LDraw file, or null. */
+function libKey(n) {
+  if (n == null || !LIB.parts) return CAT[n] ? n : null;
+  const s = String(n).toLowerCase();
+  return LIB.parts[n] ? String(n) : LIB.alias[s] || LIB.alias[normNum(s)] || (CAT[n] ? n : null);
+}
+const libEntry = (n) => { const k = libKey(n); return k && LIB.parts?.[k]; };
+/** Whether the builder can connect a piece (it has grid rules in CAT). */
+const buildable = (id) => !!CAT[id] && !CAT[id].child;
+/** The picture of any piece in a color: live 3D for pieces with a loaded shape, else the library's white picture tinted. */
+function setIcon(img, p) {
+  const C = CAT[p.id];
+  if ((C && LD.parts?.[p.id]) || SETS.shapes?.parts[p.id]) { img.src = Snap.icon(p); return; }
+  const k = libKey(p.id);
+  if (!k) return;
+  libIcon(k, p.c).then((u) => { if (u) img.src = u; });
+}
+async function libIcon(key, color) {
+  const tk = key + ":" + color;
+  if (LIB.tinted.has(tk)) return LIB.tinted.get(tk);
+  const i = LIB.order?.indexOf(key) ?? -1;
+  if (i < 0) return null;
+  const k = Math.floor(i / 500);
+  if (!LIB.icons.has(k)) LIB.icons.set(k, fetchJson(`lib-icons-${k}.json`).catch(() => ({})));
+  const src = (await LIB.icons.get(k))[key];
+  if (!src) return null;
+  const url = await new Promise((done) => {
+    const im = new Image();
+    im.onload = () => {
+      // Multiply the white picture by the color, then keep the picture's own shape (alpha).
+      const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+      const g = c.getContext("2d"), col = COLORS[color] || COLORS.lightgray;
+      g.drawImage(im, 0, 0);
+      g.globalCompositeOperation = "multiply"; g.fillStyle = "#" + col.hex.toString(16).padStart(6, "0"); g.fillRect(0, 0, c.width, c.height);
+      g.globalCompositeOperation = "destination-in"; g.globalAlpha = col.alpha || 1; g.drawImage(im, 0, 0);
+      done(c.toDataURL("image/png"));
+    };
+    im.onerror = () => done(null); im.src = src;
+  });
+  LIB.tinted.set(tk, url);
+  return url;
+}
+
 /* ============================================== real sets (LDraw OMR) */
 /* Real LEGO sets as CAD models with their build steps, from the LDraw Official Model Repository (made by tools/omr-build.js).
    sets-index.json lists them; sets-N.json holds the steps of a chunk of sets and sets-thumbs-N.json their pictures;
@@ -1097,8 +1153,8 @@ async function loadRb() {
 }
 async function loadThumbs(k) { if (!SETS.thumbs.has(k)) SETS.thumbs.set(k, fetchJson(`sets-thumbs-${k}.json`).catch(() => ({}))); return SETS.thumbs.get(k); }
 async function loadChunk(k) { if (!SETS.chunks.has(k)) SETS.chunks.set(k, await fetchJson(`sets-${k}.json`)); return SETS.chunks.get(k); }
-/** The catalog id of a set part's LDraw file, if the catalog has that piece. */
-const catOf = (f) => SETS.shapes?.cat[f];
+/** The catalog id of a set part's LDraw file, if the builder can connect that piece. */
+const catOf = (f) => { const k = libKey(f); return k && CAT[k] ? k : SETS.shapes?.cat[f]; };
 const FLIP = new THREE.Matrix4().makeScale(1, -1, -1); // LDraw axes to app axes
 function setMatrix(p) {
   if (!p.m) return FLIP.clone(); // an icon: the part upright
@@ -1148,7 +1204,7 @@ function orbitPos(target, dist, az, el) {
 /* ======================================================== naming */
 function partName(p) {
   const C = CAT[p.id] || CAT[catOf(p.id)];
-  if (!C) return SETS.shapes?.names[p.id] || "Bit"; // a part only real sets use: its English LDraw name
+  if (!C) { const e = libEntry(p.id); return e ? e[LIB_FIELDS.sv] || e[LIB_FIELDS.en] : SETS.shapes?.names[p.id] || "Bit"; } // other pieces: the library's name
   return C.size ? `${NOUNS[C.noun].name} ${C.size}` : NOUNS[C.noun].name;
 }
 function colorWord(c, form) { return COLORS[c][form]; }
@@ -1579,7 +1635,8 @@ function upgradeBuild(b) {
   return nb.steps.length ? { ...b, steps: repairLocally(nb.steps).steps } : null;
 }
 function cleanInventory(list) {
-  return (Array.isArray(list) ? list : []).map((p) => (CAT[p.id] && !CAT[p.id].child ? { id: p.id, c: COLORS[p.c] ? p.c : "lightgray", n: clampInt(p.n, 1, 500, 1) } : null)).filter(Boolean);
+  // Any piece in the library (or the builder's catalog), by its library key.
+  return (Array.isArray(list) ? list : []).map((p) => { const k = buildable(p.id) ? p.id : libKey(p.id); return k ? { id: k, c: COLORS[p.c] ? p.c : "lightgray", n: clampInt(p.n, 1, 500, 1) } : null; }).filter(Boolean);
 }
 
 /* ============================================================= Claude */
@@ -1664,7 +1721,8 @@ const FORMAT = `Reply with ONLY this JSON and nothing else:
 {"title":"Swedish name, max 4 words","description":"one short Swedish sentence for the cover","steps":[{"text":"short Swedish instruction for a 5-year-old, max 10 words","parts":[{"id":"3001","x":0,"y":0,"z":0,"r":0,"c":"red"}]}]}`;
 
 function inventoryLine(o) {
-  const inv = Store.inventory;
+  // The builder can only use pieces it knows how to connect; the child's other pieces are left out of the design.
+  const inv = Store.inventory.filter((p) => buildable(p.id));
   if (!o.useInv || !inv.length) return "";
   const list = inv.map((p) => `${p.id} ${p.c} x${p.n}`).join("; ");
   return o.strict
@@ -1971,7 +2029,7 @@ function bomSheet() {
     const grid = document.createElement("div"); grid.className = "bom";
     for (const g of groups) {
       const it = document.createElement("button"); it.className = "bom-item";
-      const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(g.p);
+      const img = document.createElement("img"); img.alt = ""; setIcon(img, g.p);
       const b = document.createElement("b"); b.textContent = `${g.n}×`;
       const s = document.createElement("span"); s.textContent = `${partName(g.p)} · ${COLORS[g.p.c].sg}`;
       const id = document.createElement("span"); id.textContent = g.p.id;
@@ -1984,7 +2042,7 @@ function partSheet(p) {
   openSheet((body) => {
     sheetHeader(body, partName(p));
     const t = document.createElement("div"); t.className = "target";
-    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
+    const img = document.createElement("img"); img.alt = ""; setIcon(img, p);
     const d = document.createElement("div");
     const nm = document.createElement("div"); nm.className = "hint"; nm.textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
     const no = document.createElement("small"); no.style.color = "var(--ink-soft)"; no.textContent = `Bitnummer ${p.id}`;
@@ -1992,7 +2050,7 @@ function partSheet(p) {
     const row = document.createElement("div"); row.className = "btn-row";
     const f = document.createElement("button"); f.className = "btn go"; f.textContent = "Hitta den i högen";
     // A catalog piece is looked for under its catalog id; a part only real sets use under its LDraw name and shape.
-    const cat = CAT[p.id] && !CAT[p.id].child ? p.id : catOf(p.id) || p.id;
+    const cat = buildable(p.id) ? p.id : catOf(p.id) || libKey(p.id) || p.id;
     f.disabled = !(AI.sample && AI.images);
     f.addEventListener("click", () => { closeSheet(); closeViewer(); openFinder({ id: cat, c: p.c }); });
     row.append(f); body.append(row);
@@ -2007,7 +2065,7 @@ function renderInventory() {
   $("#inv-clear").hidden = !total; $("#inv-sets").hidden = !total;
   inv.forEach((p, i) => {
     const row = document.createElement("div"); row.className = "inv-row";
-    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
+    const img = document.createElement("img"); img.alt = ""; setIcon(img, p);
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = partName(p);
     const sm = document.createElement("small"); sm.textContent = `${COLORS[p.c].sg} · ${p.id}`; nm.append(sm);
     const st = document.createElement("div"); st.className = "stepper";
@@ -2043,18 +2101,22 @@ $("#inv-scan").addEventListener("click", async () => {
     const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
     const res = await AI.sample.json(`Identify every LEGO piece in the pile and count identical pieces.
 ${anglesNote(files.length, "pile")}
-Match each piece to the closest part in this catalog (use the id exactly). Skip pieces that match nothing in the catalog (Technic beams, gears, axles and pins, minifigures, special parts). A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end). Parts that come apart in the box but belong together (a window and its glass, a door frame and its door, a flower stem and its flowers) count as the main part.
+Name every piece by its LEGO design number: the number molded on the part, as BrickLink, Rebrickable and LDraw use it (for example 3001 for a 2 x 4 brick, 4740 for an inverted 2 x 2 dish, 973 for a minifigure torso). Any real LEGO piece counts, special parts and minifigure parts too. For the common pieces below, use exactly these ids. A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end). Parts that come apart in the box but belong together (a window and its glass, a door frame and its door, a flower stem and its flowers) count as the main part.
+COMMON PIECES (id: name):
 ${list}
 Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
 Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}],"unsure":"one short Swedish sentence about pieces you could not identify, or empty"}`, { images: files, modelTier: "complex", cache: false });
-    const found = cleanInventory(res?.parts);
+    // Numbers the library doesn't know are left out, and counted for the child.
+    const found = cleanInventory(res?.parts), unknown = (Array.isArray(res?.parts) ? res.parts : []).filter((p) => !buildable(p.id) && !libKey(p.id)).length;
     const merged = Store.inventory.map((p) => ({ ...p }));
     for (const p of found) { const m = merged.find((q) => q.id === p.id && q.c === p.c); if (m) m.n += p.n; else merged.push(p); }
-    merged.sort((a, b) => CAT[a.id].group.localeCompare(CAT[b.id].group) || a.id.localeCompare(b.id) || a.c.localeCompare(b.c));
+    const groupOf = (id) => CAT[id]?.group || libEntry(id)?.[LIB_FIELDS.group] || "special";
+    merged.sort((a, b) => groupOf(a.id).localeCompare(groupOf(b.id)) || a.id.localeCompare(b.id) || a.c.localeCompare(b.c));
     await Store.saveInventory(merged);
     const n = found.reduce((a, p) => a + p.n, 0);
     st.innerHTML = n ? `<b>${n} bitar hittade</b> och tillagda. Rätta antalet med plus och minus om något blev fel.` : "<b>Hittade inga bitar.</b> Prova att lägga dem glest på ett ljust bord.";
     if (n && res?.unsure) { const u = document.createElement("div"); u.textContent = String(res.unsure).slice(0, 200); st.append(u); }
+    if (unknown) { const u = document.createElement("div"); u.textContent = `${unknown} ${unknown === 1 ? "bit" : "bitar"} kände appen inte igen och hoppade över.`; st.append(u); }
     if (n && files.length === 1 && AI.maxImages > 1) { const t = document.createElement("div"); t.textContent = "Tips: ett foto till snett från sidan gör räkningen säkrare nästa gång."; st.append(t); }
     invTray.clear();
   } catch (e) { st.textContent = errText(e); }
@@ -2146,20 +2208,20 @@ function rbSheet(e) {
     }
     // The catalog pieces missing, with pictures; pieces the app doesn't know are only counted.
     const byKey = new Map(); for (const p of Store.inventory) byKey.set(p.id + ":" + p.c, (byKey.get(p.id + ":" + p.c) || 0) + p.n);
-    const miss = e.need.map(([id, c, n]) => ({ p: { id, c }, n: n - Math.min(n, byKey.get(id + ":" + c) || 0) })).filter((m) => m.n > 0 && CAT[m.p.id]).sort((a, b) => b.n - a.n);
+    const miss = e.need.map(([id, c, n]) => ({ p: { id, c }, n: n - Math.min(n, byKey.get(id + ":" + c) || 0) })).filter((m) => m.n > 0).sort((a, b) => b.n - a.n);
     if (miss.length) {
       const t = document.createElement("label"); t.className = "lbl"; t.textContent = Store.inventory.length ? "Bitar du saknar" : "Bitar i setet"; body.append(t);
       const grid = document.createElement("div"); grid.className = "bom";
       for (const m of miss.slice(0, 40)) {
         const it = document.createElement("button"); it.className = "bom-item";
-        const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(m.p);
+        const img = document.createElement("img"); img.alt = ""; setIcon(img, m.p);
         const b = document.createElement("b"); b.textContent = `${m.n}×`;
         const sp = document.createElement("span"); sp.textContent = `${partName(m.p)} · ${COLORS[m.p.c].sg}`;
         it.append(img, b, sp); it.addEventListener("click", () => partSheet(m.p)); grid.append(it);
       }
       body.append(grid);
     }
-    if (e.other) { const o = document.createElement("p"); o.className = "tray-tip"; o.textContent = `Plus ${e.other} bitar som appen inte känner till än.`; body.append(o); }
+    if (e.other) { const o = document.createElement("p"); o.className = "tray-tip"; o.textContent = `Plus ${e.other} ${e.other === 1 ? "bit" : "bitar"} som appen inte har någon bild av än.`; body.append(o); }
     const row = document.createElement("div"); row.className = "btn-row";
     const a = document.createElement("a"); a.className = "btn go"; a.target = "_blank"; a.rel = "noopener";
     a.href = "https://www.lego.com/sv-se/service/building-instructions/" + e.num.replace(/-1$/, ""); a.textContent = "Byggbeskrivning hos LEGO";
@@ -2190,21 +2252,30 @@ $("#s-mine").addEventListener("click", () => { SV.mine = !SV.mine; renderSets();
 $("#s-more").addEventListener("click", () => { SV.shown += 40; renderSets(); });
 
 /* ============================================================= finder */
-let F = { group: "brick", id: "3001", c: "red" };
+let F = { group: "brick", id: "3001", c: "red", q: "" };
+/** The pieces to choose from: a search over the whole library, or the most used pieces of one group. */
+function finderChoices() {
+  const q = F.q.trim().toLowerCase();
+  const all = LIB.parts ? LIB.order : Object.keys(CAT);
+  const group = (k) => CAT[k]?.group || LIB.parts?.[k]?.[LIB_FIELDS.group];
+  const name = (k) => partName({ id: k }).toLowerCase();
+  const pick = q ? all.filter((k) => k.toLowerCase().startsWith(q) || name(k).includes(q) || (LIB.parts?.[k]?.[LIB_FIELDS.en] || "").toLowerCase().includes(q))
+    : all.filter((k) => group(k) === F.group && !CAT[k]?.child);
+  return pick.slice(0, 60);
+}
 function renderFinder() {
   const groups = $("#f-groups"); groups.textContent = "";
   for (const [g, label] of Object.entries(GROUPS)) {
-    const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(g === F.group));
-    b.addEventListener("click", () => { F.group = g; if (CAT[F.id]?.group !== g) F.id = Object.values(CAT).find((C) => C.group === g && !C.child).id; renderFinder(); });
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(g === F.group && !F.q));
+    b.addEventListener("click", () => { F.group = g; F.q = ""; $("#f-q").value = ""; renderFinder(); });
     groups.append(b);
   }
   const grid = $("#f-parts"); grid.textContent = "";
-  for (const C of Object.values(CAT)) {
-    if (C.group !== F.group) continue;
-    const b = document.createElement("button"); b.setAttribute("aria-pressed", String(C.id === F.id));
-    const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon({ id: C.id, c: F.c });
-    const t = document.createElement("span"); t.textContent = partName({ id: C.id });
-    b.append(img, t); b.addEventListener("click", () => { F.id = C.id; renderFinder(); }); grid.append(b);
+  for (const k of finderChoices()) {
+    const b = document.createElement("button"); b.setAttribute("aria-pressed", String(k === F.id));
+    const img = document.createElement("img"); img.alt = ""; setIcon(img, { id: k, c: F.c });
+    const t = document.createElement("span"); t.textContent = partName({ id: k });
+    b.append(img, t); b.addEventListener("click", () => { F.id = k; renderFinder(); }); grid.append(b);
   }
   const cols = $("#f-colors"); cols.textContent = "";
   for (const c of Object.keys(COLORS)) {
@@ -2213,12 +2284,14 @@ function renderFinder() {
     b.addEventListener("click", () => { F.c = c; renderFinder(); }); cols.append(b);
   }
   const p = { id: F.id, c: F.c };
-  $("#f-img").src = Snap.icon(p);
+  setIcon($("#f-img"), p);
   $("#f-name").textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
 }
+let finderSearchTimer;
+$("#f-q").addEventListener("input", (e) => { clearTimeout(finderSearchTimer); finderSearchTimer = setTimeout(() => { F.q = e.target.value; renderFinder(); }, 200); });
 function openFinder(p) {
   // Any piece can be looked for: catalog pieces, and parts only real sets use (then no catalog chip is chosen).
-  if (p) F = { group: CAT[p.id]?.group || null, id: p.id, c: p.c };
+  if (p) { const k = buildable(p.id) ? p.id : libKey(p.id) || p.id; F = { group: CAT[k]?.group || LIB.parts?.[k]?.[LIB_FIELDS.group] || "brick", id: k, c: p.c, q: "" }; $("#f-q").value = ""; }
   $("#f-result").hidden = true; findTray.clear();
   renderFinder(); go("#v-find");
 }
@@ -2232,8 +2305,10 @@ const findTray = new PhotoTray($("#f-tray"), ["Ovanifrån", "Från ett annat hå
 function pieceFacts(p) {
   const C = CAT[p.id];
   if (C) return `${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"})`;
+  // Any other piece: its English name and the size measured from its CAD model (library), or from its loaded shape.
+  const e = libEntry(p.id), half = (v) => Math.round(v * 2) / 2;
+  if (e) return `piece "${e[LIB_FIELDS.en]}" (design number ${libKey(p.id)}; about ${half(e[LIB_FIELDS.w])} x ${half(e[LIB_FIELDS.d])} studs and ${Math.round(e[LIB_FIELDS.h])} plates tall)`;
   const b = new THREE.Box3().setFromObject(buildPart(p, true)), sz = b.getSize(new THREE.Vector3());
-  const half = (v) => Math.round(v * 2) / 2;
   return `piece "${partName(p)}" (LDraw part ${p.id}; about ${half(sz.x)} x ${half(sz.z)} studs and ${Math.round(sz.y / PH)} plates tall including studs)`;
 }
 /** Looks for the chosen piece in every photo of the pile and circles it where it is seen. */
@@ -2242,7 +2317,8 @@ async function findPiece() {
   if (!files.length) return;
   const piece = pieceFacts({ id: F.id, c: F.c });
   // With room for one more image than photos, a drawing of the piece goes along: it shows Claude the exact shape.
-  const drawing = files.length < AI.maxImages ? await fetch(Snap.icon({ id: F.id, c: F.c })).then((r) => r.blob()).then((b) => new File([b], "bit.png", { type: "image/png" })).catch(() => null) : null;
+  const pic = buildable(F.id) ? Snap.icon({ id: F.id, c: F.c }) : await libIcon(libKey(F.id), F.c);
+  const drawing = pic && files.length < AI.maxImages ? await fetch(pic).then((r) => r.blob()).then((b) => new File([b], "bit.png", { type: "image/png" })).catch(() => null) : null;
   const res = $("#f-result"); res.hidden = false;
   $("#f-hint").textContent = "Letar…"; lastHint = "";
   const holder = $("#f-photo"); holder.textContent = "";
@@ -2281,5 +2357,6 @@ $("#f-more").addEventListener("click", () => pickPhoto((f) => { findTray.add(f);
 $("#f-again").addEventListener("click", () => { findTray.clear(); $("#f-result").hidden = true; });
 
 /* =============================================================== boot */
+loadLibrary();
 loadParts().then((ok) => { if (!ok) toast("Bitarna kunde inte laddas. Ladda om sidan."); renderShelf(); initAI(); Store.init(); });
 </script>
