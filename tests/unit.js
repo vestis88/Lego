@@ -9,33 +9,26 @@ window.__unit = () => {
     const g = buildPart(p, true);
     const b = new THREE.Box3().setFromObject(g);
     const tag = `${C.id} r${r}`;
+    // Real parts that reach past their grid cells (pins, handles, clips, tabs, branches) or have studs off the grid.
+    const OUT = { "2540": 0.85, "32028": 0.5, "4081b": 0.95, "33291": 0.15, "3471": 0.25, "3470": 0.2, "3741": 0.2, "4600": 0.75, "6157": 1.25, "122c01": 0.85, "2926": 0.75, "4079": 0.3, "3853": 0.25, "4070": 0.1,
+      "4733": 0.25, "11211": 0.25, "30414": 0.25, "87087": 0.25 };
+    // Studs off the grid (center studs), or other bits above the top that the stud check would mistake for studs.
+    const OFFGRID = ["3794", "15573", "87580", "3942c", "33291", "4600", "6157", "122c01", "2926", "2540", "4081b", "3741"];
     if (!C.child) {
-      const fills = ["cutcorner", "seat", "box", "slope", "inv", "baseplate", "window", "frame", "arch", "screen", "holder", "turn", "cone2"].includes(C.shape);
-      const tol = C.deco ? (String(C.deco).startsWith("side") ? 0.24 : C.deco === "handle" ? 0.36 : 0.12) : 0.06;
-      if (fills) {
-        ok(Math.abs(b.min.x - p.x) < tol && Math.abs(b.max.x - (p.x + I.w)) < tol, `${tag} x ${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)} vs ${p.x}..${p.x + I.w}`);
-        ok(Math.abs(b.min.z - p.z) < tol && Math.abs(b.max.z - (p.z + I.d)) < tol, `${tag} z ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} vs ${p.z}..${p.z + I.d}`);
-      }
-      ok(b.max.y >= (p.y + C.h) * PH - 0.48, `${tag} drawn top ${b.max.y.toFixed(2)} falls short of its height ${((p.y + C.h) * PH).toFixed(2)}`);
-      // The drawing may only stick out where the part really fills space (its occupied cells), never elsewhere.
+      const tol = (OUT[C.id] || 0) + 0.06;
+      ok(b.max.y >= (p.y + C.h) * PH - 0.3, `${tag} drawn top ${b.max.y.toFixed(2)} falls short of its height ${((p.y + C.h) * PH).toFixed(2)}`);
+      // The drawing stays inside the space the part occupies, apart from the known bits that stick out.
       const ox = I.occ.map((c) => c[0]), oz = I.occ.map((c) => c[2]);
       const [x0, x1, z0, z1] = [Math.min(...ox), Math.max(...ox) + 1, Math.min(...oz), Math.max(...oz) + 1];
-      ok(b.min.x > x0 - tol && b.max.x < x1 + tol && b.min.z > z0 - tol && b.max.z < z1 + tol && b.min.y > p.y * PH - 0.01 && b.max.y < (p.y + C.h) * PH + 0.25, `${tag} shape leaves its space (${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)}, ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} vs ${x0}..${x1}, ${z0}..${z1})`);
+      ok(b.min.x > x0 - tol && b.max.x < x1 + tol && b.min.z > z0 - tol && b.max.z < z1 + tol && b.min.y > p.y * PH - 0.01 - (OUT[C.id] ? 0.45 : 0) && b.max.y < (p.y + C.h) * PH + 0.25 + (OUT[C.id] ? 0.45 : 0), `${tag} shape leaves its space (${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)}, ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)}, y ${b.min.y.toFixed(2)}..${b.max.y.toFixed(2)} vs ${x0}..${x1}, ${z0}..${z1})`);
       const xs = I.cells.map((c) => c[0]), zs = I.cells.map((c) => c[1]);
       ok(I.cells.length === canonCells(C).length && Math.min(...xs) === p.x && Math.max(...xs) === p.x + I.w - 1 && Math.min(...zs) === p.z && Math.max(...zs) === p.z + I.d - 1, `${tag} cells`);
     }
-    // studs sit exactly over stud cells
-    const studPos = [];
-    g.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i++) { const y = a.getY(i); if (y > (p.y + C.h) * PH + 0.1) studPos.push([Math.floor(a.getX(i)), Math.floor(a.getZ(i))]); } } });
+    // Real studs on top (from LDraw) sit exactly over the cells the checker gives studs, turned with the part.
+    const studPos = new Set();
+    g.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i++) if (a.getY(i) > (p.y + C.h) * PH + 0.1) studPos.add(Math.floor(a.getX(i)) + "," + Math.floor(a.getZ(i))); } });
     const sc = new Set(I.studs.map(([x, z]) => x + "," + z));
-    if (!C.deco) ok(studPos.every(([x, z]) => sc.has(x + "," + z)), `${tag} stud outside stud cells`);
-    if (!C.deco) ok(new Set(studPos.map(([x, z]) => x + "," + z)).size === sc.size, `${tag} stud count ${new Set(studPos.map(String)).size} vs ${sc.size}`);
-    // slopes: the full-height surface only over the high end (stud row)
-    if (C.shape === "slope" && C.d >= 2 && C.h === 3) {
-      const hi = new Set();
-      g.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i++) { const y = a.getY(i); if (Math.abs(y - ((p.y + C.h) * PH - 0.01)) < 0.005) hi.add(Math.floor(a.getX(i) - 0.001 + (a.getX(i) % 1 === 0 ? 0 : 0)) + "," + Math.floor(a.getZ(i))); } } });
-      ok([...hi].every((k) => sc.has(k) || [...sc].some((s) => { const [sx, sz] = s.split(",").map(Number); const [hx, hz] = k.split(",").map(Number); return Math.abs(sx - hx) <= 1 && Math.abs(sz - hz) <= 1; })), `${tag} slope high side`);
-    }
+    if (!OFFGRID.includes(C.id) && !C.child) ok([...studPos].every((k) => sc.has(k)) && [...sc].every((k) => studPos.has(k)), `${tag} drawn studs [${[...studPos].sort()}] vs stud cells [${[...sc].sort()}]`);
     // wheels stay inside the occupied wheel space
     if (C.wheels) {
       const full = new THREE.Box3().setFromObject(buildPart(p, false));

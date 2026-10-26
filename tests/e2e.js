@@ -33,7 +33,10 @@ fs.writeFileSync(S + '/harness.html', html);
     const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type()==='error') errs.push(m.text()); });
     await page.route('**/three.min.js', r => r.fulfill({ path: S + '/.cache/three.min.js', contentType: 'application/javascript' }));
     await page.route('**/fonts.googleapis.com/**', r => r.abort());
-    await page.goto('file://' + S + '/harness.html');
+    // Served from a made-up http origin so the app can fetch parts.json next to it.
+    await page.route('**/parts.json', r => r.fulfill({ path: S + '/../app/parts.json', contentType: 'application/json' }));
+    await page.route('http://app.test/harness.html', r => r.fulfill({ path: S + '/harness.html', contentType: 'text/html' }));
+    await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts);
     await page.waitForTimeout(800);
     const unitFails = await page.evaluate(() => window.__unit()); console.log(name, 'unit:', JSON.stringify(unitFails)); if (unitFails.length) process.exitCode = 1;
     console.log(name, 'calls ok');

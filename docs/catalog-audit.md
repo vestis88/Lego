@@ -72,6 +72,23 @@ Three of them are LDraw quirks, checked against BrickLink photos: the windows 38
 
 **New check (`tests/ldraw-check.js`, run by `run.sh`):** compares every catalog part with `tests/ldraw-ref.json`, the LDraw measurements, and fails on any difference that isn't accepted. An accepted part may only differ in the ways its reason names (footprint, height or studs), and an exception that stops being needed also fails, so the list stays honest. It works offline. After adding a part, run `node tests/ldraw-update.js` (needs internet) to measure it from LDraw. Run against the version before this fix, the check flags 3823, 4865, 2432, 3470 and 60474.
 
+## Every part drawn from its CAD model (2026-10-26)
+
+The hand-made drawings are gone. Every part is now drawn from its LDraw model (`app/parts.json`, made by `tools/ldraw-pack.js`). I compared each new drawing side by side with the old one, and checked the facing of every directional part. The facing of each part is saved in `tools/ldraw-turns.json`, so repacking can't silently turn a part around.
+
+This turned up four more errors that the checks on numbers couldn't see:
+
+| # | Part | What was wrong | Fix |
+|---|---|---|---|
+| 25 | 4070 headlight brick | Fix 8 above drew the side stud inside a square recess on the front. The real brick has the stud standing out on the front, on a small ledge, and the square hole is on the back. | Drawn from LDraw, stud facing +z. |
+| 26 | 6157 wide wheel plate | The wheel space was guessed. Its holders rise above the plate, so the axle is 1.4 plates higher than assumed: the wheels reach 4 plates above the holder, not 3. Parts placed at y+4 could intersect a wheel. | Wheel space computed from the measured pins and the real 6014 wheel: wider parts need y+5. |
+| 27 | 122c01 and 4600 wheel plates | Wheel space was off by a plate (122c01 wheels reach y+3, not y+2; 4600 wheels reach only 2 plates below, not 3). | Computed from the real pins and wheels, like 6157. |
+| 28 | Wheel rules in the prompt | The wheel space told to Claude was typed in by hand and could disagree with the checker. | The prompt text is generated from the same computed wheel space. |
+
+**How placement works:** the packer turns each LDraw model into the app's axes. It tries all four turns and keeps the one whose footprint and stud cells match the catalog, using the saved facing where that's ambiguous. It lines the studs up on cell centers only when something sticks out of the footprint (a handle). That way the jumper plates keep their center stud between grid positions. A part with studs on its very top is placed by that top surface, so pins hanging below a wheel plate don't lift it off the grid.
+
+**New checks:** the audit fails if any part has no CAD shape. `tests/unit.js` now checks the real studs from LDraw against the checker's stud cells in all four turns. It also checks that each real shape stays in its space; the parts that stick out (pins, handles, clips, side studs, tabs, branches) are listed with how far.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

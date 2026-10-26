@@ -28,7 +28,13 @@ In the instruction viewer:
 
 ## How it is built
 
-- **One file:** `app/byggboken.html`, published as a claude.ai Artifact. three.js (r128, from cdnjs) renders the bricks.
+- **Two files:** `app/byggboken.html` is the app, published as a claude.ai Artifact. `app/parts.json` holds the real shape of every part, and is published next to it. three.js (r128, from cdnjs) renders the bricks.
+- **Real part shapes:** every part is drawn from its CAD model in the [LDraw library](https://library.ldraw.org) (CC BY 4.0), the community library of exact LEGO part models. That includes the outline edges, the studs and the tubes underneath. `tools/ldraw-pack.js` converts them:
+  - it turns each part to the app's facing and places it on the stud grid;
+  - it packs positions as 16-bit integers;
+  - it stores each repeated stud and tube shape once.
+
+  The result is 1.4 MB (about 440 KB compressed) for all 164 parts. A model of 140 parts builds in about 0.3 s.
 - **AI:** the Artifact `sample` capability, with images enabled, asks Claude. It runs on the viewer's own Claude account and plan. Generation uses the most capable model for difficulty 4 and up, so big builds can take a minute or two.
 - **Sync:** the Artifact `db` capability takes the place of Firebase. Saved builds (`builds/<id>`) and the piece list (`inventory/main`) sync to every device signed in to the same Claude account.
 - **Real parts only:** Claude may use only parts from the built-in catalog of real LEGO System parts, by design ID (the number molded on the part). The app throws away any other part and asks Claude to fix it.
@@ -75,12 +81,14 @@ The rule for loose parts allows pillars standing side by side on the table befor
 
 **Wheels work like real LEGO.** Every wheel plate clips *under* a chassis with its studs, and its wheels sit on side pins. Each wheel plate reserves its real wheel space, and anything wider than the chassis has to sit above it, like a fender. The prompt also gives Claude a short recipe for vehicles: chassis, wheel plates, seat, steering wheel, windscreen, grille, headlights and taillights.
 
+The wheels are real LDraw wheels mounted on the measured pin tips of each plate. Their size and the space they reserve are computed from those models, and so is the prompt text that tells Claude about them:
+
 | Wheel plate | Wheel space beside it | Wider parts start at |
 |---|---|---|
-| 4600 | 1 column each side, 3 plates below to 2 above | y+3 |
-| 122c01 | 1 column each side, 2 below to 1 above | y+2 |
-| 6157 | 2 columns each side, 4 rows long, 4 below to 3 above | y+4 |
-| 2926 | 1 column at each end | y+3 |
+| 4600 | 1 column each side, 2 plates below to 2 above | y+3 |
+| 122c01 | 1 column each side, 1 below to 3 above | y+4 |
+| 6157 | 2 columns each side, 4 rows long, 2 below to 4 above (its holders rise above the plate) | y+5 |
+| 2926 | 1 column at each end, 3 rows, 2 below to 2 above | y+3 |
 
 The 3788 mudguard and the hinged 1×3×1 car doors are not in yet. Their studs sit at two heights, or they attach with a hinge, and the grid engine can't represent that yet.
 
@@ -119,17 +127,24 @@ Run `tests/run.sh` before publishing. It needs Node and Playwright with Chromium
 
 - **Name audit:** compares each part's real name with its size, height, holes and label, and compares parts whose name gives no height with BrickLink's measured size.
 - **LDraw check:** compares each part's footprint, height and stud positions with the real part's CAD model from the [LDraw library](https://library.ldraw.org), stored in `tests/ldraw-ref.json`. After adding a part, run `node tests/ldraw-update.js` (needs internet) to measure it.
-- **Part geometry:** checks every part in all four rotations.
+- **Part geometry:** checks every part in all four rotations: the real shape stays in its space (apart from known bits that stick out, like pins and handles), its real studs sit on the cells the checker gives studs, and wheels stay inside their reserved space.
 - **Full flow:** runs the whole app with a stand-in for Claude on simulated iPhone and iPad screens.
 
 `docs/catalog-audit.md` lists the deviations found when every part was compared with the real part, how each was fixed, and the rules for adding parts.
 
 ## Updating the app
 
-Edit `app/byggboken.html` (the parts catalog is the `CAT` table near the top of the script), then republish it to the same artifact URL from a Claude Code session. The file is the page body only: no `<!doctype>`, `<html>` or `<head>` tags, because the publisher adds them.
+Edit `app/byggboken.html` (the parts catalog is the `CAT` table near the top of the script), then republish it to the same artifact URL from a Claude Code session, with `app/parts.json` as a supporting file. The HTML file is the page body only: no `<!doctype>`, `<html>` or `<head>` tags, because the publisher adds them.
+
+To add a part:
+
+1. Add it to `CAT`.
+2. Run `node tools/ldraw-pack.js <id>` (needs internet the first time) and `node tests/ldraw-update.js`.
+3. Check the picture of the new part. The facing it got is saved in `tools/ldraw-turns.json`; fix it in `TURN` in the packer if it's wrong.
+4. Run `tests/run.sh`.
 
 ## Known limits
 
-- Pictures look like a building booklet, but not like an official one. Windows, doors and the windscreen are drawn simplified.
+- The parts are exact, but the pictures are still not an official booklet: no part callout arrows or sub-assemblies yet.
 - Claude's spatial accuracy drops on very large models. The checker catches loose and overlapping pieces, but it can't judge whether the model looks good.
 - Piece counting and the piece finder use still photos, not a live camera, and can miss small or hidden pieces.

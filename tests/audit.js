@@ -9,30 +9,26 @@ fs.writeFileSync(S + '/audit-harness.html', page);
   const b = await chromium.launch(); const p = await b.newPage();
   await p.route('**/three.min.js', r => r.fulfill({ path: S + '/.cache/three.min.js', contentType: 'application/javascript' }));
   await p.route('**/fonts.googleapis.com/**', r => r.abort());
-  await p.goto('file://' + S + '/audit-harness.html'); await p.waitForTimeout(500);
+  await p.route('**/parts.json', r => r.fulfill({ path: S + '/../app/parts.json', contentType: 'application/json' }));
+  await p.route('http://app.test/audit.html', r => r.fulfill({ path: S + '/audit-harness.html', contentType: 'text/html' }));
+  await p.goto('http://app.test/audit.html'); await p.waitForFunction(() => LD.parts);
   // Real sizes measured by BrickLink (cm, studs included) for every part whose name does not give its height.
   // A part missing here fails the audit: look it up before adding it. "unverified" entries are reported, never silent.
   const REAL_SIZE = {
     "3829c01": { cm: [0.8, 1.6, 1.84], src: "BrickLink 3829c01: Stud Dim. 0.8 x 1.6 x 1.84 cm" },
     "4079": { cm: [1.6, 1.92, 1.8], src: "BrickLink 4079: 1.6 x 1.92 x 1.8 cm; ToyPro: Seat 2 x 2 x 2" },
     "3403c01": { cm: [3.2, 3.2, 1.15], src: "BrickLink 3403c01: 4 x 4 x 1 studs, 3.2 x 3.2 x 1.15 cm" },
-    "3741": { unverified: "no measured height found; drawn about 2 bricks tall" },
+    "3741": { cm: [1.9, 1.57, 2.01], src: "LDraw 3741: stems spread 2.4 x 2.0 studs, 6.3 plates tall", flowers: "the 3 x 3 area holds the flowers on top" },
   };
-  // Parts compared side by side with a photo of the real part (source in brackets). Everything else is listed as not photo-checked.
-  const PHOTO_CHECKED = {
-    "3829c01": "family photo 2026-10-24", "3403c01": "family photo", "122c01": "family photo", "2412b": "BrickLink + Brick Architect photos, LDraw",
-    "4070": "family photo", "3853": "family photo", "4032": "family photo", "2432": "BrickLink + Brick Architect photos, LDraw", "4460": "family photo", "3823": "BrickLink photo, LDraw", "4865": "BrickLink + Brick Architect photos, LDraw", "60474": "BrickLink photo, LDraw", "3470": "BrickLink photo, LDraw",
-    "60594": "BrickLink photo", "60596": "BrickLink photo", "30179": "BrickLink photo", "4079": "BrickLink photo",
-  };
-  const out = await p.evaluate(([REAL_SIZE, PHOTO_CHECKED]) => {
+  const out = await p.evaluate(([REAL_SIZE]) => {
     const res = [];
     // A directional part one stud deep faces across its long side (windows, panels, grille bricks, the steering stand).
     const facesAlongLength = ["slope", "inv", "curve", "screen", "holder", "convex", "concave", "cutcorner", "quarter"];
     for (const C of Object.values(CAT)) {
       if (C.dir && !facesAlongLength.includes(C.shape) && C.d > C.w) res.push(`${C.id} (${C.en}): faces along its long side (w${C.w} d${C.d}); real 1-deep parts face across it`);
     }
-    const notPhoto = Object.values(CAT).filter((C) => !C.child && !PHOTO_CHECKED[C.id]).map((C) => C.id);
-    res.push(`PHOTO-CHECK: ${Object.keys(PHOTO_CHECKED).length} parts compared with a real photo; not yet: ${notPhoto.length} (${notPhoto.slice(0, 12).join(", ")}${notPhoto.length > 12 ? ", ..." : ""})`);
+    // Every part is drawn from its LDraw CAD model (app/parts.json, made by tools/ldraw-pack.js).
+    for (const C of Object.values(CAT)) if (!LD.parts[C.id]) res.push(`${C.id} (${C.en}): no LDraw shape in parts.json; run node tools/ldraw-pack.js ${C.id}`);
     // Names that fix the height: plates, tiles and baseplates are 1 plate; bricks, plain slopes, arches and cones 1 x 1 are 1 brick; a third number is the height in bricks.
     const heightFromName = (n) => /^(Brick|Plate|Tile|Baseplate|Technic Brick|Technic Plate|Slope|Arch|Cone 1 x 1|Wedge Plate|Antenna)/.test(n) || / x \d+(?: \d\/\d)? x (\d|\d\/\d)/.test(n);
     for (const C of Object.values(CAT)) {
@@ -47,7 +43,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
       const studs = C.studs !== "none" ? 1.7 : 0;
       if (Math.abs(C.h * 3.2 - (realH - studs)) > 1.6) res.push(`${C.id}: catalog height ${C.h} plates = ${(C.h * 3.2).toFixed(1)} mm, real ${(realH - studs).toFixed(1)} mm without studs (${R.src})`);
       const real = [a, b].map((x) => x * 10 / 8).sort((x, y) => x - y), mine = [C.w, C.d].sort((x, y) => x - y);
-      if (real.some((x, i) => Math.abs(x - mine[i]) > 0.45)) res.push(`${C.id}: footprint ${mine.join("x")} studs, real ${real.map((x) => x.toFixed(2)).join("x")} (${R.src})`);
+      if (!R.flowers && real.some((x, i) => Math.abs(x - mine[i]) > 0.45)) res.push(`${C.id}: footprint ${mine.join("x")} studs, real ${real.map((x) => x.toFixed(2)).join("x")} (${R.src})`);
     }
     const frac = (t) => t.includes('/') ? (t.includes(' ') ? Number(t.split(' ')[0]) + eval(t.split(' ')[1]) : eval(t)) : Number(t);
     for (const C of Object.values(CAT)) {
@@ -81,7 +77,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
       if (issues.length) res.push(`${C.id} (${name}): ${issues.join('; ')}`);
     }
     return res;
-  }, [REAL_SIZE, PHOTO_CHECKED]);
+  }, [REAL_SIZE]);
   // Accepted on purpose; every other line fails the audit.
   const ACCEPTED = {
     '4133': 'the pane is named after its 2 x 4 x 3 window; the pane itself is thin',
@@ -91,9 +87,9 @@ fs.writeFileSync(S + '/audit-harness.html', page);
     '85984': 'the 2/3 height is left out of the label for the child',
     '2432': 'the bar handle rises 3 plates above the tile (LDraw 2432 and Brick Architect: 4 plates tall in all)',
   };
-  const warn = out.filter((l) => l.includes("UNVERIFIED") || l.startsWith("PHOTO-CHECK"));
+  const warn = out.filter((l) => l.includes("UNVERIFIED"));
   if (warn.length) console.log("WARNINGS (not yet verified against a real measurement):\n" + warn.join("\n"));
-  const bad = out.filter((l) => !l.includes("UNVERIFIED") && !l.startsWith("PHOTO-CHECK") && !ACCEPTED[l.split(/[ :]/)[0]]);
+  const bad = out.filter((l) => !l.includes("UNVERIFIED") && !ACCEPTED[l.split(/[ :]/)[0]]);
   console.log(bad.length ? 'DEVIATIONS:\n' + bad.join('\n') : `audit ok (${Object.keys(ACCEPTED).length} accepted exceptions)`);
   if (bad.length) process.exitCode = 1;
   await b.close();

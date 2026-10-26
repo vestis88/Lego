@@ -63,4 +63,4 @@ function measure(text) {
   })(text, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], false, 0);
   return { min: mn, max: mx, studs };
 }
-module.exports = { find, measure };
+module.exports = { find, measure, load, TOPSTUD };
