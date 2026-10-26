@@ -1929,10 +1929,9 @@ function partSheet(p) {
     d.append(nm, no); t.append(img, d); body.append(t);
     const row = document.createElement("div"); row.className = "btn-row";
     const f = document.createElement("button"); f.className = "btn go"; f.textContent = "Hitta den i högen";
-    // Only catalog pieces can be looked for; a part only real sets use is shown, but not searched for.
-    const cat = CAT[p.id] && !CAT[p.id].child ? p.id : catOf(p.id);
-    f.disabled = !(AI.sample && AI.images) || !cat;
-    if (!cat) f.textContent = "Den här biten kan Hitta bit inte leta efter än";
+    // A catalog piece is looked for under its catalog id; a part only real sets use under its LDraw name and shape.
+    const cat = CAT[p.id] && !CAT[p.id].child ? p.id : catOf(p.id) || p.id;
+    f.disabled = !(AI.sample && AI.images);
     f.addEventListener("click", () => { closeSheet(); closeViewer(); openFinder({ id: cat, c: p.c }); });
     row.append(f); body.append(row);
   });
@@ -2089,7 +2088,7 @@ function renderFinder() {
   const groups = $("#f-groups"); groups.textContent = "";
   for (const [g, label] of Object.entries(GROUPS)) {
     const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(g === F.group));
-    b.addEventListener("click", () => { F.group = g; if (CAT[F.id].group !== g) F.id = Object.values(CAT).find((C) => C.group === g && !C.child).id; renderFinder(); });
+    b.addEventListener("click", () => { F.group = g; if (CAT[F.id]?.group !== g) F.id = Object.values(CAT).find((C) => C.group === g && !C.child).id; renderFinder(); });
     groups.append(b);
   }
   const grid = $("#f-parts"); grid.textContent = "";
@@ -2111,7 +2110,8 @@ function renderFinder() {
   $("#f-name").textContent = `${partName(p)}, ${COLORS[p.c].sg}`;
 }
 function openFinder(p) {
-  if (p) F = { group: CAT[p.id].group, id: p.id, c: p.c };
+  // Any piece can be looked for: catalog pieces, and parts only real sets use (then no catalog chip is chosen).
+  if (p) F = { group: CAT[p.id]?.group || null, id: p.id, c: p.c };
   $("#f-result").hidden = true; findTray.clear();
   renderFinder(); go("#v-find");
 }
@@ -2121,11 +2121,21 @@ $("#f-say").addEventListener("click", () => speak(lastHint));
 const findTray = new PhotoTray($("#f-tray"), ["Ovanifrån", "Från ett annat håll"], (files) => {
   $("#f-shoot").hidden = files.length > 0;
 }, { show: false });
+/** What the piece looks like, in words for Claude: the catalog description, or the LDraw name and size measured from its shape. */
+function pieceFacts(p) {
+  const C = CAT[p.id];
+  if (C) return `${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"})`;
+  const b = new THREE.Box3().setFromObject(buildPart(p, true)), sz = b.getSize(new THREE.Vector3());
+  const half = (v) => Math.round(v * 2) / 2;
+  return `piece "${partName(p)}" (LDraw part ${p.id}; about ${half(sz.x)} x ${half(sz.z)} studs and ${Math.round(sz.y / PH)} plates tall including studs)`;
+}
 /** Looks for the chosen piece in every photo of the pile and circles it where it is seen. */
 async function findPiece() {
   const files = findTray.files.slice();
   if (!files.length) return;
-  const C = CAT[F.id];
+  const piece = pieceFacts({ id: F.id, c: F.c });
+  // With room for one more image than photos, a drawing of the piece goes along: it shows Claude the exact shape.
+  const drawing = files.length < AI.maxImages ? await fetch(Snap.icon({ id: F.id, c: F.c })).then((r) => r.blob()).then((b) => new File([b], "bit.png", { type: "image/png" })).catch(() => null) : null;
   const res = $("#f-result"); res.hidden = false;
   $("#f-hint").textContent = "Letar…"; lastHint = "";
   const holder = $("#f-photo"); holder.textContent = "";
@@ -2138,12 +2148,12 @@ async function findPiece() {
   for (const b of ["#f-more", "#f-again"]) $(b).disabled = true;
   res.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
-    const r = await AI.sample.json(`These photos show a pile of LEGO pieces. Find a ${COLORS[F.c].en} LEGO ${C.en} (design id ${C.id}, footprint ${C.w} x ${C.d} studs, ${C.h === 1 ? "plate height" : C.h + " plates tall"}).
-${anglesNote(files.length, "pile")}
+    const r = await AI.sample.json(`These photos show a pile of LEGO pieces. Find a ${COLORS[F.c].en} LEGO ${piece}.
+${anglesNote(files.length, "pile")}${drawing ? `\nThe last image (number ${files.length + 1}) is not a photo: it is a drawing of the piece to find, in its color, so you know its exact shape. Never put a spot on the drawing.` : ""}
 Look carefully at the size (count the studs), the height, the shape and the color. Reply with ONLY JSON:
 {"found":true,"spots":[{"photo":1,"x":0.42,"y":0.63,"r":0.06,"sure":true}],"hint":"..."}
 "photo" is which photo the spot is in (1${files.length > 1 ? " to " + files.length : ""}); if the piece is visible in several photos, give a spot in each. x and y are the center of the piece as fractions of that photo's width and height (0 = left/top, 1 = right/bottom), r is a circle radius as a fraction of the photo width that covers the piece. Give up to 4 spots, best first; "sure" false for weak guesses.
-"hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look in the pile, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces${files.length < findTray.max ? " or take a photo from another angle" : ""}.`, { images: files, modelTier: "complex", cache: false });
+"hint": a short Swedish sentence (max 12 words) telling a 5-year-old where to look in the pile, e.g. "Längst ner till vänster, bredvid den blå plattan." If not found, "found":false, "spots":[] and a Swedish hint suggesting to spread out the pieces${files.length < findTray.max ? " or take a photo from another angle" : ""}.`, { images: drawing ? [...files, drawing] : files, modelTier: "complex", cache: false });
     const spots = (Array.isArray(r?.spots) ? r.spots : []).slice(0, 4);
     for (const s of spots) {
       const x = Number(s.x), y = Number(s.y), k = clampInt(s.photo, 1, files.length, 1) - 1;

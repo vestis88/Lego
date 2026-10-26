@@ -98,7 +98,15 @@ fs.writeFileSync(S + '/harness.html', html);
     const setInfo = await page.evaluate(() => ({ steps: B.steps.length, callout: document.querySelectorAll('#v-callout button').length, title: B.title, set: B.set }));
     console.log(name, 'sets', total, 'found', JSON.stringify(found), JSON.stringify(setInfo));
     if (!found.length || !setInfo.set || !setInfo.callout) process.exitCode = 1;
-    await page.click('#v-close');
+    // Hitta bit for a piece only real sets use: described by its LDraw name and size, with a drawing of it.
+    const odd = await page.evaluate(() => { const q = B.steps.flatMap((s) => s.parts).find((x) => !CAT[x.id] && !catOf(x.id)); partSheet({ id: q.id, c: q.c }); return q.id; });
+    await page.click('#sheet-body .btn.go');
+    [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#f-shoot')]);
+    await fc.setFiles(S + '/shots/' + name + '-home.png'); await page.waitForTimeout(900);
+    const ask = await page.evaluate(() => [window.__lastImages, /LDraw part/.test(window.__lastPrompt), /drawing of the piece/.test(window.__lastPrompt), document.querySelector('#f-name').textContent]);
+    console.log(name, 'find set piece', odd, JSON.stringify(ask));
+    if (ask[0] !== 2 || !ask[1] || !ask[2]) process.exitCode = 1;
+    await page.click('#v-find [data-back]'); await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
     await page.click('#v-sets [data-back]'); await page.click('#t-inv'); await page.click('#inv-sets'); await page.waitForSelector('#s-list .build-card .have');
     console.log(name, 'can build', JSON.stringify(await page.$$eval('#s-list .build-card', (c) => c.slice(0, 3).map((x) => x.querySelector('b').textContent + ': ' + x.querySelector('.have').textContent))));
     await page.click('#v-sets [data-back]');
