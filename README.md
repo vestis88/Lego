@@ -15,6 +15,8 @@ The app runs inside Claude (the Claude app on iPhone or iPad, or claude.ai in a 
 | **Överraska** | One tap for a surprise build. The app picks three random themes and Claude chooses one. |
 | **Mina bitar** | Photograph your loose pieces. Claude counts them into a list you can correct with + and −. Builds can then use *only* those pieces, or those pieces plus a few extras. |
 | **Hitta bit** | Pick a piece (or tap one in a build step), photograph the pile, and the app circles where it is and reads a hint aloud. |
+| **Riktiga set** | Step-by-step instructions for 913 real LEGO sets from 1955 to today (Town, Space, Castle, trains, racers, Creator and more). Search by the number on the box or by name, or browse by theme. |
+| **Vilka set kan jag bygga?** | From *Mina bitar*: lists the real sets you have the most pieces for, with how many you have in the right color and in any color. |
 | **Svårighet** slider | 1–10, from "like a 3-year-old" (~8 pieces) to "expert" (~140 pieces). The default is "like a 10-year-old" (~90 pieces). |
 
 In the instruction viewer:
@@ -36,6 +38,23 @@ In the instruction viewer:
 
   The result is 1.4 MB (about 440 KB compressed) for all 164 parts. A model of 140 parts builds in about 0.3 s.
 - **AI:** the Artifact `sample` capability, with images enabled, asks Claude. It runs on the viewer's own Claude account and plan. Generation uses the most capable model for difficulty 4 and up, so big builds can take a minute or two.
+- **Real sets:** the instructions come from the [LDraw Official Model Repository](https://library.ldraw.org/omr) (OMR). It has CAD models of real sets, built step by step by LDraw fans and redistributable under CC BY 2.0. Each set's author is shown on its cover. `tools/omr-build.js` turns them into app data:
+  - It keeps System sets of 10 to 400 pieces whose parts are all in LDraw: 913 models.
+  - It splits them into steps at the models' STEP marks, at most 8 new pieces per step. Sets without STEP marks are built in layers from the bottom up.
+  - Printed parts are drawn as the plain part, and LDraw colors become the app's named colors, so read-aloud still works.
+  - Pieces that are also in the catalog keep their Swedish names and can be looked for with *Hitta bit*.
+
+  The data is split so a phone only downloads what it opens:
+
+  | File | What it holds | Size |
+  |---|---|---|
+  | `sets-index.json` | the list, with the catalog pieces each set needs | 0.6 MB |
+  | `sets-N.json` | the steps of 25 sets | 5.5 MB in all |
+  | `sets-thumbs-N.json` | their pictures, drawn ahead by `tools/omr-thumbs.js` | 3.7 MB in all |
+  | `set-parts-common.json` | shapes of the parts 10+ sets use, downloaded once | 4.2 MB |
+  | `set-parts-N.json` | the rest of a chunk's parts | 0.1–3.9 MB |
+
+  Set parts use LDraw's low-detail circle primitives.
 - **Sync:** the Artifact `db` capability takes the place of Firebase. Saved builds (`builds/<id>`) and the piece list (`inventory/main`) sync to every device signed in to the same Claude account.
 - **Real parts only:** Claude may use only parts from the built-in catalog of real LEGO System parts, by design ID (the number molded on the part). The app throws away any other part and asks Claude to fix it.
 - **Structure checker:** every model is checked on a stud grid against how the parts really connect. Each part knows which of its cells have studs on top and which accept studs underneath. After Claude answers, the app checks four things:
@@ -48,7 +67,7 @@ In the instruction viewer:
 
 ### Parts catalog
 
-About 155 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
+About 190 real System parts, focused on the classic 1990s range (Town, Castle, Space, and the Trees & Flowers packs):
 
 | Group | Parts (design IDs) |
 |---|---|
@@ -66,6 +85,7 @@ About 155 real System parts, focused on the classic 1990s range (Town, Castle, S
 | Special | 3403c01 turntable 4×4 |
 | Roofs | 3043 / 3044 ridges, 3045 outside corner, 3046 inside corner, 60481 65° slope |
 | More common parts | 3065 brick without bottom tube (transparent windows), 30136 log brick, 30414 brick 1×4 with side studs, 14719 corner tile, 87580 2×2 jumper, 35480 plate with rounded ends, 32028 plate with door rail, 60474 round plate 4×4 |
+| From real sets (most used in OMR sets and fitting the grid) | 6091 / 6081 / 6215 curved-top bricks, 50950 / 61678 curved slopes, 4445 slope 2×8, 30363 slope 18° 4×2, 61409 grille slope, 3048 triple slope, 3676 inverted corner, 43722 / 43723 / 41769 / 41770 wedge plates, 2419 plate 3×6 without corners, 91405 / 92438 big plates, 11213 round plate 6×6, 87081 round brick 4×4, 3943 cone 4×4×2, 59900 cone 1×1, 4215 / 87544 / 30413 / 6231 panels, 3633 fence, 3308 / 4490 arches, 98283 masonry brick, 6541 / 32000 Technic bricks, 2921 brick with handle, 4085 plate with clip, 60478 plate with end handle, 4862 glass for window 2377 |
 | Most common today | 15573 / 3794 jumper plates, 11212 plate 3×3, 14716 / 22886 bricks ×3 tall, 87087 / 11211 / 4733 bricks with side studs, 11477 / 15068 curved slopes, 25269 quarter-circle tile, 4865 / 4864 panels |
 
 The checker knows each part's special rules:
@@ -143,8 +163,11 @@ To add a part:
 3. Check the picture of the new part. The facing it got is saved in `tools/ldraw-turns.json`; fix it in `TURN` in the packer if it's wrong.
 4. Run `tests/run.sh`.
 
+To rebuild the real sets (after adding catalog pieces, so *Vilka set kan jag bygga?* counts them): `node tools/omr-build.js && node tools/omr-thumbs.js`. The first run downloads the OMR models (120 MB) into `tests/.cache/omr`. For speed, also unpack LDraw's `complete.zip` and `ldrawunf.zip` into `tests/.cache/ldraw` (file names lowercased, `/` as `__`) and create `tests/.cache/ldraw/.complete`. With that marker the part loader works offline. The generated set files are not in git (they're about 60 MB); publish them with the app as supporting files.
+
 ## Known limits
 
 - The parts are exact, but the pictures are still not an official booklet: no part callout arrows or sub-assemblies yet.
+- Real sets: printed details (faces, signs, stickers) are drawn as the plain part. Minifigures are built in place like the rest. Part names that aren't in the catalog are LDraw's English names; read-aloud then just says "bit".
 - Claude's spatial accuracy drops on very large models. The checker catches loose and overlapping pieces, but it can't judge whether the model looks good.
 - Piece counting and the piece finder use still photos, not a live camera, and can miss small or hidden pieces.

@@ -11,9 +11,9 @@ window.__unit = () => {
     const tag = `${C.id} r${r}`;
     // Real parts that reach past their grid cells (pins, handles, clips, tabs, branches) or have studs off the grid.
     const OUT = { "2540": 0.85, "32028": 0.5, "4081b": 0.95, "33291": 0.15, "3471": 0.25, "3470": 0.2, "3741": 0.2, "4600": 0.75, "6157": 1.25, "122c01": 0.85, "2926": 0.75, "4079": 0.3, "3853": 0.25, "4070": 0.1,
-      "4733": 0.25, "11211": 0.25, "30414": 0.25, "87087": 0.25 };
+      "4733": 0.25, "11211": 0.25, "30414": 0.25, "87087": 0.25, "2921": 0.75, "4085": 0.75, "60478": 0.85 };
     // Studs off the grid (center studs), or other bits above the top that the stud check would mistake for studs.
-    const OFFGRID = ["3794", "15573", "87580", "3942c", "33291", "4600", "6157", "122c01", "2926", "2540", "4081b", "3741"];
+    const OFFGRID = ["3794", "15573", "87580", "3942c", "33291", "4600", "6157", "122c01", "2926", "2540", "4081b", "3741", "2921", "4085", "60478", "6091", "6081"];
     if (!C.child) {
       const tol = (OUT[C.id] || 0) + 0.06;
       ok(b.max.y >= (p.y + C.h) * PH - 0.3, `${tag} drawn top ${b.max.y.toFixed(2)} falls short of its height ${((p.y + C.h) * PH).toFixed(2)}`);
@@ -26,7 +26,7 @@ window.__unit = () => {
     }
     // Real studs on top (from LDraw) sit exactly over the cells the checker gives studs, turned with the part.
     const studPos = new Set();
-    g.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i++) if (a.getY(i) > (p.y + C.h) * PH + 0.1) studPos.add(Math.floor(a.getX(i)) + "," + Math.floor(a.getZ(i))); } });
+    g.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i++) if (a.getY(i) > (p.y + (C.studY ?? C.h)) * PH + 0.1 && a.getY(i) < (p.y + (C.studY ?? C.h)) * PH + 0.3) studPos.add(Math.floor(a.getX(i)) + "," + Math.floor(a.getZ(i))); } });
     const sc = new Set(I.studs.map(([x, z]) => x + "," + z));
     if (!OFFGRID.includes(C.id) && !C.child) ok([...studPos].every((k) => sc.has(k)) && [...sc].every((k) => studPos.has(k)), `${tag} drawn studs [${[...studPos].sort()}] vs stud cells [${[...sc].sort()}]`);
     // wheels stay inside the occupied wheel space
@@ -121,5 +121,16 @@ window.__unit = () => {
   ok(analyze(cvx.steps).floats.length === 0, "brick on convex corner stud holds");
   const cvx2 = normBuild({ steps: [{ parts: [{ id: "3045", x: 0, y: 0, z: 0, r: 90 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });
   ok(analyze(cvx2.steps).floats.length === 1, "turned convex corner moves its stud");
+  // 14. Curved-top bricks: their studs are 3 plates up, under the curve's top.
+  const bow = normBuild({ steps: [{ parts: [{ id: "6091", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });
+  ok(problemList(analyze(bow.steps)).length === 0, "brick on a curved-top brick's stud " + problemList(analyze(bow.steps)));
+  const bow2 = normBuild({ steps: [{ parts: [{ id: "6091", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "3004", x: 0, y: 3, z: 0, r: 0 }] }] });
+  ok(analyze(bow2.steps).overlaps.length === 1, "a 1x2 brick at stud height hits the curve");
+  // 13. Real sets: how much of a set the child's pieces cover (same color, or any color).
+  const inv0 = Store.inventory;
+  Store.inventory = [{ id: "3001", c: "red", n: 3 }, { id: "3001", c: "blue", n: 5 }, { id: "3004", c: "red", n: 1 }];
+  const cov = setCoverage({ need: [["3001", "red", 4], ["3004", "white", 2]], other: 2 });
+  ok(cov.total === 8 && cov.have === 3 && cov.any === 5, "set coverage " + JSON.stringify(cov));
+  Store.inventory = inv0;
   return out;
 };

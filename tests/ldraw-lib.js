@@ -2,11 +2,14 @@
 // Files are fetched from library.ldraw.org once and cached in .cache/ldraw.
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const CACHE = path.join(__dirname, '.cache', 'ldraw');
+const OFFLINE = fs.existsSync(path.join(CACHE, '.complete'));
 const BASES = ['https://library.ldraw.org/library/official/', 'https://library.ldraw.org/library/unofficial/'];
 function get(rel) {
   fs.mkdirSync(CACHE, { recursive: true });
   const f = path.join(CACHE, rel.replace(/\//g, '__'));
   if (fs.existsSync(f)) { const t = fs.readFileSync(f, 'utf8'); return t === '' ? null : t; }
+  // With the whole library unpacked into the cache (.complete), a file that isn't there doesn't exist: no network.
+  if (OFFLINE) return null;
   for (const base of BASES) {
     try {
       const t = execFileSync('curl', ['-sSf', '--max-time', '20', base + rel], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });

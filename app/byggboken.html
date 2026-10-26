@@ -262,6 +262,8 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 .target { display: flex; align-items: center; gap: 12px; }
 .target img { width: 80px; height: 80px; flex: none; background: var(--page); border-radius: 14px; }
 
+.search { width: 100%; box-sizing: border-box; border-radius: 14px; border: 2px solid var(--line); background: var(--card); padding: 12px 14px; font-size: 1.15rem; }
+.build-card .have { color: var(--ink); font-weight: 800; }
 .credit { margin: 0; color: var(--ink-soft); font-size: .75rem; }
 .credit a { color: inherit; }
 .toast {
@@ -322,6 +324,10 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
       <button class="tile" id="t-find">
         <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><circle cx="27" cy="27" r="17" fill="#fff" stroke="#1b2733" stroke-width="5"/><rect x="19" y="23" width="16" height="9" rx="2" fill="#c91a09"/><path d="M40 40l15 15" stroke="#1b2733" stroke-width="7" stroke-linecap="round"/></svg>
         <b>Hitta bit</b><span>Leta i högen med kameran</span>
+      </button>
+      <button class="tile" id="t-sets">
+        <svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 22l24-12 24 12v26L32 60 8 48z" fill="#f2cd37"/><path d="M8 22l24 12 24-12M32 34v26" fill="none" stroke="#2a2100" stroke-width="3" stroke-linejoin="round"/><rect x="14" y="38" width="12" height="9" rx="2" fill="#c91a09"/></svg>
+        <b>Riktiga set</b><span>Bygg LEGO-set från förr och nu</span>
       </button>
     </div>
 
@@ -396,11 +402,31 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
     <div class="tray" id="inv-tray"></div>
     <div class="btn-row">
       <button class="btn go" id="inv-scan">Räkna bitarna</button>
+      <button class="btn" id="inv-sets" hidden>Vilka set kan jag bygga?</button>
     </div>
     <div class="notice" id="inv-status" hidden></div>
     <div class="section-h"><h2 id="inv-count">Inga bitar än</h2><button class="btn small danger" id="inv-clear" hidden>Töm listan</button></div>
     <div class="confirm" id="inv-clear-confirm" hidden><span style="flex:1;min-width:0">Ta bort alla bitar från listan?</span><button class="btn small danger" id="inv-clear-yes">Ja, töm</button><button class="btn small" id="inv-clear-no">Nej</button></div>
     <div class="inv-list" id="inv-list"></div>
+  </section>
+
+  <!-- REAL SETS -->
+  <section class="view" id="v-sets" hidden>
+    <div class="topbar">
+      <button class="iconbtn" data-back aria-label="Tillbaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2>Riktiga set</h2>
+    </div>
+    <p class="tray-tip">Byggbeskrivningar för riktiga LEGO-set, steg för steg. Sök på setets nummer (det står på kartongen) eller på namnet.</p>
+    <input type="search" id="s-q" class="search" placeholder="Till exempel 6609 eller polis" aria-label="Sök set" autocomplete="off">
+    <div class="chips" id="s-themes"></div>
+    <button class="toggle" id="s-mine" role="switch" aria-checked="false">
+      <span class="knob"></span>
+      <span>Det jag kan bygga<small id="s-mine-sub">Jämför med bitarna under Mina bitar</small></span>
+    </button>
+    <div class="notice" id="s-status" hidden></div>
+    <div class="shelf" id="s-list"></div>
+    <button class="btn small" id="s-more" hidden>Visa fler</button>
+    <p class="credit">Modellerna är ritade av LDraw-entusiaster i <a href="https://library.ldraw.org/omr" target="_blank" rel="noopener">LDraw Official Model Repository</a> (CC BY 2.0). Upphovsperson står på varje set.</p>
   </section>
 
   <!-- FINDER -->
@@ -552,6 +578,12 @@ const NOUNS = {
   screen: { name: "Vindruta",          sg: "vindruta",          pl: "vindrutor",           g: "en" },
   holder: { name: "Hjulhållare",       sg: "hjulhållare",       pl: "hjulhållare",         g: "en" },
   wheel:  { name: "Hjul med däck",     sg: "hjul",              pl: "hjul",                g: "ett" },
+  bow:    { name: "Böjd kloss",        sg: "böjd kloss",        pl: "böjda klossar",       g: "en" },
+  fence:  { name: "Staket",            sg: "staket",            pl: "staket",              g: "ett" },
+  hbrick: { name: "Kloss med handtag", sg: "kloss med handtag", pl: "klossar med handtag", g: "en" },
+  clipplate:  { name: "Platta med klämma", sg: "platta med klämma", pl: "plattor med klämma",  g: "en" },
+  wall:   { name: "Murkloss",          sg: "murkloss",          pl: "murklossar",          g: "en" },
+  peak:   { name: "Takspets",          sg: "takspets",          pl: "takspetsar",          g: "en" },
 };
 const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special" };
 
@@ -630,7 +662,8 @@ def("3471", { en: "Plant Tree Pine Large 4 x 4 x 6 2/3 (attaches with the 2x2 ce
 def("3470", { en: "Plant Tree Fruit 4 x 4 x 6 (attaches with the 2x2 center underneath)", noun: "tree", group: "nature", shape: "fruit", w: 4, d: 4, h: 18, studs: "none", bottom: "center", size: "4×4×6" });
 def("3741", { en: "Plant Flower Stem with 3 Stems (stands on the center cell of a 3 x 3 area; the 3 flowers 3742 spread over the top of that area; flower color c2)", noun: "stem", group: "nature", shape: "stem", w: 3, d: 3, h: 6, studs: "none", bottom: "center", occTop: 3, size: "",
   extras: [{ id: "3742", n: 3, color: "c2", def: "red" }] });
-def("2377", { en: "Window 1 x 2 x 2 Plane (glass built in)", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2" });
+def("2377", { en: "Window 1 x 2 x 2 Plane (comes with glass 4862)", noun: "window", group: "window", shape: "window", w: 2, d: 1, h: 6, dir: true, size: "1×2×2", glass: "4862",
+  extras: [{ id: "4862", n: 1, color: "fixed", c: "transparent" }] });
 def("3853", { en: "Window 1 x 4 x 3 (comes with glass 3855)", noun: "window", group: "window", shape: "window", w: 4, d: 1, h: 9, dir: true, size: "1×4×3", glass: "3855",
   extras: [{ id: "3855", n: 1, color: "fixed", c: "transparent" }] });
 def("4132", { en: "Window 2 x 4 x 3 (comes with pane 4133)", noun: "window", group: "window", shape: "window", w: 4, d: 2, h: 9, dir: true, size: "2×4×3", glass: "4133",
@@ -682,7 +715,45 @@ def("87580", { en: "Plate 2 x 2 with 1 Stud in the center (jumper; treat it as a
 def("35480", { en: "Plate 1 x 2 with Rounded Ends", noun: "rounded", group: "plate", shape: "roundedplate", w: 1, d: 2, h: 1 });
 def("32028", { en: "Plate 1 x 2 with Door Rail", noun: "rail", group: "plate", shape: "box", deco: "rail", w: 1, d: 2, h: 1 });
 def("60474", { en: "Plate Round 4 x 4 with Pin Hole (12 studs: every cell except the 4 corners; the pin hole sits between the 4 middle studs)", noun: "rplate", group: "round", shape: "cyl", w: 4, d: 4, h: 1, mask: "round", studs: "round", bottom: "round" });
+/* More pieces, chosen by how often they appear in real sets (LDraw OMR) and measured in LDraw before adding. */
+def("6091", { en: "Brick 2 x 1 x 1 1/3 with Curved Top (one stud on the back cell z+0, 3 plates up; the front cell curves up to 4 plates)", noun: "bow", group: "brick", shape: "bow", w: 1, d: 2, h: 4, studs: "back", studY: 3, occRows: { 0: [0, 2] }, dir: true });
+def("6081", { en: "Brick 2 x 4 x 1 1/3 with Curved Top (studs on the back row z+0, 3 plates up; the front row curves up to 4 plates)", noun: "bow", group: "brick", shape: "bow", w: 4, d: 2, h: 4, studs: "back", studY: 3, occRows: { 0: [0, 2] }, dir: true });
+def("6215", { en: "Brick 2 x 3 with Curved Top (studs on rows z+0 and z+1; the front row curves down toward +z)", noun: "bow", group: "brick", shape: "bow", w: 2, d: 3, h: 3, studs: "list", studList: [[0, 0], [1, 0], [0, 1], [1, 1]], dir: true });
+def("50950", { en: "Slope Curved 3 x 1 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 1, d: 3, h: 3, studs: "none", dir: true });
+def("61678", { en: "Slope Curved 4 x 1 (curves down toward +z; no studs)", noun: "curve", group: "slope", shape: "curve", w: 1, d: 4, h: 3, studs: "none", dir: true });
+def("4445", { en: "Slope 45 2 x 8", noun: "slope", group: "slope", shape: "slope", w: 8, d: 2, h: 3, studs: "back", dir: true });
+def("30363", { en: "Slope 18 4 x 2 (low slope; studs on the back row z+0)", noun: "slope", group: "slope", shape: "slope", w: 2, d: 4, h: 3, studs: "back", dir: true });
+def("61409", { en: "Slope 18 2 x 1 x 2/3 Grille (no studs)", noun: "cheese", group: "slope", shape: "slope", w: 1, d: 2, h: 2, studs: "none", dir: true });
+def("3048", { en: "Slope 45 2 x 1 Triple (roof peak end: slopes down toward -x, +x and +z, no studs)", noun: "peak", group: "slope", shape: "ridge", w: 1, d: 2, h: 3, studs: "none", dir: true, size: "2×1" });
+def("3676", { en: "Slope 45 2 x 2 Inverted Double Convex (studs on all 4 cells; only the back-left cell (0,0) connects underneath)", noun: "inv", group: "slope", shape: "invconvex", w: 2, d: 2, h: 3, bottom: "blist", bottomList: [[0, 0]], dir: true });
+def("43722", { en: "Wedge Plate 3 x 2 Right (studs on the right column x+1; the left side is cut on a slant)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 3, h: 1, studs: "list", bottom: "list", studList: [[1, 0], [1, 1], [1, 2]], dir: true });
+def("43723", { en: "Wedge Plate 3 x 2 Left (studs on the left column x+0; the right side is cut on a slant)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 3, h: 1, studs: "list", bottom: "list", studList: [[0, 0], [0, 1], [0, 2]], dir: true });
+def("41769", { en: "Wedge Plate 4 x 2 Right (studs on the right column x+1; the left side is cut on a slant)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 4, h: 1, studs: "list", bottom: "list", studList: [[1, 0], [1, 1], [1, 2], [1, 3]], dir: true });
+def("41770", { en: "Wedge Plate 4 x 2 Left (studs on the left column x+0; the right side is cut on a slant)", noun: "wedge", group: "plate", shape: "wedge", w: 2, d: 4, h: 1, studs: "list", bottom: "list", studList: [[0, 0], [0, 1], [0, 2], [0, 3]], dir: true });
+def("2419", { en: "Plate 3 x 6 without Corners (a wedge-shaped plate: 6 studs on the back row z+0, 4 in the middle, 2 at the front)", noun: "plate", group: "plate", shape: "box", w: 6, d: 3, h: 1,
+  mask: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [1, 1], [2, 1], [3, 1], [4, 1], [2, 2], [3, 2]], dir: true });
+def("91405", { en: "Plate 16 x 16", noun: "plate", group: "plate", shape: "box", w: 16, d: 16, h: 1 });
+def("92438", { en: "Plate 8 x 16", noun: "plate", group: "plate", shape: "box", w: 8, d: 16, h: 1 });
+def("11213", { en: "Plate Round 6 x 6 with Hole (24 studs in a circle)", noun: "rplate", group: "round", shape: "cyl", w: 6, d: 6, h: 1,
+  mask: [[2, 0], [3, 0], [1, 1], [2, 1], [3, 1], [4, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [1, 4], [2, 4], [3, 4], [4, 4], [2, 5], [3, 5]] });
+def("87081", { en: "Brick Round 4 x 4 with Pin Hole (12 studs: every cell except the 4 corners)", noun: "rbrick", group: "round", shape: "cyl", w: 4, d: 4, h: 3, mask: "round", studs: "round", bottom: "round" });
+def("3943", { en: "Cone 4 x 4 x 2 with Axle Hole (studs on the 2 x 2 center on top; the round base fills all but the corners)", noun: "cone", group: "round", shape: "cone2", w: 4, d: 4, h: 6, mask: "round", studs: "center", bottom: "round", size: "4×4×2" });
+def("59900", { en: "Cone 1 x 1 with Stop", noun: "cone", group: "round", shape: "cone", w: 1, d: 1, h: 3 });
+def("4215", { en: "Panel 1 x 4 x 3 (thin wall with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 4, d: 1, h: 9, dir: true, size: "1×4×3" });
+def("87544", { en: "Panel 1 x 2 x 3 (thin wall with studs on top; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 2, d: 1, h: 9, dir: true, size: "1×2×3" });
+def("30413", { en: "Panel 1 x 4 x 1 with Rounded Corners (L-shape: a floor plate and a thin wall along the back edge; no studs; faces +z)", noun: "panel", group: "brick", shape: "panel", w: 4, d: 1, h: 3, studs: "none", dir: true, size: "1×4×1" });
+def("6231", { en: "Panel 1 x 1 x 1 Corner (two thin walls on the back and left edges; no studs)", noun: "panel", group: "brick", shape: "panel", w: 1, d: 1, h: 3, studs: "none", dir: true, size: "1×1×1" });
+def("3633", { en: "Fence 1 x 4 x 1 (thin lattice; nothing attaches on top; faces +z)", noun: "fence", group: "brick", shape: "panel", w: 4, d: 1, h: 3, studs: "none", dir: true, size: "1×4×1" });
+def("3308", { en: "Arch 1 x 8 x 2 (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 8, d: 1, h: 6, bottom: "ends", size: "1×8×2" });
+def("4490", { en: "Arch 1 x 3 (only the two end columns connect underneath; the opening counts as filled)", noun: "arch", group: "brick", shape: "arch", w: 3, d: 1, h: 3, bottom: "ends", size: "1×3" });
+def("98283", { en: "Brick 1 x 2 with Embossed Bricks (masonry; castle and house walls)", noun: "wall", group: "brick", shape: "box", w: 1, d: 2, h: 3 });
+def("6541", { en: "Technic Brick 1 x 1 with Hole (studs on top like a normal brick)", noun: "tbrick", group: "brick", shape: "box", w: 1, d: 1, h: 3 });
+def("32000", { en: "Technic Brick 1 x 2 with Holes (2 holes across; studs on top like a normal brick)", noun: "tbrick", group: "brick", shape: "box", w: 1, d: 2, h: 3 });
+def("2921", { en: "Brick 1 x 1 with Handle (the handle sticks out toward +z; decoration only)", noun: "hbrick", group: "brick", shape: "box", w: 1, d: 1, h: 3, dir: true });
+def("4085", { en: "Plate 1 x 1 with Clip Vertical (the clip sticks out toward +z; decoration only)", noun: "clipplate", group: "plate", shape: "box", w: 1, d: 1, h: 1, dir: true });
+def("60478", { en: "Plate 1 x 2 with Handle on End (the bar sticks out at the +z end; decoration only)", noun: "handle", group: "plate", shape: "box", w: 1, d: 2, h: 1, dir: true });
 // Pieces that come along with the parts above.
+def("4862", { en: "Glass for Window 1 x 2 x 2 Plane", noun: "glass", group: "window", shape: "glass", w: 2, d: 1, h: 6, studs: "none", size: "1×2×2", child: true });
 def("6014ac01", { en: "Wheel 11mm D. x 12mm with Black Tire 21mm D. x 12mm (6014 / 6015)", noun: "wheel", group: "vehicle", shape: "bigwheel", w: 2, d: 3, h: 7, studs: "none", size: "", child: true });
 def("3855", { en: "Glass for Window 1 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "1×4×3", child: true });
 def("4133", { en: "Pane for Window 2 x 4 x 3", noun: "glass", group: "window", shape: "glass", w: 4, d: 1, h: 9, studs: "none", size: "2×4×3", child: true });
@@ -798,6 +869,7 @@ function ruleCells(C, rule) {
     case "center": return all.filter(([cx, cz]) => cx >= 1 && cx <= C.w - 2 && cz >= 1 && cz <= C.d - 2);
     case "round": return all.filter(([cx, cz]) => !((cx === 0 || cx === C.w - 1) && (cz === 0 || cz === C.d - 1)));
     case "list": return C.studList;
+    case "blist": return C.bottomList;
     case "ring": return all.filter(([cx, cz]) => cx === 0 || cz === 0 || cx === C.w - 1 || cz === C.d - 1);
     default: return [];
   }
@@ -826,7 +898,8 @@ function info(p) {
   for (const e of C.occExtra || []) { const [x, z] = tc(...e.cell); for (let y = p.y + e.lo; y < p.y + C.h; y++) occ.push([x, y, z]); }
   const W = C.wheels;
   if (W?.cells) for (const [cx, cz] of W.cells) { const [x, z] = tc(cx, cz); for (let y = p.y + W.lo; y <= p.y + W.hi; y++) occ.push([x, y, z]); }
-  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + C.h, cells, studs: ruleCells(C, C.studs).map(([a, b]) => tc(a, b)), bottom: ruleCells(C, C.bottom).map(([a, b]) => tc(a, b)), occ };
+  // Studs sit on top, or lower where a part rises above them (curved-top bricks).
+  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + (C.studY ?? C.h), cells, studs: ruleCells(C, C.studs).map(([a, b]) => tc(a, b)), bottom: ruleCells(C, C.bottom).map(([a, b]) => tc(a, b)), occ };
 }
 function rotMatrix(C, r, p) {
   const m = new THREE.Matrix4(), W = C.w, D = C.d;
@@ -877,7 +950,8 @@ function ldShape(key, P) {
   const own = ldMesh(P), mainGeos = [], extra = [], edges = own.edges.slice();
   for (const g of own.groups) (g.color === "m" ? mainGeos.push(g.geo) : extra.push(g));
   for (const [name, ...m] of P.s || []) {
-    if (!LD.prims.has(name) && LD.parts._prims[name]) LD.prims.set(name, ldMesh(LD.parts._prims[name]));
+    const src = LD.parts?._prims[name] || SETS.shapes?._prims[name];
+    if (!LD.prims.has(name) && src) LD.prims.set(name, ldMesh(src));
     const prim = LD.prims.get(name);
     if (!prim) continue;
     // Prims are in 1/4 LDU, the matrix moves in LDU: scale its translation to 1/4 LDU.
@@ -943,6 +1017,37 @@ function shapeLayers(C, p, solo) {
   }
   return L;
 }
+/* ============================================== real sets (LDraw OMR) */
+/* Real LEGO sets as CAD models with their build steps, from the LDraw Official Model Repository (made by tools/omr-build.js).
+   sets-index.json lists them; sets-N.json holds the steps of a chunk of sets and sets-thumbs-N.json their pictures;
+   set-parts-common.json has the raw shapes of the parts many sets use, set-parts-N.json the other parts of chunk N.
+   A set part is {id: LDraw file, c: app color, m: placement}: rotation (3x3, row by row) and position in studs, app axes. */
+const SETS = { index: null, chunks: new Map(), thumbs: new Map(), shapes: null, loaded: new Map() };
+const fetchJson = async (f) => { const r = await fetch(f); if (!r.ok) throw new Error(f); return r.json(); };
+async function loadSetIndex() { return (SETS.index ||= await fetchJson("sets-index.json")); }
+/** Shapes for the sets of chunk k: the common file once, then that chunk's own parts. */
+async function loadSetShapes(k) {
+  SETS.shapes ||= { names: {}, cat: {}, parts: {}, _prims: {} };
+  for (const f of ["set-parts-common.json", `set-parts-${k}.json`]) {
+    if (!SETS.loaded.has(f)) SETS.loaded.set(f, fetchJson(f).then((S) => { for (const key of ["names", "cat", "parts", "_prims"]) Object.assign(SETS.shapes[key], S[key]); }));
+    await SETS.loaded.get(f);
+  }
+}
+async function loadThumbs(k) { if (!SETS.thumbs.has(k)) SETS.thumbs.set(k, fetchJson(`sets-thumbs-${k}.json`).catch(() => ({}))); return SETS.thumbs.get(k); }
+async function loadChunk(k) { if (!SETS.chunks.has(k)) SETS.chunks.set(k, await fetchJson(`sets-${k}.json`)); return SETS.chunks.get(k); }
+/** The catalog id of a set part's LDraw file, if the catalog has that piece. */
+const catOf = (f) => SETS.shapes?.cat[f];
+const FLIP = new THREE.Matrix4().makeScale(1, -1, -1); // LDraw axes to app axes
+function setMatrix(p) {
+  if (!p.m) return FLIP.clone(); // an icon: the part upright
+  const [a, b, c, d, e, f, g, h, i, x, y, z] = p.m;
+  return new THREE.Matrix4().set(a, b, c, x, d, e, f, y, g, h, i, z, 0, 0, 0, 1);
+}
+function setLayers(p) {
+  const S = ldShape("set:" + p.id, SETS.shapes?.parts[p.id]);
+  if (!S) return [{ geos: [box(0, 0, 0, 1, 0.4, 1)], color: p.c }];
+  return S.groups.map((g, i) => ({ geos: [g.geo], ld: true, edges: i === 0 ? S.edges : null, ...(g.color === "m" ? { color: p.c } : { hex: parseInt(g.color, 16), alpha: g.alpha }) }));
+}
 function edgeColor(c) {
   const col = new THREE.Color(typeof c === "number" ? c : COLORS[c].hex);
   const l = col.r * 0.3 + col.g * 0.59 + col.b * 0.11;
@@ -950,11 +1055,11 @@ function edgeColor(c) {
 }
 /** A placed part as a THREE.Group already transformed into world space. */
 function buildPart(p, solo = false) {
-  const C = CAT[p.id];
+  const C = CAT[p.id], set = p.m || !C;
   const g = new THREE.Group();
-  const m = rotMatrix(C, p.r || 0, p);
+  const m = set ? setMatrix(p) : rotMatrix(C, p.r || 0, p);
   g.userData.mats = [];
-  for (const layer of shapeLayers(C, p, solo)) {
+  for (const layer of set ? setLayers(p) : shapeLayers(C, p, solo)) {
     // A layer has an app color name, or a fixed LDraw color (hex, alpha) for parts molded in a second color.
     const colr = layer.color ? COLORS[layer.color] : { hex: layer.hex, alpha: layer.alpha < 1 ? layer.alpha : 0 };
     const geo = mergeGeoms(layer.geos).applyMatrix4(m);
@@ -979,11 +1084,17 @@ function orbitPos(target, dist, az, el) {
 }
 
 /* ======================================================== naming */
-function partName(p) { const C = CAT[p.id]; return C.size ? `${NOUNS[C.noun].name} ${C.size}` : NOUNS[C.noun].name; }
+function partName(p) {
+  const C = CAT[p.id] || CAT[catOf(p.id)];
+  if (!C) return SETS.shapes?.names[p.id] || "Bit"; // a part only real sets use: its English LDraw name
+  return C.size ? `${NOUNS[C.noun].name} ${C.size}` : NOUNS[C.noun].name;
+}
 function colorWord(c, form) { return COLORS[c][form]; }
 const NUMS = ["noll", "en", "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio"];
 function spokenPart(p, n) {
-  const C = CAT[p.id], N = NOUNS[C.noun];
+  const C = CAT[p.id] || CAT[catOf(p.id)];
+  if (!C) return `${n === 1 ? "en" : (NUMS[n] || String(n))} ${colorWord(p.c, n === 1 ? "sg" : "pl")} ${n === 1 ? "bit" : "bitar"}`;
+  const N = NOUNS[C.noun];
   const size = C.size ? " " + C.size.split("×").join(" gånger ") : "";
   if (C.noun === "wheel") return `${n === 1 ? "ett" : (NUMS[n] || n)} hjul`;
   const count = n === 1 ? N.g : (NUMS[n] || String(n));
@@ -995,7 +1106,7 @@ function pieceList(parts) {
   const out = [];
   for (const p of parts) {
     out.push({ id: p.id, c: p.c });
-    for (const ex of CAT[p.id].extras || []) for (let i = 0; i < ex.n; i++) out.push({ id: ex.id, c: ex.color === "fixed" ? ex.c : ex.color === "c2" ? (p.c2 || ex.def || p.c) : p.c });
+    for (const ex of CAT[p.id]?.extras || []) for (let i = 0; i < ex.n; i++) out.push({ id: ex.id, c: ex.color === "fixed" ? ex.c : ex.color === "c2" ? (p.c2 || ex.def || p.c) : p.c });
   }
   return out;
 }
@@ -1117,7 +1228,7 @@ const Snap = {
     this.r.setSize(w, h, false);
     this.r.setClearColor(opts.bg != null ? opts.bg : 0x000000, opts.bg != null ? 1 : 0);
     this.r.render(scene, cam);
-    const url = this.r.domElement.toDataURL(opts.jpeg ? "image/jpeg" : "image/png", 0.82);
+    const url = this.r.domElement.toDataURL(opts.type || (opts.jpeg ? "image/jpeg" : "image/png"), opts.quality || 0.82);
     scene.remove(group); disposeTree(group);
     return url;
   },
@@ -1556,7 +1667,7 @@ function anglesNote(n, what) {
 }
 
 /* ============================================================== views */
-const VIEWS = ["#v-home", "#v-create", "#v-working", "#v-inv", "#v-find"];
+const VIEWS = ["#v-home", "#v-create", "#v-working", "#v-inv", "#v-find", "#v-sets"];
 function go(view) { for (const v of VIEWS) $(v).hidden = v !== view; window.scrollTo(0, 0); }
 document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => go("#v-home")));
 
@@ -1736,7 +1847,7 @@ function setStep(s, animate = true) {
   if (cover) {
     $("#c-name").textContent = B.title; $("#c-desc").textContent = B.description;
     $("#c-parts").textContent = `${total} bitar`; $("#c-steps").textContent = `${n} steg`;
-    $("#c-del").hidden = !!B.example; $("#c-start").lastChild.textContent = lsGet("step:" + B.id, -1) > 0 ? "Fortsätt bygga" : "Börja bygga";
+    $("#c-del").hidden = !!B.example || !!B.set; $("#c-start").lastChild.textContent = lsGet("step:" + B.id, -1) > 0 ? "Fortsätt bygga" : "Börja bygga";
     $("#v-text").textContent = "";
     Stage.show(null, false);
   } else if (done) {
@@ -1818,8 +1929,11 @@ function partSheet(p) {
     d.append(nm, no); t.append(img, d); body.append(t);
     const row = document.createElement("div"); row.className = "btn-row";
     const f = document.createElement("button"); f.className = "btn go"; f.textContent = "Hitta den i högen";
-    f.disabled = !(AI.sample && AI.images);
-    f.addEventListener("click", () => { closeSheet(); closeViewer(); openFinder(p); });
+    // Only catalog pieces can be looked for; a part only real sets use is shown, but not searched for.
+    const cat = CAT[p.id] && !CAT[p.id].child ? p.id : catOf(p.id);
+    f.disabled = !(AI.sample && AI.images) || !cat;
+    if (!cat) f.textContent = "Den här biten kan Hitta bit inte leta efter än";
+    f.addEventListener("click", () => { closeSheet(); closeViewer(); openFinder({ id: cat, c: p.c }); });
     row.append(f); body.append(row);
   });
 }
@@ -1829,7 +1943,7 @@ function renderInventory() {
   const inv = Store.inventory, list = $("#inv-list"); list.textContent = "";
   const total = inv.reduce((a, p) => a + p.n, 0);
   $("#inv-count").textContent = total ? `${total} bitar` : "Inga bitar än";
-  $("#inv-clear").hidden = !total;
+  $("#inv-clear").hidden = !total; $("#inv-sets").hidden = !total;
   inv.forEach((p, i) => {
     const row = document.createElement("div"); row.className = "inv-row";
     const img = document.createElement("img"); img.alt = ""; img.src = Snap.icon(p);
@@ -1851,6 +1965,7 @@ function changeInv(i, delta) {
   clearTimeout(invSaveTimer); invSaveTimer = setTimeout(() => Store.saveInventory(Store.inventory).catch(() => toast("Kunde inte spara listan.")), 700);
 }
 $("#t-inv").addEventListener("click", () => { renderInventory(); go("#v-inv"); });
+$("#inv-sets").addEventListener("click", () => openSets(true));
 $("#inv-clear").addEventListener("click", () => { $("#inv-clear-confirm").hidden = false; });
 $("#inv-clear-no").addEventListener("click", () => { $("#inv-clear-confirm").hidden = true; });
 $("#inv-clear-yes").addEventListener("click", async () => { $("#inv-clear-confirm").hidden = true; try { await Store.saveInventory([]); } catch { toast("Kunde inte tömma listan."); } });
@@ -1884,6 +1999,88 @@ Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}],"unsure":"one sho
   } catch (e) { st.textContent = errText(e); }
   finally { $("#inv-scan").disabled = !(AI.sample && AI.images); }
 });
+
+/* ========================================================= real sets */
+const SET_GROUPS = [
+  ["Alla", null], ["Stad", /^(Town|City|Legoland|Homemaker|Factory|LEGO Brand Store)/], ["Rymd", /^Space/], ["Borg", /^(Castle|The Hobbit)/],
+  ["Tåg", /^Train/], ["Bilar", /^(Racers|Speed)/], ["Pirater & västern", /^(Pirates|Western|Adventurers|Pharaoh)/],
+  ["Klassiska lådor", /^(Universal Building Set|System|Hobby Sets|Basic)/], ["Creator", /^Creator/], ["Övrigt", "other"],
+];
+const SV = { group: "Alla", q: "", mine: false, shown: 40 };
+/** How much of a set the child's pieces cover: same piece and color (have), or the same piece in any color (any). */
+function setCoverage(e) {
+  const inv = Store.inventory, byKey = new Map(), byId = new Map();
+  for (const p of inv) { byKey.set(p.id + ":" + p.c, (byKey.get(p.id + ":" + p.c) || 0) + p.n); byId.set(p.id, (byId.get(p.id) || 0) + p.n); }
+  let total = e.other, have = 0, any = 0;
+  const needById = new Map();
+  for (const [id, c, n] of e.need) { total += n; have += Math.min(n, byKey.get(id + ":" + c) || 0); needById.set(id, (needById.get(id) || 0) + n); }
+  for (const [id, n] of needById) any += Math.min(n, byId.get(id) || 0);
+  return { total, have, any };
+}
+function setMatches(e) {
+  const g = SET_GROUPS.find(([n]) => n === SV.group)[1];
+  if (g === "other" ? SET_GROUPS.some(([, re]) => re instanceof RegExp && re.test(e.theme)) : g && !g.test(e.theme)) return false;
+  const q = SV.q.trim().toLowerCase();
+  return !q || e.num.toLowerCase().startsWith(q) || e.name.toLowerCase().includes(q) || e.theme.toLowerCase().includes(q) || String(e.year) === q;
+}
+let thumbObserver = null;
+async function renderSets() {
+  const list = $("#s-list"), st = $("#s-status");
+  let index;
+  try { index = await loadSetIndex(); } catch { st.hidden = false; st.textContent = "Seten kunde inte laddas. Försök igen."; return; }
+  const chips = $("#s-themes"); chips.textContent = "";
+  for (const [name] of SET_GROUPS) {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = name; b.setAttribute("aria-pressed", String(name === SV.group));
+    b.addEventListener("click", () => { SV.group = name; SV.shown = 40; renderSets(); }); chips.append(b);
+  }
+  const hasInv = Store.inventory.length > 0;
+  $("#s-mine").disabled = !hasInv; $("#s-mine").setAttribute("aria-checked", String(SV.mine && hasInv));
+  $("#s-mine-sub").textContent = hasInv ? "Visar först de set du har flest bitar till" : "Fota dina bitar under Mina bitar först";
+  let rows = index.filter(setMatches).map((e) => ({ e, cov: hasInv ? setCoverage(e) : null }));
+  if (SV.mine && hasInv) rows.sort((a, b) => b.cov.have / b.cov.total - a.cov.have / a.cov.total || b.cov.any / b.cov.total - a.cov.any / a.cov.total);
+  st.hidden = rows.length > 0; st.textContent = "Inga set hittades. Prova ett annat nummer eller namn.";
+  list.textContent = "";
+  thumbObserver?.disconnect();
+  thumbObserver = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { thumbObserver.unobserve(en.target); setThumb(en.target); } }), { rootMargin: "200px" });
+  for (const { e, cov } of rows.slice(0, SV.shown)) {
+    const card = document.createElement("button"); card.className = "build-card";
+    const th = document.createElement("div"); th.className = "thumb"; th.dataset.key = e.key; th.dataset.chunk = e.chunk;
+    const meta = document.createElement("div"); meta.className = "meta";
+    const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = `${e.num} · ${e.year || ""}`;
+    const t = document.createElement("b"); t.textContent = e.name;
+    const s = document.createElement("span"); s.textContent = `${e.parts} bitar · ${e.steps} steg`;
+    meta.append(bd, t, s);
+    if (cov) { const h = document.createElement("span"); h.className = "have"; h.textContent = `Du har ${cov.have} av ${cov.total}` + (cov.any > cov.have ? ` (${cov.any} i någon färg)` : ""); meta.append(h); }
+    card.append(th, meta); card.addEventListener("click", () => openSet(e));
+    list.append(card); thumbObserver.observe(th);
+  }
+  $("#s-more").hidden = rows.length <= SV.shown;
+}
+/** Shows a set's picture (drawn ahead by tools/omr-thumbs.js) when its card scrolls into view. */
+async function setThumb(th) {
+  const src = (await loadThumbs(Number(th.dataset.chunk)))[th.dataset.key];
+  if (src) { const img = new Image(); img.alt = ""; img.src = src; th.append(img); }
+}
+const setSteps = (d) => d.steps.map((s) => ({ text: "", parts: s.map(([fi, c, ...m]) => ({ id: d.files[fi], c, m })) }));
+async function openSet(e) {
+  const st = $("#s-status"); st.hidden = false; st.textContent = `Hämtar ${e.name}…`;
+  try {
+    const [, c] = await Promise.all([loadSetShapes(e.chunk), loadChunk(e.chunk)]);
+    const d = c[e.key];
+    st.hidden = true;
+    openBuild({ id: "set:" + e.key, set: true, title: e.name, steps: setSteps(d),
+      description: `Set ${e.num} från ${e.year}. Modellen är ritad av ${e.author || "en LDraw-entusiast"} (LDraw OMR, CC BY 2.0).` + (e.figs ? " Minifigurerna ingår i bygget." : "") });
+  } catch { st.textContent = "Setet kunde inte laddas. Försök igen."; }
+}
+function openSets(mine) {
+  SV.mine = !!mine && Store.inventory.length > 0; SV.shown = 40;
+  go("#v-sets"); renderSets();
+}
+$("#t-sets").addEventListener("click", () => openSets(false));
+let setSearchTimer;
+$("#s-q").addEventListener("input", (e) => { clearTimeout(setSearchTimer); setSearchTimer = setTimeout(() => { SV.q = e.target.value; SV.shown = 40; renderSets(); }, 200); });
+$("#s-mine").addEventListener("click", () => { SV.mine = !SV.mine; renderSets(); });
+$("#s-more").addEventListener("click", () => { SV.shown += 40; renderSets(); });
 
 /* ============================================================= finder */
 let F = { group: "brick", id: "3001", c: "red" };

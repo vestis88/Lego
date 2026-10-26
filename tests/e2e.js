@@ -34,7 +34,8 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.route('**/three.min.js', r => r.fulfill({ path: S + '/.cache/three.min.js', contentType: 'application/javascript' }));
     await page.route('**/fonts.googleapis.com/**', r => r.abort());
     // Served from a made-up http origin so the app can fetch parts.json next to it.
-    await page.route('**/parts.json', r => r.fulfill({ path: S + '/../app/parts.json', contentType: 'application/json' }));
+    // parts.json, the real sets and their shapes are files next to the app.
+    await page.route(/\/[\w-]+\.json$/, r => r.fulfill({ path: S + '/../app/' + new URL(r.request().url()).pathname.split('/').pop(), contentType: 'application/json' }));
     await page.route('http://app.test/harness.html', r => r.fulfill({ path: S + '/harness.html', contentType: 'text/html' }));
     await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts);
     await page.waitForTimeout(800);
@@ -83,6 +84,25 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.click('#go'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 5000 });
     console.log(name, 'photo build images', await page.evaluate(() => [window.__buildImages, window.__lastPrompt.includes('SAME thing from different sides') || window.__calls.length]));
     await page.click('#v-close');
+    // real sets: search by number, open, build a few steps; then the sets the inventory can build
+    if (!fs.existsSync(S + '/../app/sets-index.json')) console.log(name, 'sets SKIPPED: run node tools/omr-build.js && node tools/omr-thumbs.js first');
+    else {
+    await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
+    const total = await page.$$eval('#s-list .build-card', (c) => c.length);
+    await page.fill('#s-q', '6611'); await page.waitForTimeout(500);
+    const found = await page.$$eval('#s-list .build-card b', (c) => c.map((x) => x.textContent));
+    await page.waitForTimeout(800); await page.screenshot({ path: `${S}/shots/${name}-sets.png`, fullPage: true });
+    await page.click('#s-list .build-card'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 15000 });
+    await page.click('#c-start'); await page.waitForTimeout(800); await page.click('#v-next'); await page.waitForTimeout(1200);
+    await page.screenshot({ path: `${S}/shots/${name}-set-step.png` });
+    const setInfo = await page.evaluate(() => ({ steps: B.steps.length, callout: document.querySelectorAll('#v-callout button').length, title: B.title, set: B.set }));
+    console.log(name, 'sets', total, 'found', JSON.stringify(found), JSON.stringify(setInfo));
+    if (!found.length || !setInfo.set || !setInfo.callout) process.exitCode = 1;
+    await page.click('#v-close');
+    await page.click('#v-sets [data-back]'); await page.click('#t-inv'); await page.click('#inv-sets'); await page.waitForSelector('#s-list .build-card .have');
+    console.log(name, 'can build', JSON.stringify(await page.$$eval('#s-list .build-card', (c) => c.slice(0, 3).map((x) => x.querySelector('b').textContent + ': ' + x.querySelector('.have').textContent))));
+    await page.click('#v-sets [data-back]');
+    }
     const hscroll = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
     const realErrs = errs.filter((e) => !e.includes('net::ERR_FAILED')); console.log(name, 'hscroll', hscroll, 'errors:', JSON.stringify(realErrs)); if (hscroll || realErrs.length) process.exitCode = 1;
     await page.close();

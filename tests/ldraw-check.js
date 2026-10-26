@@ -45,6 +45,10 @@ const ACCEPTED = {
   '60616': 'FH: comes with door frame 60596 and is drawn inside it',
   '60623': 'FH: comes with a door frame and is drawn inside it',
   '60797': 'FH: comes with door frame 30179 and is drawn inside it',
+  '2921': 'F: the handle sticks out 0.7 studs in front of the brick',
+  '4085': 'F: the clip sticks out 0.7 studs in front of the plate',
+  '60478': 'FH: the bar handle sticks out 0.8 studs past the end of the plate',
+  '4862': 'FH: comes with window 2377 and is drawn inside it',
   '4624c01': 'FH: wheels are sized in millimetres, not studs',
   '6014ac01': 'FH: wheels are sized in millimetres, not studs',
 };

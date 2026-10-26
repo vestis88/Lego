@@ -1,0 +1,4 @@
+# Real-set data made by tools/omr-build.js and tools/omr-thumbs.js (about 60 MB; rebuild, don't commit)
+sets-index.json
+sets-*.json
+set-parts-*.json

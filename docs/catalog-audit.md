@@ -89,6 +89,17 @@ This turned up four more errors that the checks on numbers couldn't see:
 
 **New checks:** the audit fails if any part has no CAD shape. `tests/unit.js` now checks the real studs from LDraw against the checker's stud cells in all four turns. It also checks that each real shape stays in its space; the parts that stick out (pins, handles, clips, side studs, tabs, branches) are listed with how far.
 
+## More pieces, chosen from real sets (2026-10-26)
+
+I looked at all 913 real sets now in the app and counted which pieces the catalog lacked. Leaving out minifigure parts and pieces that come with another one (wheels, glass, doors), I added the 34 most used pieces that fit the stud grid. Before writing each catalog entry, I measured the piece in LDraw: footprint, height, and which cells have studs at which height. Then I checked a picture of every new piece for its facing. With them, the sets made 90% or more of catalog pieces went from 45 to 76, and 75% or more from 237 to 332.
+
+Measuring first caught things a name doesn't tell:
+
+- **The curved-top bricks 6091 and 6081 have their studs 3 plates up, under a curve that rises to 4.** The checker now supports studs below a part's top (`studY`). A 1×1 brick on the stud holds, and a longer brick at that height hits the curve.
+- **3048 "Slope 45 2 x 1 Triple" has no studs on top.** That settles the earlier "3048 and 3049 sources disagree": 3049's footprint is unusual, so it stays out.
+- **3676, the inverted corner, connects underneath only at its back-left cell.** The other three corners start 2.5 plates up. This needed a separate list of underside cells (`bottomList`).
+- **Left out because they don't fit the grid:** 3063 (LDraw shows 2 studs where photos suggest 3; to check), 2444 (2.4 plates tall with ribs), 3839 and 4599 (studs off the grid), 4175 and 2555 (rise far above their plate), and 2458 (the pin sticks out a full stud). Hinges, brackets, clips on bars, dishes on a single stud and car mudguards still need connections the grid can't express.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

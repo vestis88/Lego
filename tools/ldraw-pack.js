@@ -43,7 +43,7 @@ const ap = (M, x, y, z) => [M[0] * x + M[1] * y + M[2] * z + M[3], M[4] * x + M[
 const PRIM = /^stud[0-9a-z]*\.dat$/;
 
 /** Triangles by color and edge lines of an LDraw file, in LDraw axes. With prims, studs and tubes become instances. */
-function walk(text, prims) {
+function walk(text, prims, lowres = false) {
   const tris = {}, lines = [], inst = [], studs = [];
   (function go(t, M, color, depth) {
     if (depth > 30) return;
@@ -57,10 +57,11 @@ function walk(text, prims) {
         // Upward studs on the top (for placing the part on the grid).
         if (TOPSTUD.test(base)) { const o = ap(M2, 0, 0, 0), u = ap(M2, 0, -1, 0); studs.push({ o, d: [u[0] - o[0], u[1] - o[1], u[2] - o[2]].map((v) => Math.round(v * 1000) / 1000) }); }
         if (prims && PRIM.test(base) && c === color) {
-          if (!prims[base]) { const st = load(name); if (st) prims[base] = walk(st, null); }
+          if (!prims[base]) { const st = load(name); if (st) prims[base] = walk(st, null, lowres); }
           if (prims[base]) { inst.push({ name: base, M: M2 }); continue; }
         }
-        const st = load(name); if (st) go(st, M2, c, depth + 1);
+        // Low detail: 8-segment versions of the circle primitives, where LDraw has them.
+        const st = (lowres && !name.includes('/') && load('8/' + name, ['p/'])) || load(name); if (st) go(st, M2, c, depth + 1);
       } else if (a[0] === '3' || a[0] === '4') {
         const n = a.slice(2).map(Number), pts = [];
         for (let i = 0; i < Number(a[0]); i++) pts.push(ap(M, n[i * 3], n[i * 3 + 1], n[i * 3 + 2]));
@@ -217,7 +218,8 @@ function wheel(f, prims) {
   return { ...pack(null, W, P), r: Math.round(Math.max(...size.filter((_, k) => k !== axle)) / 2 / 20 * 100) / 100, width: Math.round(size[axle] / 20 * 100) / 100 };
 }
 
-(async () => {
+module.exports = { walk, packMesh, pack, PRIMS, COLORS, toApp, extent };
+if (require.main === module) (async () => {
   const ids = process.argv.slice(2);
   const cat = (await appCatalog()).filter((C) => !ids.length || ids.includes(C.id));
   const out = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : {};

@@ -23,7 +23,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
   const out = await p.evaluate(([REAL_SIZE]) => {
     const res = [];
     // A directional part one stud deep faces across its long side (windows, panels, grille bricks, the steering stand).
-    const facesAlongLength = ["slope", "inv", "curve", "screen", "holder", "convex", "concave", "cutcorner", "quarter"];
+    const facesAlongLength = ["slope", "inv", "curve", "screen", "holder", "convex", "concave", "cutcorner", "quarter", "bow", "wedge", "ridge"];
     for (const C of Object.values(CAT)) {
       if (C.dir && !facesAlongLength.includes(C.shape) && C.d > C.w) res.push(`${C.id} (${C.en}): faces along its long side (w${C.w} d${C.d}); real 1-deep parts face across it`);
     }
@@ -54,7 +54,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
       const name = C.en;
       // Naming conventions: slopes/curves are "along x across (x tall)"; windows, doors, windscreens and panels are "depth x width x height in bricks".
       let expW, expD, expH = null;
-      if (/^Slope|Curved/.test(name)) { expD = a; expW = bb; if (c != null) expH = Math.round(c * 3); }
+      if (/^Slope/.test(name)) { expD = a; expW = bb; if (c != null) expH = Math.round(c * 3); }
       else if (/^(Window|Door Frame|Door |Windscreen|Panel|Glass|Pane)/.test(name)) { expD = a; expW = bb; if (c != null) expH = Math.round(c * 3); }
       else if (/^Arch/.test(name)) { expD = a; expW = bb; expH = c != null ? c * 3 : 3; }
       else if (/^Antenna/.test(name)) { expW = 1; expD = 1; expH = bb * 3; }
@@ -62,7 +62,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
       else { expW = Math.min(a, bb); expD = Math.max(a, bb); if (c != null) expH = Math.round(c * 3); }
       const dims = [C.w, C.d].sort((x, y) => x - y).join('x'), exp = [expW, expD].sort((x, y) => x - y).join('x');
       if (dims !== exp) issues.push(`footprint ${C.w}x${C.d} vs name ${expW}x${expD}`);
-      else if (/^Slope|Curved|Window|Door|Windscreen|Panel/.test(name) && (C.w !== expW || C.d !== expD)) issues.push(`orientation w${C.w} d${C.d} but name implies w${expW} d${expD}`);
+      else if (/^Slope|Window|Door|Windscreen|Panel/.test(name) && (C.w !== expW || C.d !== expD)) issues.push(`orientation w${C.w} d${C.d} but name implies w${expW} d${expD}`);
       if (expH != null && expH !== C.h) issues.push(`height ${C.h} plates vs name ${expH}`);
       if (expH == null) {
         const H = /^Plate|^Tile|^Baseplate/.test(name) ? 1 : /^Brick|^Technic Brick/.test(name) ? 3 : null;
@@ -73,7 +73,7 @@ fs.writeFileSync(S + '/audit-harness.html', page);
       // size label shown to the child should read like the real part name
       const label = C.size; const realLabel = c != null ? `${a}×${bb}×${m[3]}` : `${a}×${bb}`;
       if (label && label.replace(/ \d\/\d/, '') !== realLabel.replace(/ \d\/\d/, '') && label !== `${bb}×${a}` ) issues.push(`label "${label}" vs real "${realLabel}"`);
-      else if (label && /^Slope|Curved/.test(name) && label === `${bb}×${a}` && a !== bb) issues.push(`label "${label}" reversed vs real "${realLabel}"`);
+      else if (label && /^Slope/.test(name) && label === `${bb}×${a}` && a !== bb) issues.push(`label "${label}" reversed vs real "${realLabel}"`);
       if (issues.length) res.push(`${C.id} (${name}): ${issues.join('; ')}`);
     }
     return res;
@@ -85,6 +85,8 @@ fs.writeFileSync(S + '/audit-harness.html', page);
     '6014ac01': 'wheels are sized in millimetres, not studs',
     '11477': 'the 2/3 height is left out of the label for the child',
     '85984': 'the 2/3 height is left out of the label for the child',
+    '61409': 'the 2/3 height is left out of the label for the child',
+    '60478': 'its handle is on the short end, so it faces along its length',
     '2432': 'the bar handle rises 3 plates above the tile (LDraw 2432 and Brick Architect: 4 plates tall in all)',
   };
   const warn = out.filter((l) => l.includes("UNVERIFIED"));
