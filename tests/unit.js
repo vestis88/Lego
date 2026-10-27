@@ -2,8 +2,8 @@
 window.__unit = () => {
   const out = [];
   const ok = (c, m) => { if (!c) out.push("FAIL " + m); };
-  // 1. Geometry footprint and grid cells agree for every part and rotation.
-  for (const C of Object.values(CAT)) for (const r of [0, 90, 180, 270]) {
+  // 1. Geometry footprint and grid cells agree for every part and rotation (pieces measured from CAD: see __unitAuto).
+  for (const C of Object.values(CAT).filter((C) => !C.auto)) for (const r of [0, 90, 180, 270]) {
     const p = { id: C.id, x: 3, y: 2, z: -4, r, c: "red" };
     const I = info(p);
     const g = buildPart(p, true);
@@ -133,5 +133,38 @@ window.__unit = () => {
   const cov = setCoverage({ need: [["3001", "red", 4], ["3004", "white", 2]], other: 2 });
   ok(cov.total === 8 && cov.have === 3 && cov.any === 5, "set coverage " + JSON.stringify(cov));
   Store.inventory = inv0;
+  return out;
+};
+
+// Pieces measured from CAD (library-connect.json): drawn where the checker thinks they are, in every rotation, and the
+// checker connects them by their studs and grips. Checks the pieces in the first shape files.
+window.__unitAuto = async () => {
+  const out = [];
+  const ok = (c, m) => { if (!c) out.push("FAIL " + m); };
+  await loadConnect();
+  const auto = Object.values(CAT).filter((C) => C.auto && C.conn.k < 3);
+  ok(auto.length > 60, "measured pieces loaded: " + auto.length);
+  await ensureParts(auto.map((C) => ({ id: C.id })));
+  // Known: thin sheets lying exactly on a plate boundary fill no cell (the boat deck's curved rim).
+  const THIN = ["998"];
+  for (const C of auto.filter((C) => !THIN.includes(C.id))) for (const r of [0, 90, 180, 270]) {
+    const p = { id: C.id, x: 3, y: 2, z: -4, r, c: "red" }, I = info(p);
+    const b = new THREE.Box3().setFromObject(buildPart(p, true));
+    const xs = I.occ.map((c) => c[0]), ys = I.occ.map((c) => c[1]), zs = I.occ.map((c) => c[2]);
+    // Material less than 1 unit into a cell doesn't fill it, studs stand above the top and side studs stick out 0.2.
+    const t = 0.25;
+    ok(b.min.x > Math.min(...xs) - t && b.max.x < Math.max(...xs) + 1 + t && b.min.z > Math.min(...zs) - t && b.max.z < Math.max(...zs) + 1 + t
+      && b.min.y > Math.min(...ys) * PH - t && b.max.y < (Math.max(...ys) + 1) * PH + 0.2 + t,
+      `${C.id} r${r} drawn ${[b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z].map((v) => v.toFixed(2))} vs space x ${Math.min(...xs)}..${Math.max(...xs) + 1} y ${(Math.min(...ys) * PH).toFixed(2)}..${((Math.max(...ys) + 1) * PH).toFixed(2)} z ${Math.min(...zs)}..${Math.max(...zs) + 1}`);
+  }
+  // A 1x1 brick on any stud of a measured piece holds; one beside the studs floats. A measured piece on a big plate holds by its grips.
+  const studded = auto.find((C) => C.conn.studs.length && C.conn.holds.some(([, , y]) => y === 0));
+  const [sx, sz, sy] = studded.conn.studs[0];
+  const base = { id: studded.id, x: 0, y: 0, z: 0, r: 0, c: "red" };
+  ok(analyze([{ parts: [base] }, { parts: [{ id: "3005", x: sx, y: sy, z: sz, c: "blue" }] }]).floats.length === 0, `brick on a stud of ${studded.id}`);
+  ok(analyze([{ parts: [base] }, { parts: [{ id: "3005", x: -5, y: sy, z: -5, c: "blue" }] }]).floats.length === 1, `brick away from ${studded.id} floats`);
+  const [hx, hz] = studded.conn.holds.find(([, , y]) => y === 0);
+  ok(analyze([{ parts: [{ id: "3958", x: -2, y: -1, z: -2, c: "green" }] }, { parts: [base] }]).floats.length === 0, `${studded.id} held by its grip at (${hx},${hz})`);
+  ok(pieceSpec(studded).startsWith(studded.id + ": "), "measured piece described for Claude");
   return out;
 };

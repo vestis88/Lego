@@ -126,6 +126,28 @@ How the library resolves part numbers:
 
 Swedish names are made from the English name: a noun, the size, and known features. If words are left untranslated, the piece is marked "special" (for example "Specialplatta 2×2 med hjulfäste"), so it never gets the same name as the plain piece. Catch-all nouns ("Djur", "Teknikbit") with more to say keep their English name instead.
 
+## Every library piece measured from CAD (2026-10-27)
+
+The builder used to know only the 240 hand-made catalog parts. Now `tools/library-connect.js` measures every library piece's connections from its LDraw model, so 2,760 pieces can be used in new designs. Working from the geometry, it finds:
+
+- **Studs:** stud primitives pointing up with nothing above them, at any height. Some studs are drawn stretched from lower down, so a stud's base is taken as its tip less 4.
+- **Filled space:** per grid column, from the lowest to the highest plate level where the model has material more than 1 unit inside the cell.
+- **Grips:** at the bottom of each column, room for a stud (nothing within 5 units of the center for the stud's height) with material 5 to 9 units out, on two sides at least 80° apart. That covers brick walls, tubes and the thin pins of 1-wide parts. A slanted underside on one side holds nothing.
+- **Grid alignment:** taken from the studs. Pieces without studs try both ways LDraw can line a part up and keep the one where the most grips fall on the grid; a cut corner can move an edge off the grid.
+
+Compared with the hand-made catalog (`tests/connect-check.js`), studs agree for 216 of 230 parts and grips for 183. The differences point the other way more often than not. The CAD models show:
+
+- The curved-top bricks 6091 and 6081 have their stud end raised 2 plates off the floor. The catalog fills those cells to the floor and gives them grips at the bottom, which the real part doesn't have.
+- The curved slopes 11477, 15068 and 93606 are also raised under their high end.
+- Arches leave their opening free (the catalog fills it on purpose).
+- Wedge plates grip studs under their cut side too, wherever the plate covers a stud.
+
+The catalog keeps its hand-made data for now; switching these parts to the measured data is a follow-up.
+
+### Real sets: no part before what holds it
+
+The sets with steps used the models' own order. LDraw authors often build a sub-assembly on its own and attach it later, and big steps were split purely by height. So parts hung in the air: 13,981 in 649 of the 913 sets. `tools/set-order.js` now finds which parts hold which (a stud in a grip, side studs included; parts without stud data hold by touching) and moves each part to the first step where something already built holds it. Each separate model in a set (a second vehicle, a minifigure) gets its own base. Models without steps are built one model at a time, biggest first, in layers from the bottom up. After reordering, no part hangs in the air.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

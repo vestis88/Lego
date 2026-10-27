@@ -935,6 +935,14 @@ function info(p) {
     const [a, b] = r === 0 ? [cx, cz] : r === 180 ? [C.w - 1 - cx, C.d - 1 - cz] : r === 90 ? [cz, C.w - 1 - cx] : [C.d - 1 - cz, cx];
     return [a + p.x, b + p.z];
   };
+  // Pieces measured from their CAD model list the space they fill, their studs and their grips, each at its own height.
+  const K = C.conn;
+  if (K) {
+    const occ = [];
+    for (const [cx, cz, lo, hi] of K.cells) { const [x, z] = tc(cx, cz); for (let y = lo; y <= hi; y++) occ.push([x, p.y + y, z]); }
+    return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, cells: K.cells.map(([a, b]) => tc(a, b)), occ,
+      studs: K.studs.map(([a, b, y]) => [...tc(a, b), p.y + y]), bottom: K.holds.map(([a, b, y]) => [...tc(a, b), p.y + y]) };
+  }
   const cells = canonCells(C).map(([a, b]) => tc(a, b));
   const occ = [];
   const center = new Set(ruleCells(C, "center").map(([a, b]) => tc(a, b).join(",")));
@@ -953,7 +961,8 @@ function info(p) {
   const W = C.wheels;
   if (W?.cells) for (const [cx, cz] of W.cells) { const [x, z] = tc(cx, cz); for (let y = p.y + W.lo; y <= p.y + W.hi; y++) occ.push([x, y, z]); }
   // Studs sit on top, or lower where a part rises above them (curved-top bricks).
-  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, top: p.y + (C.studY ?? C.h), cells, studs: ruleCells(C, C.studs).map(([a, b]) => tc(a, b)), bottom: ruleCells(C, C.bottom).map(([a, b]) => tc(a, b)), occ };
+  const top = p.y + (C.studY ?? C.h);
+  return { C, w: sw ? C.d : C.w, d: sw ? C.w : C.d, h: C.h, cells, studs: ruleCells(C, C.studs).map(([a, b]) => [...tc(a, b), top]), bottom: ruleCells(C, C.bottom).map(([a, b]) => [...tc(a, b), p.y]), occ };
 }
 function rotMatrix(C, r, p) {
   const m = new THREE.Matrix4(), W = C.w, D = C.d;
@@ -1090,6 +1099,34 @@ function libKey(n) {
   return LIB.parts[n] ? String(n) : LIB.alias[s] || LIB.alias[normNum(s)] || (CAT[n] ? n : null);
 }
 const libEntry = (n) => { const k = libKey(n); return k && LIB.parts?.[k]; };
+/* library-connect.json (made by tools/library-connect.js) says how each library piece connects on the stud grid, measured
+   from its CAD model: the space it fills, its studs and where it grips studs underneath. Every such piece joins CAT
+   (auto: true), so the builder can use it like the hand-made catalog. Their shapes are in lib-shapes-N.json. */
+const CONN = { ready: null, shapes: new Map() };
+function loadConnect() {
+  return (CONN.ready ||= (async () => {
+    await LIB.ready;
+    let data = {};
+    try { data = await fetchJson("library-connect.json"); } catch {}
+    for (const [id, K] of Object.entries(data)) {
+      const e = LIB.parts?.[id];
+      if (CAT[id] || !e) continue;
+      CAT[id] = { id, auto: true, en: e[LIB_FIELDS.en], group: GROUPS[e[LIB_FIELDS.group]] ? e[LIB_FIELDS.group] : "special", shape: "ld",
+        file: e[LIB_FIELDS.file], w: K.w, d: K.d, h: K.h, conn: K, size: `${K.w}×${K.d}` };
+    }
+    return true;
+  })());
+}
+/** Loads what the parts of a build need to be checked and drawn: the measured pieces and their shapes. */
+async function ensureParts(parts) {
+  await loadConnect();
+  const chunks = new Set(parts.map((p) => CAT[p.id]?.conn?.k).filter((k) => k != null));
+  SETS.shapes ||= { names: {}, cat: {}, parts: {}, _prims: {} };
+  await Promise.all([...chunks].map((k) => {
+    if (!CONN.shapes.has(k)) CONN.shapes.set(k, fetchJson(`lib-shapes-${k}.json`).then((S) => { Object.assign(SETS.shapes.parts, S.parts); Object.assign(SETS.shapes._prims, S._prims); }).catch(() => {}));
+    return CONN.shapes.get(k);
+  }));
+}
 /** Whether the builder can connect a piece (it has grid rules in CAT). */
 const buildable = (id) => !!CAT[id] && !CAT[id].child;
 /** The picture of any piece in a color: live 3D for pieces with a loaded shape, else the library's white picture tinted. */
@@ -1176,9 +1213,11 @@ function edgeColor(c) {
 function buildPart(p, solo = false) {
   const C = CAT[p.id], set = p.m || !C;
   const g = new THREE.Group();
-  const m = set ? setMatrix(p) : rotMatrix(C, p.r || 0, p);
+  let m = set ? setMatrix(p) : rotMatrix(C, p.r || 0, p);
+  // A piece measured from CAD: its raw shape (LDraw axes), moved so grid cell (0, 0, 0) starts at the origin.
+  if (C?.conn && !p.m) { const [ox, oy, oz] = C.conn.o; m = m.multiply(new THREE.Matrix4().makeTranslation(-ox / 20, -oy / 20, -oz / 20)).multiply(FLIP); }
   g.userData.mats = [];
-  for (const layer of set ? setLayers(p) : shapeLayers(C, p, solo)) {
+  for (const layer of C?.conn && !p.m ? setLayers({ id: C.file, c: p.c }) : set ? setLayers(p) : shapeLayers(C, p, solo)) {
     // A layer has an app color name, or a fixed LDraw color (hex, alpha) for parts molded in a second color.
     const colr = layer.color ? COLORS[layer.color] : { hex: layer.hex, alpha: layer.alpha < 1 ? layer.alpha : 0 };
     const geo = mergeGeoms(layer.geos).applyMatrix4(m);
@@ -1205,14 +1244,14 @@ function orbitPos(target, dist, az, el) {
 /* ======================================================== naming */
 function partName(p) {
   const C = CAT[p.id] || CAT[catOf(p.id)];
-  if (!C) { const e = libEntry(p.id); return e ? e[LIB_FIELDS.sv] || e[LIB_FIELDS.en] : SETS.shapes?.names[p.id] || "Bit"; } // other pieces: the library's name
+  if (!C || C.auto) { const e = libEntry(p.id); return e ? e[LIB_FIELDS.sv] || e[LIB_FIELDS.en] : SETS.shapes?.names[p.id] || "Bit"; } // other pieces: the library's name
   return C.size ? `${NOUNS[C.noun].name} ${C.size}` : NOUNS[C.noun].name;
 }
 function colorWord(c, form) { return COLORS[c][form]; }
 const NUMS = ["noll", "en", "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio"];
 function spokenPart(p, n) {
   const C = CAT[p.id] || CAT[catOf(p.id)];
-  if (!C) return `${n === 1 ? "en" : (NUMS[n] || String(n))} ${colorWord(p.c, n === 1 ? "sg" : "pl")} ${n === 1 ? "bit" : "bitar"}`;
+  if (!C || C.auto) return `${n === 1 ? "en" : (NUMS[n] || String(n))} ${colorWord(p.c, n === 1 ? "sg" : "pl")} ${n === 1 ? "bit" : "bitar"}`;
   const N = NOUNS[C.noun];
   const size = C.size ? " " + C.size.split("×").join(" gånger ") : "";
   if (C.noun === "wheel") return `${n === 1 ? "ett" : (NUMS[n] || n)} hjul`;
@@ -1254,11 +1293,11 @@ function analyze(steps) {
     for (const [x, y, z] of p.I.occ) occ.set(`${x},${y},${z}`, i);
   });
   const tops = new Map();
-  parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z] of p.I.studs) { const k = `${x},${p.I.top},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
+  parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z, y] of p.I.studs) { const k = `${x},${y},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
   const edges = parts.map(() => new Set()), below = parts.map(() => new Set()), above = parts.map(() => new Set());
   parts.forEach((p, j) => {
     if (bad.has(j)) return;
-    for (const [x, z] of p.I.bottom) for (const i of tops.get(`${x},${p.y},${z}`) || []) {
+    for (const [x, z, y] of p.I.bottom) for (const i of tops.get(`${x},${y},${z}`) || []) {
       if (i === j) continue;
       edges[i].add(j); edges[j].add(i); below[j].add(i); above[i].add(j);
     }
@@ -1686,7 +1725,7 @@ function catalogText() {
     return "";
   };
   const groups = {};
-  for (const C of Object.values(CAT)) if (!C.child) (groups[C.group] ||= []).push(`${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}${note(C) ? " (" + note(C) + ")" : ""}`);
+  for (const C of Object.values(CAT)) if (!C.child && !C.auto) (groups[C.group] ||= []).push(`${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}${note(C) ? " (" + note(C) + ")" : ""}`);
   return Object.values(groups).map((g) => g.join("\n")).join("\n");
 }
 /** The wheel space of each wheel plate, in words, from the measured wheels (setupWheels). */
@@ -1697,9 +1736,43 @@ function wheelRules() {
     return `- ${C.id} (${W.desc}): columns ${cols.map((x) => off(x, "x")).join(", ")}, rows ${off(Math.min(...rows), "z")}..${off(Math.max(...rows), "z")}, from ${off(W.lo, "y")} to ${off(W.hi, "y")}. Parts wider than ${C.w} over the wheels need ${off(W.hi + 1, "y")} or higher.`;
   }).join("\n");
 }
-const RULES = () => `PART CATALOG (the ONLY parts that exist; use these ids exactly):
+/** A piece measured from CAD, in words for Claude: its box, studs, grips and (when not a full box) the space it fills. */
+function pieceSpec(C) {
+  const K = C.conn, at = (a, b, y, h) => `(${a},${b})${y !== h ? ` y+${y}` : ""}`;
+  const cells = new Set(K.cells.map(([a, b]) => a + "," + b));
+  const box = K.cells.length === C.w * C.d && K.cells.every(([, , lo, hi]) => lo === 0 && hi === C.h - 1);
+  const everyCell = (list, y) => list.length === cells.size && list.every(([a, b, yy]) => yy === y && cells.has(a + "," + b));
+  const studs = !K.studs.length ? "no studs on top" : everyCell(K.studs, C.h) ? "studs on every cell" : "studs at " + K.studs.map(([a, b, y]) => at(a, b, y, C.h)).join(" ");
+  const grips = !K.holds.length ? "nothing attaches underneath" : everyCell(K.holds, 0) ? "grips studs under every cell" : "grips studs under " + K.holds.map(([a, b, y]) => at(a, b, y, 0)).join(" ");
+  const fills = box ? "" : "; fills only " + K.cells.map(([a, b, lo, hi]) => `(${a},${b}) y+${lo}${hi > lo ? ".." + hi : ""}`).join(" ");
+  return `${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}; ${studs}; ${grips}${fills}`;
+}
+/** Measured pieces worth offering for this build: the child's own, and the best matches for the special parts Claude asks for. */
+async function extraPieces(o) {
+  await loadConnect();
+  const ids = new Set();
+  if (o.useInv) for (const p of Store.inventory) if (CAT[p.id]?.auto) ids.add(p.id);
+  let words = [];
+  try {
+    const subject = o.mode === "random" ? o.surprise.join(", ") : o.text || "the thing in the photo";
+    words = await AI.sample.json(`A child wants a LEGO model of: ${subject}. Besides plain bricks, plates, tiles and slopes, which special LEGO pieces would make it look right (for example: propeller, fence, lamp, flower, antenna, ladder, wheel, window, bar, cone, dish, plant leaves, grille)? Reply with ONLY a JSON array of up to 10 short English words or two-word names, the way LEGO part names say them.`,
+      { signal: o.signal, modelTier: "quick", cache: false, ...(o.mode === "photo" && o.photos?.length ? { images: o.photos.slice(0, 1) } : {}) });
+  } catch (e) { if (e?.code === "cancelled") throw e; }
+  // Pieces too complex to describe in a few words (boat hulls, big baseplates with odd shapes) stay out of new designs.
+  const auto = Object.values(CAT).filter((C) => C.auto && C.conn.cells.length <= 32), pop = (C) => LIB.parts[C.id]?.[LIB_FIELDS.sets] || 0;
+  for (const w of (Array.isArray(words) ? words : []).slice(0, 12).map((w) => String(w).toLowerCase().trim()).filter((w) => w.length > 2)) {
+    const re = new RegExp(`\\b${w.replace(/[^a-z0-9 ]/g, "")}`, "i");
+    auto.filter((C) => re.test(C.en)).sort((a, b) => pop(b) - pop(a)).slice(0, 5).forEach((C) => ids.add(C.id));
+  }
+  return [...ids].slice(0, 60);
+}
+const RULES = (extras = []) => `PART CATALOG (use these ids exactly):
 ${catalogText()}
-
+${extras.length ? `
+MORE PIECES, measured from the real parts. Same grid and rotation rules; at r=0 a piece covers cells (0..w-1, 0..d-1) and the cell lists use those cells. "y+N" is N plates above the piece's own y: a stud at y+N is where the piece on it starts; a grip at y+N takes the stud of a piece whose top is there. A piece fills its whole w x d x h box unless it says "fills only".
+${extras.map((id) => pieceSpec(CAT[id])).join("\n")}
+Only the ids in these two lists exist.
+` : ""}
 COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative.
 ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
 WHEELS: the wheels come with their plate. Attach the wheel plate UNDER a chassis plate or brick (its studs go into the part above it); nothing attaches under it. At r=0 the wheels stick out on the left and right. Nothing else may be in the wheel space:
@@ -1722,7 +1795,7 @@ const FORMAT = `Reply with ONLY this JSON and nothing else:
 {"title":"Swedish name, max 4 words","description":"one short Swedish sentence for the cover","steps":[{"text":"short Swedish instruction for a 5-year-old, max 10 words","parts":[{"id":"3001","x":0,"y":0,"z":0,"r":0,"c":"red"}]}]}`;
 
 function inventoryLine(o) {
-  // The builder can only use pieces it knows how to connect; the child's other pieces are left out of the design.
+  // The builder can only use pieces it knows how to connect (the catalog and every piece measured from CAD); others are left out.
   const inv = Store.inventory.filter((p) => buildable(p.id));
   if (!o.useInv || !inv.length) return "";
   const list = inv.map((p) => `${p.id} ${p.c} x${p.n}`).join("; ");
@@ -1740,7 +1813,7 @@ function buildPrompt(o) {
   return `You are an expert LEGO set designer making official-style building instructions for a 5-year-old Swedish boy who builds at the level of a ${L.age}. Use only real LEGO System parts from the catalog below.
 TASK: ${what}
 SIZE: about ${L.parts} parts in about ${L.steps} steps. The model must clearly look like the subject, with good colors and details (windows, lights, wheels, roofs) where they fit.
-${RULES()}${inventoryLine(o)}
+${RULES(o.extras)}${inventoryLine(o)}
 Before you answer, plan the model layer by layer on the grid and check every part against the rules.
 ${FORMAT}`;
 }
@@ -1748,7 +1821,7 @@ function fixPrompt(build, problems, o) {
   return `You designed this LEGO model, but a checker found problems. Fix ALL of them by moving, turning, swapping or adding catalog parts (extra support parts are fine). Keep the model looking the same and keep the step order buildable.
 PROBLEMS:
 ${problems.join("\n")}
-${RULES()}${inventoryLine(o)}
+${RULES(o.extras)}${inventoryLine(o)}
 MODEL TO FIX:
 ${JSON.stringify({ title: build.title, description: build.description, steps: build.steps })}
 Return the full corrected model. ${FORMAT}`;
@@ -1880,6 +1953,8 @@ async function generate(o) {
   lsSet("pending", { mode: o.mode, text: o.text || "", level: o.level, at: Date.now() });
   const onText = ({ text }) => { const n = countParts(text); if (n) setWorking("Lägger ut bitar", null, n); };
   try {
+    o.signal = working.signal;
+    o.extras = await extraPieces(o);
     const opts = { signal: working.signal, onText, modelTier: tier, cache: false };
     if (o.mode === "photo" && o.photos?.length) opts.images = o.photos;
     let build = normBuild(await AI.sample.json(buildPrompt(o), opts));
@@ -1899,6 +1974,7 @@ async function generate(o) {
       id: uid(), title: build.title, description: build.description, steps, level: o.level, source: o.mode,
       request: o.mode === "random" ? "" : (o.text || "").slice(0, 200), createdAt: Date.now(),
     };
+    await ensureParts(rec.steps.flatMap((s) => s.parts));
     rec.thumb = Snap.model(rec.steps);
     try { await Store.saveBuild(rec); } catch (e) { toast(e?.code === "quota_exceeded" ? "Minnet är fullt. Ta bort några gamla byggen." : "Bygget kunde inte sparas, men du kan bygga det nu."); }
     go("#v-home");
@@ -1958,6 +2034,7 @@ function speakStep() {
   speak(`Steg ${step + 1}. Du behöver ${need}. ${s.text}`);
 }
 async function openBuild(b) {
+  await ensureParts(b.steps.flatMap((s) => s.parts));
   B = b;
   $("#v-view").hidden = false;
   document.body.style.overflow = "hidden";
@@ -2122,7 +2199,7 @@ $("#inv-scan").addEventListener("click", async () => {
   st.innerHTML = `<b>Tittar på ${files.length === 1 ? "bilden" : "bilderna"}…</b> Claude räknar dina bitar.`;
   $("#inv-scan").disabled = true;
   try {
-    const list = Object.values(CAT).filter((C) => !C.child).map((C) => `${C.id}: ${C.en}`).join("\n");
+    const list = Object.values(CAT).filter((C) => !C.child && !C.auto).map((C) => `${C.id}: ${C.en}`).join("\n");
     const res = await AI.sample.json(`Identify every LEGO piece in the pile and count identical pieces.
 ${anglesNote(files.length, "pile")}
 Name every piece by its LEGO design number: the number molded on the part, as BrickLink, Rebrickable and LDraw use it (for example 3001 for a 2 x 4 brick, 4740 for an inverted 2 x 2 dish, 973 for a minifigure torso). Any real LEGO piece counts, special parts and minifigure parts too. For the common pieces below, use exactly these ids. A wheel plate with its wheels counts as one part: 4600 (2x2, normal wheels), 122c01 (2x2, small red-hub wheels on a metal axle), 6157 (2x2, wide wheels with big tires) or 2926 (1x4 with a wheel at each end). Parts that come apart in the box but belong together (a window and its glass, a door frame and its door, a flower stem and its flowers) count as the main part.
@@ -2341,7 +2418,7 @@ async function findPiece() {
   if (!files.length) return;
   const piece = pieceFacts({ id: F.id, c: F.c });
   // With room for one more image than photos, a drawing of the piece goes along: it shows Claude the exact shape.
-  const pic = buildable(F.id) ? Snap.icon({ id: F.id, c: F.c }) : await libIcon(libKey(F.id), F.c);
+  const pic = buildable(F.id) && !CAT[F.id].auto ? Snap.icon({ id: F.id, c: F.c }) : await libIcon(libKey(F.id), F.c);
   const drawing = pic && files.length < AI.maxImages ? await fetch(pic).then((r) => r.blob()).then((b) => new File([b], "bit.png", { type: "image/png" })).catch(() => null) : null;
   const res = $("#f-result"); res.hidden = false;
   $("#f-hint").textContent = "Letar…"; lastHint = "";
@@ -2381,6 +2458,7 @@ $("#f-more").addEventListener("click", () => pickPhoto((f) => { findTray.add(f);
 $("#f-again").addEventListener("click", () => { findTray.clear(); $("#f-result").hidden = true; });
 
 /* =============================================================== boot */
-loadLibrary();
+LIB.ready = loadLibrary();
+loadConnect();
 loadParts().then((ok) => { if (!ok) toast("Bitarna kunde inte laddas. Ladda om sidan."); renderShelf(); initAI().then(resumeInterrupted); Store.init(); });
 </script>

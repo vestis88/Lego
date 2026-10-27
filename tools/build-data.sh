@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Rebuilds all generated app data in order: the sets' steps (their part lists feed the library), the piece library and
-# its pictures, then the sets again and Rebrickable's sets, so every "what you need" list counts library pieces.
+# Rebuilds all generated app data in order: the sets' steps (their part lists feed the library), the piece library, its
+# pictures and how each piece connects, then the sets again (put in an order where every part is held, and counting
+# library pieces) and Rebrickable's sets.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 node tools/omr-build.js
 node tools/library-build.js
 node tools/library-icons.js
+node tools/library-connect.js
 node tools/omr-build.js
 node tools/omr-thumbs.js
 node tools/rb-build.js

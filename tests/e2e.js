@@ -40,6 +40,7 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts);
     await page.waitForTimeout(800);
     const unitFails = await page.evaluate(() => window.__unit()); console.log(name, 'unit:', JSON.stringify(unitFails)); if (unitFails.length) process.exitCode = 1;
+    const autoFails = await page.evaluate(() => window.__unitAuto()); console.log(name, 'unit measured pieces:', JSON.stringify(autoFails.slice(0, 20)), autoFails.length); if (autoFails.length) process.exitCode = 1;
     console.log(name, 'calls ok');
     await page.screenshot({ path: `${S}/shots/${name}-home.png` });
     await page.click('#t-text'); await page.fill('#prompt', 'ett torn'); await page.screenshot({ path: `${S}/shots/${name}-create.png`, fullPage: true });
@@ -99,7 +100,7 @@ fs.writeFileSync(S + '/harness.html', html);
     console.log(name, 'sets', total, 'found', JSON.stringify(found), JSON.stringify(setInfo));
     if (!found.length || !setInfo.set || !setInfo.callout) process.exitCode = 1;
     // Hitta bit for a piece only real sets use: described by its LDraw name and size, with a drawing of it.
-    const odd = await page.evaluate(() => { const q = B.steps.flatMap((s) => s.parts).find((x) => !CAT[x.id] && !catOf(x.id)); partSheet({ id: q.id, c: q.c }); return q.id; });
+    const odd = await page.evaluate(() => { const q = B.steps.flatMap((s) => s.parts).find((x) => !(CAT[x.id] && !CAT[x.id].auto) && !catOf(x.id)); partSheet({ id: q.id, c: q.c }); return q.id; });
     await page.click('#sheet-body .btn.go');
     [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#f-shoot')]);
     await fc.setFiles(S + '/shots/' + name + '-home.png'); await page.waitForTimeout(900);
@@ -107,7 +108,7 @@ fs.writeFileSync(S + '/harness.html', html);
     console.log(name, 'find set piece', odd, JSON.stringify(ask));
     if (ask[0] !== 2 || !ask[1] || !ask[2]) process.exitCode = 1;
     // Hitta bit searches the whole piece library: a piece no set with steps or catalog entry has, found by its Swedish name.
-    const libPiece = await page.evaluate(() => LIB.order.find((k) => !CAT[k] && LIB.parts[k][LIB_FIELDS.sv] && LIB.parts[k][LIB_FIELDS.sets] > 20 && /med hjulfäste/.test(LIB.parts[k][LIB_FIELDS.sv])));
+    const libPiece = await page.evaluate(() => LIB.order.find((k) => (!CAT[k] || CAT[k].auto) && LIB.parts[k][LIB_FIELDS.sv] && LIB.parts[k][LIB_FIELDS.sets] > 20 && /med hjulfäste/.test(LIB.parts[k][LIB_FIELDS.sv])));
     const libName = await page.evaluate((k) => LIB.parts[k][LIB_FIELDS.sv], libPiece);
     await page.click('#v-find [data-back]'); await page.click('#t-find');
     await page.fill('#f-q', 'hjulfäste'); await page.waitForTimeout(600);

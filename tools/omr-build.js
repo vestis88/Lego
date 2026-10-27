@@ -10,6 +10,7 @@ const fs = require('fs'), path = require('path'), { execFileSync } = require('ch
 const { find, load } = require('../tests/ldraw-lib.js');
 const { walk, pack, PRIMS, COLORS: LDCOLORS, packMesh } = require('./ldraw-pack.js');
 const { keyOf } = require('./library-keys.js');
+const { orderSteps, floating, bases, place: placeParts, links } = require('./set-order.js');
 const ROOT = path.join(__dirname, '..');
 const CACHE = path.join(ROOT, 'tests', '.cache', 'omr');
 const APP = path.join(ROOT, 'app');
@@ -149,7 +150,7 @@ console.log(`${models.length} models from ${sets.length} sets`);
 const titles = {};
 const title = (f) => (titles[f] ??= (load(f + '.dat', ['parts/'])?.split('\n')[0] || '').replace(/^0\s*~?/, '').replace(/\s+/g, ' ').trim());
 
-const index = [], chunks = [];
+const index = [], chunks = [], stats = [];
 models.sort((a, b) => a.S.theme.localeCompare(b.S.theme) || (a.S.year || 0) - (b.S.year || 0) || a.S.num.localeCompare(b.S.num));
 const used = new Set(), usedIn = [];
 models.forEach((m, i) => {
@@ -163,7 +164,13 @@ models.forEach((m, i) => {
     const M = p.M, D = [1, -1, -1];
     return [fileIdx.get(p.file), appColor(p.code), ...[0, 1, 2].flatMap((row) => [r4(D[row] * M[row * 4]), r4(D[row] * M[row * 4 + 1]), r4(D[row] * M[row * 4 + 2])]), ...[0, 1, 2].map((row) => r3(D[row] * M[row * 4 + 3] / 20))];
   };
-  const st = kidSteps(m.st.steps).map((s) => s.map(place));
+  // The model's own steps, reordered so no part comes before what holds it (see tools/set-order.js).
+  const before = kidSteps(m.st.steps), ordered = orderSteps(m.st.steps);
+  // Floating parts before and after, measured against the same bases (the model's first step and each separate model's start).
+  const flat0 = m.st.steps.flat(), P0 = placeParts(flat0), B0 = bases(m.st.steps, P0, links(P0));
+  const fl = (st) => { const f = st.flat(), Q = placeParts(f); return floating(st, Q, links(Q), new Set(f.map((p, i) => (B0.has(flat0.indexOf(p)) ? i : -1)))).length; };
+  stats.push([key, fl(before), fl(ordered)]);
+  const st = ordered.map((s) => s.map(place));
   (chunks[k] ||= {})[key] = { files, steps: st };
   // What the set needs from "Mina bitar": library pieces by color; pieces the library lacks counted apart.
   const need = new Map(); let other = 0, figs = 0;
@@ -198,6 +205,9 @@ chunks.forEach((c, k) => {
   fs.writeFileSync(path.join(APP, `set-parts-${k}.json`), shapeFile([...usedIn[k]].filter((f) => uses[f] < COMMON), false));
 });
 fs.writeFileSync(path.join(APP, 'sets-index.json'), JSON.stringify(index));
+const sum = (k) => stats.reduce((a, s) => a + s[k], 0);
+console.log(`floating parts: ${sum(1)} in ${stats.filter((s) => s[1]).length} sets with the model's own order, ${sum(2)} in ${stats.filter((s) => s[2]).length} sets after reordering`);
+if (process.env.FLOATING) console.log(stats.filter((s) => s[2]).sort((a, b) => b[2] - a[2]).slice(0, 30).map((s) => s.join(' ')).join('\n'));
 const size = (f) => (fs.statSync(path.join(APP, f)).size / 1024 / 1024).toFixed(1) + ' MB';
 console.log(`${index.length} sets in ${chunks.length} chunks; ${used.size} different parts packed in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 const mb = (pre) => chunks.map((_, k) => fs.statSync(path.join(APP, `${pre}-${k}.json`)).size / 1024 / 1024);
