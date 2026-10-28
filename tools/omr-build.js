@@ -7,7 +7,7 @@
 //   set-parts-common.json  the raw LDraw shape of the parts many sets use (same packing as parts.json, low-detail circles)
 //   set-parts-N.json       the other parts the sets in chunk N use
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
-const { find, load } = require('../tests/ldraw-lib.js');
+const { find, load, measure } = require('../tests/ldraw-lib.js');
 const { walk, pack, PRIMS, COLORS: LDCOLORS, packMesh } = require('./ldraw-pack.js');
 const { keyOf } = require('./library-keys.js');
 const { orderSteps, floating, bases, place: placeParts, links } = require('./set-order.js');
@@ -117,6 +117,79 @@ function steps(text) {
   })(first, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], '16', 0);
   return { steps: out.filter((s) => s.length), author, missing: [...missing] };
 }
+/**
+ * Rims placed the way LDraw drew them before it turned the part (30027a was turned 90° in 2012; older models still place
+ * it the old way, so its hub faces sideways). A rim sits inside its tire, and the tire's axle is right: where a rim's
+ * axle doesn't match the tire around it, turn the rim a quarter turn about its own up axis, facing out the way the same
+ * rim faces in the models that place it right.
+ */
+const titles = {};
+const title = (f) => (titles[f] ??= (load(f + '.dat', ['parts/'])?.split('\n')[0] || '').replace(/^0\s*~?/, '').replace(/\s+/g, ' ').trim());
+const shapeBox = {};
+function axleOf(file) {
+  if (!(file in shapeBox)) {
+    const text = load(file + '.dat', ['parts/']), m = text && measure(text);
+    // The axle: the direction most of the part's round primitives (cylinders, rings, discs) are turned along.
+    const votes = [0, 0, 0];
+    (function go(t, M, depth) {
+      if (depth > 6) return;
+      for (const line of t.split(/\r?\n/)) {
+        const a = line.trim().split(/\s+/);
+        if (a[0] !== '1') continue;
+        const n = a.slice(2, 14).map(Number), name = a.slice(14).join(' ').toLowerCase().replace(/\\/g, '/');
+        const M2 = mul(M, [n[3], n[4], n[5], n[0], n[6], n[7], n[8], n[1], n[9], n[10], n[11], n[2]]);
+        if (/^(48\/|8\/)?\d+-\d+(cyl|ring|disc|ndis|edge|con|chrd)/.test(name)) {
+          const y = [M2[1], M2[5], M2[9]], L = Math.hypot(...y) || 1;
+          y.forEach((v, k) => (votes[k] += Math.abs(v) / L > 0.9 ? 1 : 0));
+        } else if (/^s\/|^\d+[a-z0-9]*\.dat$/.test(name)) { const st = load(name); if (st) go(st, M2, depth + 1); }
+      }
+    })(text || '', [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], 0);
+    const axle = votes.indexOf(Math.max(...votes));
+    // measure() is in app axes; back to LDraw for the centre.
+    shapeBox[file] = m && Math.max(...votes) ? { axle, c: [(m.min[0] + m.max[0]) / 2, -(m.min[1] + m.max[1]) / 2, -(m.min[2] + m.max[2]) / 2] } : null;
+  }
+  return shapeBox[file];
+}
+const at = (M, p) => [0, 1, 2].map((r) => M[r * 4] * p[0] + M[r * 4 + 1] * p[1] + M[r * 4 + 2] * p[2] + M[r * 4 + 3]);
+const axis = (M, k) => [M[k], M[4 + k], M[8 + k]];
+function fixRims(parts, facing, fix) {
+  // Which way a rim's own axle points from the model's centre: + or - along the axle, outward.
+  const cx = parts.reduce((s, p) => s + p.M[3], 0) / parts.length, cz = parts.reduce((s, p) => s + p.M[11], 0) / parts.length;
+  const outward = (M, a, c) => Math.sign(axis(M, a)[0] * (c[0] - cx) + axis(M, a)[2] * (c[2] - cz));
+  // A part LDraw moved keeps a stub named "Moved to <new>": go by the new part's name.
+  const named = (f) => { const t = title(f), m = t.match(/^Moved to (\S+)/); return m ? title(m[1]) : t; };
+  const tires = parts.filter((p) => /^(Tyre|Tire)/i.test(named(p.file)) && axleOf(p.file));
+  let n = 0;
+  for (const p of parts) {
+    if (!/^Wheel Rim/i.test(named(p.file))) continue;
+    const R = axleOf(p.file); if (!R) continue;
+    const c = at(p.M, R.c);
+    const t = tires.map((q) => ({ q, d: Math.hypot(...at(q.M, axleOf(q.file).c).map((v, k) => v - c[k])) })).sort((a, b) => a.d - b.d)[0];
+    if (!t || t.d > 25) continue;
+    const ta = axis(t.q.M, axleOf(t.q.file).axle), ra = axis(p.M, R.axle);
+    if (Math.abs(ta[0] * ra[0] + ta[1] * ra[1] + ta[2] * ra[2]) > 0.9) {
+      // Sitting right: count which way this rim faces.
+      if (!fix) { const f = (facing[p.file] ||= [0, 0]); f[outward(p.M, R.axle, c) > 0 ? 0 : 1]++; }
+      continue;
+    }
+    if (!fix) continue;
+    const want = facing[p.file] && facing[p.file][0] !== facing[p.file][1] ? (facing[p.file][0] > facing[p.file][1] ? 1 : -1) : 0;
+    const tc = at(t.q.M, axleOf(t.q.file).c);
+    let best = null;
+    for (const sgn of [1, -1]) {
+      // M * Ry(±90): local x -> -/+z.
+      const Ry = [0, 0, sgn, 0, 0, 1, 0, 0, -sgn, 0, 0, 0], M = mul(p.M, Ry);
+      if (Math.abs([0, 1, 2].reduce((s, k) => s + axis(M, R.axle)[k] * ta[k], 0)) < 0.9) continue;
+      // Keep the rim's centre where the model had it: move the part so its own centre lands back on c.
+      const c2 = at(M, R.c); M[3] += c[0] - c2[0]; M[7] += c[1] - c2[1]; M[11] += c[2] - c2[2];
+      // The turn that faces the way this rim faces in the other models; else the one that stays centred in the tire.
+      const d = (want && outward(M, R.axle, c) !== want ? 1000 : 0) + Math.hypot(...at(M, R.c).map((v, k) => v - tc[k]));
+      if (!best || d < best.d) best = { M, d };
+    }
+    if (best) { p.M = best.M; n++; }
+  }
+  return n;
+}
 /** Steps a child can follow: at most 8 new parts each; a model without steps is built in layers from the bottom up. */
 function kidSteps(st) {
   const layered = (parts) => {
@@ -134,6 +207,7 @@ function kidSteps(st) {
 fs.mkdirSync(CACHE, { recursive: true });
 const sets = setList().filter((s) => !SKIP.test(s.theme));
 const models = [];
+let rimsFixed = 0;
 for (const S of sets) {
   const page = cached(`pages/${S.id}.html`, `${BASE}/omr/sets/${S.id}`);
   for (const u of new Set(page?.match(/media\/omr_models\/[^"?]+\.(mpd|ldr)/g) || [])) {
@@ -144,11 +218,13 @@ for (const S of sets) {
     models.push({ S, file: path.basename(u), st, parts });
   }
 }
-console.log(`${models.length} models from ${sets.length} sets`);
+// Rims first learn which way they face where they sit right, then the ones placed the old way are turned to match.
+const facing = {};
+for (const m of models) rimsFixed += fixRims(m.parts, facing, false);
+for (const m of models) rimsFixed += fixRims(m.parts, facing, true);
+console.log(`${models.length} models from ${sets.length} sets; ${rimsFixed} rims turned to match their tire`);
 
 // Part names (minifig parts are drawn but never count as pieces to find).
-const titles = {};
-const title = (f) => (titles[f] ??= (load(f + '.dat', ['parts/'])?.split('\n')[0] || '').replace(/^0\s*~?/, '').replace(/\s+/g, ' ').trim());
 
 const index = [], chunks = [], stats = [];
 models.sort((a, b) => a.S.theme.localeCompare(b.S.theme) || (a.S.year || 0) - (b.S.year || 0) || a.S.num.localeCompare(b.S.num));

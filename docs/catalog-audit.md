@@ -153,6 +153,10 @@ So the hand-made connection data is gone: every piece, the common ones included,
 
 The sets with steps used the models' own order. LDraw authors often build a sub-assembly on its own and attach it later, and big steps were split purely by height. So parts hung in the air: 13,981 in 649 of the 913 sets. `tools/set-order.js` now finds which parts hold which (a stud in a grip, side studs included; parts without stud data hold by touching) and moves each part to the first step where something already built holds it. Each separate model in a set (a second vehicle, a minifigure) gets its own base. Models without steps are built one model at a time, biggest first, in layers from the bottom up. After reordering, no part hangs in the air.
 
+### Rims placed the pre-2012 way
+
+LDraw turned rim 30027a by 90° in 2012. Models made before that, or copied from them, still place it the old way, with the hub facing sideways; set 7601 is one. Every rim sits inside a tire whose axle is right, so `tools/omr-build.js` turns a rim whose axle doesn't match its tire a quarter turn. It faces the rim out the way the same rim faces in the models that place it right (the hub away from the model). 16 rims in the 913 sets were turned.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.
