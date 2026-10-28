@@ -11,3 +11,4 @@ node tools/library-connect.js
 node tools/omr-build.js
 node tools/omr-thumbs.js
 node tools/rb-build.js
+python3 tools/rb-thumbs.py

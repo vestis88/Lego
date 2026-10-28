@@ -1183,7 +1183,7 @@ async function libIcon(key, color) {
    sets-index.json lists them; sets-N.json holds the steps of a chunk of sets and sets-thumbs-N.json their pictures;
    set-parts-common.json has the raw shapes of the parts many sets use, set-parts-N.json the other parts of chunk N.
    A set part is {id: LDraw file, c: app color, m: placement}: rotation (3x3, row by row) and position in studs, app axes. */
-const SETS = { index: null, chunks: new Map(), thumbs: new Map(), shapes: null, loaded: new Map() };
+const SETS = { index: null, chunks: new Map(), thumbs: new Map(), rbThumbs: new Map(), shapes: null, loaded: new Map() };
 const fetchJson = async (f) => { const r = await fetch(f); if (!r.ok) throw new Error(f); return r.json(); };
 async function loadSetIndex() { return (SETS.index ||= await fetchJson("sets-index.json")); }
 /** Shapes for the sets of chunk k: the common file once, then that chunk's own parts. */
@@ -1198,10 +1198,12 @@ async function loadSetShapes(k) {
 async function loadRb() {
   return (SETS.rb ||= fetchJson("rb-index.json").then(({ ids, colors, sets }) => {
     const have = new Set((SETS.index || []).map((e) => e.num));
-    return sets.filter(([num]) => !have.has(num)).map(([num, name, year, theme, parts, figs, other, flat, img]) => {
+    // pic: which rb-thumbs-N.json has the set's picture (500 sets a file, in this list's order).
+    return sets.map(([num, name, year, theme, parts, figs, other, flat], at) => {
+      if (have.has(num)) return null;
       const need = []; for (let i = 0; i < flat.length; i += 3) need.push([ids[flat[i]], colors[flat[i + 1]], flat[i + 2]]);
-      return { key: "rb:" + num, rb: true, num, name, year, theme, parts, figs, other, need, img };
-    });
+      return { key: "rb:" + num, rb: true, num, name, year, theme, parts, figs, other, need, pic: Math.floor(at / 500) };
+    }).filter(Boolean);
   }).catch(() => []));
 }
 async function loadThumbs(k) { if (!SETS.thumbs.has(k)) SETS.thumbs.set(k, fetchJson(`sets-thumbs-${k}.json`).catch(() => ({}))); return SETS.thumbs.get(k); }
@@ -2312,31 +2314,11 @@ async function setThumb(th) {
   const src = (await loadThumbs(Number(th.dataset.chunk)))[th.dataset.key];
   if (src) { const img = new Image(); img.alt = ""; img.src = src; th.append(img); }
 }
-/** A set picture from Rebrickable's image server where the page may load it; otherwise (or meanwhile) its own pieces. */
-function setImage(th, e) {
-  partsPicture(th, e);
-  if (!e.img) return;
-  const img = new Image(); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-  img.onload = () => { th.textContent = ""; th.append(img); };
-  img.src = "https://cdn.rebrickable.com/media/sets/" + e.img;
-}
-/** The set's six most used pieces, in their colors, from the library's pictures. */
-async function partsPicture(th, e) {
-  const top = e.need.slice().sort((a, b) => b[2] - a[2]).slice(0, 6);
-  // Common pieces are drawn in 3D (their shapes load at start); the library's pictures cover the rest.
-  const pics = await Promise.all(top.map(([id, c]) => { if (CAT[id] && !CAT[id].auto) return Snap.icon({ id, c }); const k = libKey(id); return k ? libIcon(k, c) : null; }));
-  const urls = pics.filter(Boolean);
-  if (!urls.length || th.querySelector("img")) return;
-  const W = 240, H = 180, cols = urls.length > 4 ? 3 : 2, rows = Math.ceil(urls.length / cols), cell = Math.min(W / cols, H / rows);
-  const c = document.createElement("canvas"); c.width = W; c.height = H;
-  const g = c.getContext("2d");
-  await Promise.all(urls.map((u, i) => new Promise((done) => {
-    const im = new Image();
-    im.onload = () => { const x = (W - cols * cell) / 2 + (i % cols) * cell, y = (H - rows * cell) / 2 + Math.floor(i / cols) * cell; g.drawImage(im, x + 4, y + 4, cell - 8, cell - 8); done(); };
-    im.onerror = done; im.src = u;
-  })));
-  if (th.querySelector("img")) return;
-  const img = new Image(); img.alt = ""; img.src = c.toDataURL("image/png"); th.append(img);
+/** The picture of a set without steps: its photo from Rebrickable, shrunk and published with the app (tools/rb-thumbs.py). */
+async function setImage(th, e) {
+  if (!SETS.rbThumbs.has(e.pic)) SETS.rbThumbs.set(e.pic, fetchJson(`rb-thumbs-${e.pic}.json`).catch(() => ({})));
+  const src = (await SETS.rbThumbs.get(e.pic))[e.num];
+  if (src && !th.querySelector("img")) { const img = new Image(); img.alt = ""; img.src = src; th.append(img); }
 }
 /** A set the app has no steps for: what the child has, what is missing, and LEGO's own instructions. */
 function rbSheet(e) {

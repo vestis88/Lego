@@ -3,6 +3,7 @@ sets-index.json
 sets-*.json
 set-parts-*.json
 rb-index.json
+rb-thumbs-*.json
 # The piece library made by tools/library-build.js, tools/library-icons.js and tools/library-connect.js (about 60 MB)
 library.json
 lib-icons-*.json
