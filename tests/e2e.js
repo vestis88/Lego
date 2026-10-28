@@ -38,7 +38,7 @@ fs.writeFileSync(S + '/harness.html', html);
     // Served from a made-up http origin so the app can fetch parts.json next to it.
     // parts.json, the real sets and their shapes are files next to the app.
     // The library files come slowly, like on a phone: nothing may be drawn before the pieces' shapes are in.
-    await page.route(/\/[\w-]+\.json$/, async (r) => { const f = new URL(r.request().url()).pathname.split('/').pop(); if (/^(library|lib-shapes-core)/.test(f)) await new Promise((d) => setTimeout(d, 1500)); r.fulfill({ path: S + '/../app/' + f, contentType: 'application/json' }); });
+    await page.route(/\/[\w-]+\.json$/, async (r) => { const f = new URL(r.request().url()).pathname.split('/').pop(); if (/^(library|lib-shapes-core)/.test(f)) await new Promise((d) => setTimeout(d, 1500)); if (!fs.existsSync(S + '/../app/' + f)) return r.fulfill({ status: 404, body: '' }); r.fulfill({ path: S + '/../app/' + f, contentType: 'application/json' }); });
     await page.route('http://app.test/harness.html', r => r.fulfill({ path: S + '/harness.html', contentType: 'text/html' }));
     await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts && CONN.shapes.has('core')); await page.evaluate(() => CONN.shapes.get('core'));
     await page.waitForTimeout(800);
@@ -136,9 +136,13 @@ fs.writeFileSync(S + '/harness.html', html);
     const rbCards = await page.$$('#s-list .build-card >> text=bitlista');
     if (rbCards.length) {
       await rbCards[0].click(); await page.waitForSelector('#sheet:not([hidden])');
-      const sheet = await page.evaluate(() => [document.querySelector('#sheet-body h3').textContent, document.querySelectorAll('#sheet-body .bom-item').length, document.querySelector('#sheet-body a.btn').href]);
-      console.log(name, 'set without steps', JSON.stringify(sheet));
-      if (!/lego\.com/.test(sheet[2])) process.exitCode = 1;
+      // Links only where instructions exist: scans on BrickInstructions, LEGO's archive for sets from 2002 on; else a note.
+      const sheet = await page.evaluate(() => [document.querySelector('#sheet-body h3').textContent, document.querySelectorAll('#sheet-body .bom-item').length,
+        [...document.querySelectorAll('#sheet-body a.btn')].map((a) => a.href.replace(/^https:\/\/([^/]+).*/, '$1')).join(' ') || [...document.querySelectorAll('#sheet-body .tray-tip')].pop()?.textContent]);
+      const want = await page.evaluate((title) => { const e = SETS.rbList.find((x) => x.name === title); const nr = e.num.replace(/-1$/, '');
+        return [SETS.instr?.has(nr) && 'lego.brickinstructions.com', e.year >= 2002 && 'www.lego.com'].filter(Boolean).join(' ') || 'ingen byggbeskrivning'; }, sheet[0]);
+      console.log(name, 'set without steps', JSON.stringify(sheet), 'expected', want);
+      if (!sheet[2] || !sheet[2].includes(want.split(' ')[0])) process.exitCode = 1;
       await page.screenshot({ path: `${S}/shots/${name}-rb-sheet.png` });
       await page.click('#sheet', { position: { x: 5, y: 5 } });
     } else { console.log(name, 'no sets without steps listed'); process.exitCode = 1; }

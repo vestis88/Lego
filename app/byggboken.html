@@ -1196,14 +1196,18 @@ async function loadSetShapes(k) {
 }
 /** Every official set's parts list (Rebrickable, made by tools/rb-build.js), for sets without steps in the app. Loaded when needed. */
 async function loadRb() {
+  // Which of them have scanned instructions online (tools/rb-instructions.py).
+  SETS.instrLoad ||= fetchJson("rb-instructions.json").then((l) => { SETS.instr = new Set(l); }).catch(() => {});
   return (SETS.rb ||= fetchJson("rb-index.json").then(({ ids, colors, sets }) => {
     const have = new Set((SETS.index || []).map((e) => e.num));
     // pic: which rb-thumbs-N.json has the set's picture (100 sets a file, in this list's order).
-    return sets.map(([num, name, year, theme, parts, figs, other, flat], at) => {
+    const list = sets.map(([num, name, year, theme, parts, figs, other, flat], at) => {
       if (have.has(num)) return null;
       const need = []; for (let i = 0; i < flat.length; i += 3) need.push([ids[flat[i]], colors[flat[i + 1]], flat[i + 2]]);
       return { key: "rb:" + num, rb: true, num, name, year, theme, parts, figs, other, need, pic: Math.floor(at / 100) };
     }).filter(Boolean);
+    SETS.rbList = list;
+    return list;
   }).catch(() => []));
 }
 async function loadThumbs(k) { if (!SETS.thumbs.has(k)) SETS.thumbs.set(k, fetchJson(`sets-thumbs-${k}.json`).catch(() => ({}))); return SETS.thumbs.get(k); }
@@ -2356,10 +2360,15 @@ function rbSheet(e) {
       body.append(grid);
     }
     if (e.other) { const o = document.createElement("p"); o.className = "tray-tip"; o.textContent = `Plus ${e.other} ${e.other === 1 ? "bit" : "bitar"} som appen inte har någon bild av än.`; body.append(o); }
+    // Instructions only where there are some: scans on BrickInstructions (checked by tools/rb-instructions.py, many
+    // old sets), and LEGO's own archive, which mostly has sets from 2002 on (it can't be checked ahead).
     const row = document.createElement("div"); row.className = "btn-row";
-    const a = document.createElement("a"); a.className = "btn go"; a.target = "_blank"; a.rel = "noopener";
-    a.href = "https://www.lego.com/sv-se/service/building-instructions/" + e.num.replace(/-1$/, ""); a.textContent = "Byggbeskrivning hos LEGO";
-    row.append(a); body.append(row);
+    const link = (href, text, main) => { const a = document.createElement("a"); a.className = main ? "btn go" : "btn small"; a.target = "_blank"; a.rel = "noopener"; a.href = href; a.textContent = text; row.append(a); };
+    const nr = e.num.replace(/-1$/, ""), scanned = SETS.instr?.has(nr), lego = e.year >= 2002;
+    if (scanned) link("https://lego.brickinstructions.com/en/lego_instructions/set/" + nr, "Byggbeskrivning", true);
+    if (lego) link("https://www.lego.com/sv-se/service/building-instructions/" + nr, scanned ? "Hos LEGO" : "Byggbeskrivning hos LEGO", !scanned);
+    if (row.children.length) body.append(row);
+    else { const n = document.createElement("p"); n.className = "tray-tip"; n.textContent = "Det finns ingen byggbeskrivning på nätet för det här setet. Bilden visar hur det ska se ut."; body.append(n); }
     const cr = document.createElement("p"); cr.className = "credit"; cr.textContent = "Bitlista från Rebrickable."; body.append(cr);
   });
 }
