@@ -144,7 +144,11 @@ window.__unitAuto = async () => {
   const out = [];
   const ok = (c, m) => { if (!c) out.push("FAIL " + m); };
   await loadConnect();
+  // Drawn before any test asked for more shapes: a piece in the shelf's example builds is the real shape, not a box.
+  ok(CONN.shapes.has("core") && CONN.shapes.size === 1, "only the common pieces' shape file loaded at start: " + [...CONN.shapes.keys()]);
   // The common pieces (drawn from parts.json, checked with measured data: both must agree) and the first shape files.
+  // The common pieces' shapes were loaded at start, before anything was drawn.
+  ok(CONN.shapes.has("core") && Object.values(CAT).filter((C) => C.conn && !C.auto).every((C) => SETS.shapes.parts[C.file]), "common pieces' shapes loaded at start");
   const auto = Object.values(CAT).filter((C) => C.conn && (!C.auto || C.conn.k < 3));
   ok(auto.length > 250, "measured pieces loaded: " + auto.length);
   await ensureParts(auto.map((C) => ({ id: C.id })));

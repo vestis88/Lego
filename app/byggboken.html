@@ -996,8 +996,10 @@ const LDU = 1 / 80; // one packed unit (1/4 LDU) in studs
 async function loadParts() {
   try { const r = await fetch("parts.json"); if (r.ok) LD.parts = await r.json(); } catch {}
   if (LD.parts) setupWheels();
-  // The common pieces' CAD shapes (lib-shapes-core.json) before anything is drawn.
-  await ensureParts(Object.values(CAT).filter((C) => C.conn).map((C) => ({ id: C.id })));
+  // The common pieces' CAD shapes (lib-shapes-core.json) before anything is drawn. Which pieces have CAD data is only
+  // known once library-connect.json is in, so wait for that first.
+  await loadConnect();
+  await ensureParts(Object.values(CAT).filter((C) => C.conn && !C.auto).map((C) => ({ id: C.id })));
   return !!LD.parts;
 }
 const unb64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
@@ -1112,9 +1114,10 @@ const CONN = { ready: null, shapes: new Map() };
 const composite = (C) => !!(C.child || C.wheels || C.door || C.glass || C.shape === "window" || C.extras?.some((x) => x.id === "3742"));
 function loadConnect() {
   return (CONN.ready ||= (async () => {
+    // Fetched alongside the library, not after it: on a phone the files take seconds each.
+    const fetched = fetchJson("library-connect.json").catch(() => ({}));
     await LIB.ready;
-    let data = {};
-    try { data = await fetchJson("library-connect.json"); } catch {}
+    const data = await fetched;
     for (const [id, K] of Object.entries(data)) {
       const e = LIB.parts?.[id], C = CAT[id];
       // The common pieces are measured and drawn from CAD like every other piece; CAT only adds their Swedish names
@@ -1131,12 +1134,13 @@ function loadConnect() {
 /** Loads what the parts of a build need to be checked and drawn: the measured pieces and their shapes. */
 async function ensureParts(parts) {
   await loadConnect();
-  const chunks = new Set(parts.map((p) => CAT[p.id]?.conn?.k).filter((k) => k != null));
+  await Promise.all([...new Set(parts.map((p) => CAT[p.id]?.conn?.k).filter((k) => k != null))].map(loadShapes));
+}
+/** One shape file (lib-shapes-N.json), added to the shapes the drawing code looks pieces up in. */
+function loadShapes(k) {
   SETS.shapes ||= { names: {}, cat: {}, parts: {}, _prims: {} };
-  await Promise.all([...chunks].map((k) => {
-    if (!CONN.shapes.has(k)) CONN.shapes.set(k, fetchJson(`lib-shapes-${k}.json`).then((S) => { Object.assign(SETS.shapes.parts, S.parts); Object.assign(SETS.shapes._prims, S._prims); }).catch(() => {}));
-    return CONN.shapes.get(k);
-  }));
+  if (!CONN.shapes.has(k)) CONN.shapes.set(k, fetchJson(`lib-shapes-${k}.json`).then((S) => { Object.assign(SETS.shapes.parts, S.parts); Object.assign(SETS.shapes._prims, S._prims); }).catch(() => {}));
+  return CONN.shapes.get(k);
 }
 /** Whether the builder can connect a piece (it has grid rules in CAT). */
 const buildable = (id) => !!CAT[id] && !CAT[id].child;
@@ -2480,5 +2484,6 @@ $("#f-again").addEventListener("click", () => { findTray.clear(); $("#f-result")
 /* =============================================================== boot */
 LIB.ready = loadLibrary();
 loadConnect();
+loadShapes("core"); // the common pieces' shapes, downloading while the rest loads
 loadParts().then((ok) => { if (!ok) toast("Bitarna kunde inte laddas. Ladda om sidan."); renderShelf(); initAI().then(resumeInterrupted); Store.init(); });
 </script>

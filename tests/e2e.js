@@ -35,9 +35,10 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.route('**/fonts.googleapis.com/**', r => r.abort());
     // Served from a made-up http origin so the app can fetch parts.json next to it.
     // parts.json, the real sets and their shapes are files next to the app.
-    await page.route(/\/[\w-]+\.json$/, r => r.fulfill({ path: S + '/../app/' + new URL(r.request().url()).pathname.split('/').pop(), contentType: 'application/json' }));
+    // The library files come slowly, like on a phone: nothing may be drawn before the pieces' shapes are in.
+    await page.route(/\/[\w-]+\.json$/, async (r) => { const f = new URL(r.request().url()).pathname.split('/').pop(); if (/^(library|lib-shapes-core)/.test(f)) await new Promise((d) => setTimeout(d, 1500)); r.fulfill({ path: S + '/../app/' + f, contentType: 'application/json' }); });
     await page.route('http://app.test/harness.html', r => r.fulfill({ path: S + '/harness.html', contentType: 'text/html' }));
-    await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts);
+    await page.goto('http://app.test/harness.html'); await page.waitForFunction(() => LD.parts && CONN.shapes.has('core')); await page.evaluate(() => CONN.shapes.get('core'));
     await page.waitForTimeout(800);
     const unitFails = await page.evaluate(() => window.__unit()); console.log(name, 'unit:', JSON.stringify(unitFails)); if (unitFails.length) process.exitCode = 1;
     const autoFails = await page.evaluate(() => window.__unitAuto()); console.log(name, 'unit measured pieces:', JSON.stringify(autoFails.slice(0, 20)), autoFails.length); if (autoFails.length) process.exitCode = 1;
