@@ -3,7 +3,7 @@ window.__unit = () => {
   const out = [];
   const ok = (c, m) => { if (!c) out.push("FAIL " + m); };
   // 1. Geometry footprint and grid cells agree for every part and rotation (pieces measured from CAD: see __unitAuto).
-  for (const C of Object.values(CAT).filter((C) => !C.auto)) for (const r of [0, 90, 180, 270]) {
+  for (const C of Object.values(CAT).filter((C) => !C.conn)) for (const r of [0, 90, 180, 270]) {
     const p = { id: C.id, x: 3, y: 2, z: -4, r, c: "red" };
     const I = info(p);
     const g = buildPart(p, true);
@@ -108,14 +108,16 @@ window.__unit = () => {
   // 12. Steering stand: across the car, in front of a seat, wheel over the seat's low front row.
   const st = info({ id: "3829c01", x: 0, y: 0, z: 0, r: 0 });
   ok(st.cells.length === 2 && st.cells.every(([x, z]) => z === 0), "steering base lies across (x)");
-  const cab = normBuild({ steps: [{ parts: [{ id: "3021", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "4079", x: 0, y: 1, z: 0 }, { id: "3829c01", x: 0, y: 1, z: 2 }] }] });
+  const cab = normBuild({ steps: [{ parts: [{ id: "3020", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "4079", x: 0, y: 1, z: 0 }, { id: "3829c01", x: 0, y: 1, z: 3 }] }] });
   ok(problemList(analyze(cab.steps)).length === 0, "seat + steering stand fit together " + problemList(analyze(cab.steps)));
   const cab2 = normBuild({ steps: [{ parts: [{ id: "3021", x: 0, y: 0, z: 0, r: 0 }] }, { parts: [{ id: "3004", x: 0, y: 1, z: 1, r: 90 }, { id: "3004", x: 0, y: 4, z: 1, r: 90 }, { id: "3829c01", x: 0, y: 1, z: 2 }] }] });
-  ok(analyze(cab2.steps).overlaps.length === 1, "steering wheel collides with a tall brick behind it");
+  // The real wheel (CAD) stays inside its own cell: a tall brick right behind it fits.
+  ok(analyze(cab2.steps).overlaps.length === 0, "steering wheel stays in its cell");
   // 11. Roof pieces and round plates.
   ok(info({ id: "3046", x: 0, y: 0, z: 0, r: 0 }).studs.length === 3, "3046 studs");
   const rp = info({ id: "60474", x: 0, y: 0, z: 0, r: 0 });
-  ok(rp.studs.length === 12 && rp.cells.length === 12, "60474 cells " + rp.studs.length + "/" + rp.cells.length);
+  // 12 studs; the round rim reaches into the 4 corner cells too.
+  ok(rp.studs.length === 12 && rp.cells.length === 16, "60474 cells " + rp.studs.length + "/" + rp.cells.length);
   const ridge = normBuild({ steps: [{ parts: [{ id: "3043", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });
   ok(analyze(ridge.steps).floats.length === 1, "nothing holds on a ridge");
   const cvx = normBuild({ steps: [{ parts: [{ id: "3045", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3005", x: 0, y: 3, z: 0 }] }] });
@@ -142,8 +144,9 @@ window.__unitAuto = async () => {
   const out = [];
   const ok = (c, m) => { if (!c) out.push("FAIL " + m); };
   await loadConnect();
-  const auto = Object.values(CAT).filter((C) => C.auto && C.conn.k < 3);
-  ok(auto.length > 60, "measured pieces loaded: " + auto.length);
+  // The common pieces (drawn from parts.json, checked with measured data: both must agree) and the first shape files.
+  const auto = Object.values(CAT).filter((C) => C.conn && (!C.auto || C.conn.k < 3));
+  ok(auto.length > 250, "measured pieces loaded: " + auto.length);
   await ensureParts(auto.map((C) => ({ id: C.id })));
   // Known: thin sheets lying exactly on a plate boundary fill no cell (the boat deck's curved rim).
   const THIN = ["998"];

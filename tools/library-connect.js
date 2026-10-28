@@ -1,13 +1,13 @@
 // Works out how every library piece connects on the stud grid, from its LDraw CAD model, so the builder can use any
-// piece, not only the hand-made catalog. For each piece, at r=0 and in grid units (x, z in studs, y in plates):
+// piece. For each piece, at r=0 and in grid units (x, z in studs, y in plates):
 //   cells   [cx, cz, lo, hi]  the space it fills: in column (cx, cz), plate levels lo..hi
 //   studs   [cx, cz, y]       an upward stud on the grid, its base y plates above the bottom
 //   holds   [cx, cz, y]       a spot underneath that grips a stud coming from below, y plates above the bottom
 //   o       [x, y, z]         where grid cell (0, 0, 0) starts, in the part's own LDraw units (app axes)
 // A piece fits when its studs sit on the grid; pieces with studs off the grid (jumpers), and pieces that can't connect
-// at all, are left out. Writes app/library-connect.json, and the shapes of the pieces outside the catalog, raw in LDraw axes
-// like the set parts, 40 to a file: lib-shapes-N.json (k in each entry says which). tests/connect-check.js compares the
-// result with the hand-made catalog.
+// at all, are left out. Writes app/library-connect.json, and the shapes, raw in LDraw axes like the set parts:
+// lib-shapes-core.json for the common pieces, lib-shapes-N.json for the rest (k in each entry says which file), and t,
+// the turn (degrees) that makes a common piece face the way the app describes it.
 // Usage: node tools/library-connect.js [part ...]   (with parts: print their data only)
 const fs = require('fs'), path = require('path');
 const { load, TOPSTUD } = require('../tests/ldraw-lib.js');
@@ -22,10 +22,14 @@ const mul = (A, B) => {
   return r;
 };
 const ap = (M, x, y, z) => [M[0] * x + M[1] * y + M[2] * z + M[3], M[4] * x + M[5] * y + M[6] * z + M[7], M[8] * x + M[9] * y + M[10] * z + M[11]];
-const T = (p) => [p[0], -p[1], -p[2]]; // LDraw -> app axes (y up, z toward the viewer)
+// LDraw -> app axes (y up, z toward the viewer), then turned (degrees, seen from above) to the facing the app uses.
+const rotY = ([x, y, z], r) => (r === 0 ? [x, y, z] : r === 90 ? [-z, y, x] : r === 180 ? [-x, y, -z] : [z, y, -x]);
+// Catalog pieces face the way the app's descriptions say ("slopes down toward +z"): the turn tools/ldraw-pack.js chose.
+const TURNS = JSON.parse(fs.readFileSync(path.join(__dirname, 'ldraw-turns.json'), 'utf8'));
 
-/** Triangles of the body (studs on top left out) and the studs, both in app axes and LDraw units. */
-function geometry(text) {
+/** Triangles of the body (studs on top left out) and the studs, both in app axes and LDraw units, turned by turn. */
+function geometry(text, turn = 0) {
+  const T = (p) => rotY([p[0], -p[1], -p[2]], turn);
   const tris = [], studs = [];
   (function go(t, M, depth) {
     if (depth > 30) return;
@@ -103,12 +107,12 @@ const near = (v, step, tol) => Math.abs(v / step - Math.round(v / step)) * step 
 const mod = (v, m) => ((v % m) + m) % m;
 
 /** Connection data of one LDraw part, or a reason it doesn't fit the grid. */
-function connect(file, name = '') {
+function connect(file, name = '', turn = 0) {
   // Jumpers: their studs sit half a stud off the body's grid, which the stud grid can't show.
   if (/jumper|cent(re|er) stud|offset/i.test(name)) return { why: 'studs off the grid' };
   const text = load(file + '.dat', ['parts/']);
   if (!text) return { why: 'no model' };
-  const { tris, studs } = geometry(text);
+  const { tris, studs } = geometry(text, turn);
   if (!tris.length) return { why: 'no geometry' };
   const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
   for (const t of tris) for (const p of t) for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], p[k]); mx[k] = Math.max(mx[k], p[k]); }
@@ -127,14 +131,21 @@ function connect(file, name = '') {
     for (const s of up) if (!near(s.o[1] - s0, 8, 0.6)) return { why: 'studs between plate heights' };
     // The lowest plate level at or below the body's bottom, so nothing hangs below level 0.
     oy = s0 - 8 * Math.ceil((s0 - mn[1] - 1) / 8);
-    return layout(tris, up, mn, mx, ox, oy, oz);
+    // Studs half a stud off the body (a seat, a jumper not named so): neither edge of the body is on the studs' grid in
+    // some direction. Then the body and its grips set the grid, and studs between grid positions don't count.
+    const onGrid = (k, o) => near(mn[k] - o, 20, 1.5) || near(mx[k] - o, 20, 1.5);
+    if (onGrid(0, ox) && onGrid(2, oz)) return layout(tris, up, mn, mx, ox, oy, oz);
+    return bestGrid(tris, up, mn, mx, oy);
   }
-  // No studs on top: LDraw draws parts with grid lines a multiple of 10 from the origin. Of the two ways each
-  // direction can line up, keep the one where the most stud grips fall on the grid (a cut corner moves the edge).
+  return bestGrid(tris, up, mn, mx, mn[1]);
+}
+/** Of the two ways LDraw can line a part up in each direction, the one with the most grips (then studs) on the grid. */
+function bestGrid(tris, up, mn, mx, oy) {
   let best = null;
+  const score = (r) => (r.holds ? r.holds.length * 100 + r.studs.length : -1);
   for (const px of [0, 10]) for (const pz of [0, 10]) {
-    const r = layout(tris, up, mn, mx, px + 20 * Math.floor((mn[0] + 2 - px) / 20), mn[1], pz + 20 * Math.floor((mn[2] + 2 - pz) / 20));
-    if (!best || (r.holds?.length || 0) > (best.holds?.length || 0) || (!best.holds && r.holds)) best = r;
+    const r = layout(tris, up, mn, mx, px + 20 * Math.floor((mn[0] + 2 - px) / 20), oy, pz + 20 * Math.floor((mn[2] + 2 - pz) / 20));
+    if (!best || score(r) > score(best)) best = r;
   }
   return best;
 }
@@ -163,7 +174,8 @@ function layout(tris, up, mn, mx, ox, oy, oz) {
   }
   if (!cells.length) return { why: 'no space filled' };
   // Studs on the grid.
-  const st = up.map((s) => [Math.round((s.o[0] - ox - 10) / 20), Math.round((s.o[2] - oz - 10) / 20), Math.round((s.o[1] - oy) / 8)]);
+  const st = up.filter((s) => near(s.o[0] - ox - 10, 20, 0.6) && near(s.o[2] - oz - 10, 20, 0.6))
+    .map((s) => [Math.round((s.o[0] - ox - 10) / 20), Math.round((s.o[2] - oz - 10) / 20), Math.round((s.o[1] - oy) / 8)]);
   // Underneath: at the bottom of each column, a stud fits (nothing within 5 units of the center for the stud's height)
   // and something grips it: material 5 to 9 units out (the walls of a brick, the tubes, the thin pins of 1-wide parts).
   const holds = [];
@@ -196,21 +208,24 @@ if (require.main === module) {
   const t0 = Date.now();
   for (const [key, e] of Object.entries(lib.parts)) {
     if (only.length && !only.includes(key)) continue;
-    if (e[8] & 1) { why['minifigure part'] = (why['minifigure part'] || 0) + 1; continue; }
-    const r = connect(e[0], e[2]);
-    if (r.why) why[r.why] = (why[r.why] || 0) + 1; else out[key] = r;
+    if ((e[8] & 1) && !(e[8] & 2)) { why['minifigure part'] = (why['minifigure part'] || 0) + 1; continue; }
+    const turn = TURNS[key] || 0, r = connect(e[0], e[2], turn);
+    if (r.why) { why[r.why] = (why[r.why] || 0) + 1; continue; }
+    out[key] = turn ? { ...r, t: turn } : r;
   }
   if (only.length) { for (const k of only) console.log(k, JSON.stringify(out[k] || 'left out')); }
   else {
-    // Shapes of the pieces the catalog doesn't draw already (parts.json), with the shared stud and tube shapes they use.
+    // Shapes, raw in LDraw axes, with the shared stud and tube shapes they use: the most used pieces (the catalog) in
+    // full detail in lib-shapes-core.json, loaded at start; the rest with low-detail circles, 40 to a file.
     const { walk, pack, packMesh, PRIMS } = require('./ldraw-pack.js');
-    for (const f of fs.readdirSync(APP)) if (/^lib-shapes-\d+\.json$/.test(f)) fs.unlinkSync(path.join(APP, f));
-    const own = Object.keys(out).filter((k) => !(lib.parts[k][8] & 2)), PER = 40, sizes = [];
-    for (let k = 0; k * PER < own.length; k++) {
+    for (const f of fs.readdirSync(APP)) if (/^lib-shapes-(\d+|core)\.json$/.test(f)) fs.unlinkSync(path.join(APP, f));
+    const core = Object.keys(out).filter((k) => lib.parts[k][8] & 2), rest = Object.keys(out).filter((k) => !(lib.parts[k][8] & 2)), PER = 40, sizes = [];
+    const chunks = [['core', core, false], ...Array.from({ length: Math.ceil(rest.length / PER) }, (_, k) => [k, rest.slice(k * PER, (k + 1) * PER), true])];
+    for (const [k, keys, lowres] of chunks) {
       const parts = {}, used = new Set();
-      for (const key of own.slice(k * PER, (k + 1) * PER)) {
+      for (const key of keys) {
         const file = lib.parts[key][0];
-        parts[file] = pack(null, walk(load(file + '.dat', ['parts/', 'p/']), PRIMS, true), { at: (q) => q, r: 0 });
+        parts[file] = pack(null, walk(load(file + '.dat', ['parts/', 'p/']), PRIMS, lowres), { at: (q) => q, r: 0 });
         for (const [name] of parts[file].s) used.add(name);
         out[key].k = k;
       }
@@ -219,6 +234,7 @@ if (require.main === module) {
       fs.writeFileSync(f, JSON.stringify({ parts, _prims: prims }));
       sizes.push(fs.statSync(f).size);
     }
+    console.log(`lib-shapes-core: ${(sizes[0] / 1048576).toFixed(1)} MB`);
     console.log(`lib-shapes: ${sizes.length} files, ${(sizes.reduce((a, b) => a + b, 0) / 1048576).toFixed(1)} MB, largest ${(Math.max(...sizes) / 1048576).toFixed(1)} MB`);
     fs.writeFileSync(path.join(APP, 'library-connect.json'), JSON.stringify(out));
     console.log(`${Object.keys(out).length} pieces fit the grid in ${((Date.now() - t0) / 1000).toFixed(0)} s; left out:`, why);

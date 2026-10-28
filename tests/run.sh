@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Runs the catalog audit, the unit checks and the end-to-end flow in headless Chromium, and compares the connections
-# measured from CAD with the hand-made catalog.
+# Runs the catalog audit, the unit checks and the end-to-end flow in headless Chromium.
 # Needs Node and Playwright with Chromium. Claude is replaced by a stand-in that returns fixed answers.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -11,4 +10,3 @@ fi
 node e2e.js "$PWD"
 node audit.js "$PWD"
 node ldraw-check.js
-node connect-check.js

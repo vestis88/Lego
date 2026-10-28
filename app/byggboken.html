@@ -594,8 +594,11 @@ const NOUNS = {
 };
 const GROUPS = { brick: "Klossar", plate: "Plattor", tile: "Släta", slope: "Lutningar", round: "Runda", nature: "Natur", window: "Fönster & dörrar", vehicle: "Fordon", special: "Special", technic: "Teknik", figure: "Minifigurer" };
 
-/* The catalog: real LEGO design IDs only. w x d is the footprint at r=0 (w along x, d along z), h is height in plates.
-   Directional parts face (or slope down toward) +z at r=0. studs/bottom: which cells connect ("all", "none", "back" = row z=0). */
+/* The common pieces, always offered to Claude: real LEGO design IDs with their Swedish names (noun, size) and the facing
+   their descriptions use (directional parts face, or slope down toward, +z at r=0). How a piece connects comes from its
+   CAD model (library-connect.json, see loadConnect), which replaces w/d/h and the stud rules below at load. Only pieces
+   that come with other pieces (wheel holders, windows, the door frame, the flower stem) keep these hand rules:
+   w x d footprint at r=0 (w along x, d along z), h in plates, studs/bottom = which cells connect ("all", "none", "back"). */
 const CAT = {};
 function def(id, o) { CAT[id] = { id, studs: "all", bottom: "all", ...o, size: o.size ?? `${o.w}×${o.d}` }; }
 for (const [id, w, d] of [["3005",1,1],["3004",1,2],["3622",1,3],["3010",1,4],["3009",1,6],["3008",1,8],["6111",1,10],["3003",2,2],["3002",2,3],["3001",2,4],["2456",2,6],["3007",2,8],["3006",2,10]])
@@ -681,7 +684,7 @@ def("30179", { en: "Door Frame 1 x 4 x 6 (comes with door 60797 with 3 panes)", 
   door: "60797", extras: [{ id: "60797", n: 1, color: "c2" }] });
 def("122c01", { en: "Plate 2 x 2 with Red Wheels (red 8 mm hubs with black tires on a metal axle; see WHEELS)", noun: "wplate", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
   wheels: { mesh: "3641", onHub: true, desc: "2x2, red-hub wheels on a metal axle, classic 1980s-90s" } });
-def("3829c01", { en: "Car Steering Stand with Steering Wheel (smooth 1 x 2 tile base lying ACROSS the car at r=0; a flat column stands straight up from the middle of its long side and the wheel on top tilts back toward the driver at -z, hanging over the row behind it high up; 2 bricks tall; put it right in front of a seat 4079)", noun: "steer", group: "vehicle", shape: "steer", w: 2, d: 1, h: 6, studs: "none", dir: true, size: "1×2", c2part: true,
+def("3829c01", { en: "Car Steering Stand with Steering Wheel (smooth 1 x 2 tile base lying ACROSS the car at r=0; a flat column stands straight up from the middle of its long side and the wheel on top tilts back toward the driver at -z; 2 bricks tall; put it right in front of a seat 4079)", noun: "steer", group: "vehicle", shape: "steer", w: 2, d: 1, h: 6, studs: "none", dir: true, size: "1×2", c2part: true,
   occExtra: [{ cell: [0, -1], lo: 3 }, { cell: [1, -1], lo: 3 }] });
 def("3403c01", { en: "Turntable 4 x 4 (1 brick tall: square base and a round top that turns; studs on the round top except the 4 corners)", noun: "turn", group: "special", shape: "turn", w: 4, d: 4, h: 3, studs: "round", size: "4×4" });
 def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger wheels 6014 + tires 6015; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 2, d: 2, h: 1, dir: true, bottom: "none",
@@ -690,7 +693,7 @@ def("6157", { en: "Plate 2 x 2 with Wide Wheel Holders (comes with 2 bigger whee
 def("2926", { en: "Plate 1 x 4 with Wheel Holders at both ends (comes with 2 wheels 4624 + tires 3641; see WHEELS)", noun: "holder", group: "vehicle", shape: "holder", w: 4, d: 1, h: 1, dir: true, bottom: "none", size: "1×4",
   wheels: { mesh: "4624c01", desc: "1x4 plate across the car, one normal wheel at each end" },
   extras: [{ id: "4624c01", n: 2, color: "c2", def: "lightgray" }] });
-def("4079", { en: "Seat 2 x 2 (backrest on the back row z+0 is 2 bricks tall; the front row is only the low seat, so a steering wheel may hang over it; faces +z; nothing attaches on top)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true,
+def("4079", { en: "Seat 2 x 2 (faces +z; the backrest leans back over row z+0, so the seat takes 3 rows; the low front of the seat is row z+2)", noun: "seat", group: "vehicle", shape: "seat", w: 2, d: 2, h: 6, studs: "none", dir: true,
   occRows: { 1: [0, 1] } });
 def("2432", { en: "Tile 1 x 2 with Bar Handle (the handle rises 3 plates above the tile, so the part is 4 plates tall; bumpers and handles)", noun: "htile", group: "vehicle", shape: "box", deco: "tilehandle", w: 1, d: 2, h: 4, studs: "none" });
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
@@ -993,6 +996,8 @@ const LDU = 1 / 80; // one packed unit (1/4 LDU) in studs
 async function loadParts() {
   try { const r = await fetch("parts.json"); if (r.ok) LD.parts = await r.json(); } catch {}
   if (LD.parts) setupWheels();
+  // The common pieces' CAD shapes (lib-shapes-core.json) before anything is drawn.
+  await ensureParts(Object.values(CAT).filter((C) => C.conn).map((C) => ({ id: C.id })));
   return !!LD.parts;
 }
 const unb64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
@@ -1100,17 +1105,23 @@ function libKey(n) {
 }
 const libEntry = (n) => { const k = libKey(n); return k && LIB.parts?.[k]; };
 /* library-connect.json (made by tools/library-connect.js) says how each library piece connects on the stud grid, measured
-   from its CAD model: the space it fills, its studs and where it grips studs underneath. Every such piece joins CAT
-   (auto: true), so the builder can use it like the hand-made catalog. Their shapes are in lib-shapes-N.json. */
+   from its CAD model: its size, the space it fills, its studs and where it grips studs underneath. Every piece is drawn
+   and checked from it. CAT's own entries are the common pieces, always offered to Claude, with Swedish names and a facing;
+   the rest of the library joins CAT here (auto: true). Shapes: lib-shapes-core.json and lib-shapes-N.json. */
 const CONN = { ready: null, shapes: new Map() };
+const composite = (C) => !!(C.child || C.wheels || C.door || C.glass || C.shape === "window" || C.extras?.some((x) => x.id === "3742"));
 function loadConnect() {
   return (CONN.ready ||= (async () => {
     await LIB.ready;
     let data = {};
     try { data = await fetchJson("library-connect.json"); } catch {}
     for (const [id, K] of Object.entries(data)) {
-      const e = LIB.parts?.[id];
-      if (CAT[id] || !e) continue;
+      const e = LIB.parts?.[id], C = CAT[id];
+      // The common pieces are measured and drawn from CAD like every other piece; CAT only adds their Swedish names
+      // and facing. Pieces that come with other pieces keep their own rules and drawing: wheel holders (the wheels need
+      // their space), the flower stem (its flowers), windows (their glass) and the door frame (its door).
+      if (C) { if (!composite(C)) Object.assign(C, { conn: K, w: K.w, d: K.d, h: K.h, file: e?.[LIB_FIELDS.file] || C.id }); continue; }
+      if (!e) continue;
       CAT[id] = { id, auto: true, en: e[LIB_FIELDS.en], group: GROUPS[e[LIB_FIELDS.group]] ? e[LIB_FIELDS.group] : "special", shape: "ld",
         file: e[LIB_FIELDS.file], w: K.w, d: K.d, h: K.h, conn: K, size: `${K.w}×${K.d}` };
     }
@@ -1202,7 +1213,8 @@ function setMatrix(p) {
 function setLayers(p) {
   const S = ldShape("set:" + p.id, SETS.shapes?.parts[p.id]);
   if (!S) return [{ geos: [box(0, 0, 0, 1, 0.4, 1)], color: p.c }];
-  return S.groups.map((g, i) => ({ geos: [g.geo], ld: true, edges: i === 0 ? S.edges : null, ...(g.color === "m" ? { color: p.c } : { hex: parseInt(g.color, 16), alpha: g.alpha }) }));
+  // A second molded color is fixed, or c2 where the app lets you choose it (the steering wheel).
+  return S.groups.map((g, i) => ({ geos: [g.geo], ld: true, edges: i === 0 ? S.edges : null, ...(g.color === "m" ? { color: p.c } : p.c2 ? { color: p.c2 } : { hex: parseInt(g.color, 16), alpha: g.alpha }) }));
 }
 function edgeColor(c) {
   const col = new THREE.Color(typeof c === "number" ? c : COLORS[c].hex);
@@ -1214,10 +1226,14 @@ function buildPart(p, solo = false) {
   const C = CAT[p.id], set = p.m || !C;
   const g = new THREE.Group();
   let m = set ? setMatrix(p) : rotMatrix(C, p.r || 0, p);
-  // A piece measured from CAD: its raw shape (LDraw axes), moved so grid cell (0, 0, 0) starts at the origin.
-  if (C?.conn && !p.m) { const [ox, oy, oz] = C.conn.o; m = m.multiply(new THREE.Matrix4().makeTranslation(-ox / 20, -oy / 20, -oz / 20)).multiply(FLIP); }
+  // A piece measured from CAD: its raw shape (LDraw axes), turned to the app's facing and moved so grid cell (0, 0, 0)
+  // starts at the origin.
+  if (C?.conn && !p.m) {
+    const [ox, oy, oz] = C.conn.o;
+    m = m.multiply(new THREE.Matrix4().makeTranslation(-ox / 20, -oy / 20, -oz / 20)).multiply(new THREE.Matrix4().makeRotationY((-(C.conn.t || 0) * Math.PI) / 180)).multiply(FLIP);
+  }
   g.userData.mats = [];
-  for (const layer of C?.conn && !p.m ? setLayers({ id: C.file, c: p.c }) : set ? setLayers(p) : shapeLayers(C, p, solo)) {
+  for (const layer of C?.conn && !p.m ? setLayers({ id: C.file, c: p.c, c2: C.c2part && p.c2 }) : set ? setLayers(p) : shapeLayers(C, p, solo)) {
     // A layer has an app color name, or a fixed LDraw color (hex, alpha) for parts molded in a second color.
     const colr = layer.color ? COLORS[layer.color] : { hex: layer.hex, alpha: layer.alpha < 1 ? layer.alpha : 0 };
     const geo = mergeGeoms(layer.geos).applyMatrix4(m);
@@ -1382,7 +1398,7 @@ const Snap = {
     scene.add(group);
     const sph = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
     const dist = (sph.radius / Math.sin((28 * Math.PI) / 360)) * (opts.pad || 1.02) / Math.min(1, w / h);
-    cam.position.copy(orbitPos(sph.center, dist, 0.68, 0.52)); cam.lookAt(sph.center);
+    cam.position.copy(orbitPos(sph.center, dist, opts.az ?? 0.68, opts.el ?? 0.52)); cam.lookAt(sph.center);
     this.r.setSize(w, h, false);
     this.r.setClearColor(opts.bg != null ? opts.bg : 0x000000, opts.bg != null ? 1 : 0);
     this.r.render(scene, cam);
@@ -1621,7 +1637,7 @@ const EXAMPLE_BUGGY = {
     { text: "Den breda plattan täcker hjulen.", parts: [
       { id: "3036", x: -1, y: 4, z: 0, r: 0, c: "yellow" } ] },
     { text: "Sätt dit stolen, ratten och vindrutan.", parts: [
-      { id: "4079", x: 1, y: 5, z: 2, r: 0, c: "blue" },
+      { id: "4079", x: 1, y: 5, z: 1, r: 0, c: "blue" },
       { id: "3829c01", x: 1, y: 5, z: 4, r: 0, c: "blue", c2: "black" },
       { id: "3823", x: 0, y: 5, z: 6, r: 0, c: "transparent" } ] },
     { text: "Lampor fram och bak, och två avgasrör.", parts: [
@@ -1725,7 +1741,8 @@ function catalogText() {
     return "";
   };
   const groups = {};
-  for (const C of Object.values(CAT)) if (!C.child && !C.auto) (groups[C.group] ||= []).push(`${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}${note(C) ? " (" + note(C) + ")" : ""}`);
+  // Pieces measured from CAD say exactly where their studs and grips are; the few with hand rules use a short note.
+  for (const C of Object.values(CAT)) if (!C.child && !C.auto) (groups[C.group] ||= []).push(C.conn ? pieceSpec(C, true) : `${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}${note(C) ? " (" + note(C) + ")" : ""}`);
   return Object.values(groups).map((g) => g.join("\n")).join("\n");
 }
 /** The wheel space of each wheel plate, in words, from the measured wheels (setupWheels). */
@@ -1737,7 +1754,7 @@ function wheelRules() {
   }).join("\n");
 }
 /** A piece measured from CAD, in words for Claude: its box, studs, grips and (when not a full box) the space it fills. */
-function pieceSpec(C) {
+function pieceSpec(C, short = false) {
   const K = C.conn, at = (a, b, y, h) => `(${a},${b})${y !== h ? ` y+${y}` : ""}`;
   const cells = new Set(K.cells.map(([a, b]) => a + "," + b));
   const box = K.cells.length === C.w * C.d && K.cells.every(([, , lo, hi]) => lo === 0 && hi === C.h - 1);
@@ -1745,6 +1762,8 @@ function pieceSpec(C) {
   const studs = !K.studs.length ? "no studs on top" : everyCell(K.studs, C.h) ? "studs on every cell" : "studs at " + K.studs.map(([a, b, y]) => at(a, b, y, C.h)).join(" ");
   const grips = !K.holds.length ? "nothing attaches underneath" : everyCell(K.holds, 0) ? "grips studs under every cell" : "grips studs under " + K.holds.map(([a, b, y]) => at(a, b, y, 0)).join(" ");
   const fills = box ? "" : "; fills only " + K.cells.map(([a, b, lo, hi]) => `(${a},${b}) y+${lo}${hi > lo ? ".." + hi : ""}`).join(" ");
+  // short: plain boxes with studs and grips everywhere need no more words.
+  if (short && box && studs === "studs on every cell" && grips === "grips studs under every cell") return `${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}`;
   return `${C.id}: ${C.en}, w${C.w} d${C.d} h${C.h}; ${studs}; ${grips}${fills}`;
 }
 /** Measured pieces worth offering for this build: the child's own, and the best matches for the special parts Claude asks for. */
@@ -1766,10 +1785,11 @@ async function extraPieces(o) {
   }
   return [...ids].slice(0, 60);
 }
-const RULES = (extras = []) => `PART CATALOG (use these ids exactly):
+const RULES = (extras = []) => `PIECES: every piece is measured from its real CAD model. "w d h" is its box: w studs along x, d along z, h plates tall. A piece has studs on every cell of its top and grips studs under every cell unless its line says otherwise. Cell lists use the cells at r=0, (0..w-1, 0..d-1); "y+N" is N plates above the piece's own y: a stud at y+N is where the piece on it starts; a grip at y+N takes the stud of a piece whose top is there. A piece fills its whole box unless it says "fills only".
+PART CATALOG (use these ids exactly):
 ${catalogText()}
 ${extras.length ? `
-MORE PIECES, measured from the real parts. Same grid and rotation rules; at r=0 a piece covers cells (0..w-1, 0..d-1) and the cell lists use those cells. "y+N" is N plates above the piece's own y: a stud at y+N is where the piece on it starts; a grip at y+N takes the stud of a piece whose top is there. A piece fills its whole w x d x h box unless it says "fills only".
+MORE PIECES (same rules):
 ${extras.map((id) => pieceSpec(CAT[id])).join("\n")}
 Only the ids in these two lists exist.
 ` : ""}

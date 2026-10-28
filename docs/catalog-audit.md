@@ -128,21 +128,26 @@ Swedish names are made from the English name: a noun, the size, and known featur
 
 ## Every library piece measured from CAD (2026-10-27)
 
-The builder used to know only the 240 hand-made catalog parts. Now `tools/library-connect.js` measures every library piece's connections from its LDraw model, so 2,760 pieces can be used in new designs. Working from the geometry, it finds:
+The builder used to know only the 240 catalog parts, with connection rules written by hand. Now `tools/library-connect.js` measures every library piece's connections from its LDraw model, so 2,760 pieces can be used in new designs. Working from the geometry, it finds:
 
 - **Studs:** stud primitives pointing up with nothing above them, at any height. Some studs are drawn stretched from lower down, so a stud's base is taken as its tip less 4.
 - **Filled space:** per grid column, from the lowest to the highest plate level where the model has material more than 1 unit inside the cell.
 - **Grips:** at the bottom of each column, room for a stud (nothing within 5 units of the center for the stud's height) with material 5 to 9 units out, on two sides at least 80° apart. That covers brick walls, tubes and the thin pins of 1-wide parts. A slanted underside on one side holds nothing.
 - **Grid alignment:** taken from the studs. Pieces without studs try both ways LDraw can line a part up and keep the one where the most grips fall on the grid; a cut corner can move an edge off the grid.
 
-Compared with the hand-made catalog (`tests/connect-check.js`), studs agree for 216 of 230 parts and grips for 183. The differences point the other way more often than not. The CAD models show:
+Compared with the hand-made catalog, studs agreed for 216 of 230 parts and grips for 183, and where they differed the CAD models were right. They showed:
 
 - The curved-top bricks 6091 and 6081 have their stud end raised 2 plates off the floor. The catalog fills those cells to the floor and gives them grips at the bottom, which the real part doesn't have.
 - The curved slopes 11477, 15068 and 93606 are also raised under their high end.
 - Arches leave their opening free (the catalog fills it on purpose).
 - Wedge plates grip studs under their cut side too, wherever the plate covers a stud.
 
-The catalog keeps its hand-made data for now; switching these parts to the measured data is a follow-up.
+- The old window 3853 has only 2 studs on top, in the middle.
+- The seat 4079's backrest leans back past its base, so the seat takes 3 rows.
+- The steering wheel 3829c01 stays inside its own cell; it doesn't hang over the row behind.
+- Handles, clips and rails take real space next to the part.
+
+So the hand-made connection data is gone: every piece, the common ones included, is checked and drawn from its CAD measurement. The catalog keeps only names, facings and the pieces that come along with others (wheel holders, windows, the door frame, the flower stem), which keep their own rules.
 
 ### Real sets: no part before what holds it
 

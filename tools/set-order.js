@@ -49,8 +49,10 @@ function partData(file) {
   if (local[file]) return local[file];
   const K = CONN[keyOf(file) || ''] || CONN[file];
   const text = load(file + '.dat', ['parts/']), m = text ? measure(text) : { min: [0, 0, 0], max: [0, 0, 0] };
-  // Library data is in app axes (y up, z toward the viewer); LDraw has y down and z away.
-  const pt = (cx, cz, y) => [K.o[0] + 20 * cx + 10, -(K.o[1] + 8 * y), -(K.o[2] + 20 * cz + 10)];
+  // Library data is in app axes (y up, z toward the viewer), turned t degrees for the common pieces; LDraw has y down
+  // and z away.
+  const back = ([x, y, z]) => { const t = (360 - (K.t || 0)) % 360; return t === 0 ? [x, y, z] : t === 90 ? [-z, y, x] : t === 180 ? [-x, y, -z] : [z, y, -x]; };
+  const pt = (cx, cz, y) => { const [x, yy, z] = back([K.o[0] + 20 * cx + 10, K.o[1] + 8 * y, K.o[2] + 20 * cz + 10]); return [x, -yy, -z]; };
   return (local[file] = {
     studs: text ? studsOf(text) : [],
     holds: K ? K.holds.map(([cx, cz, y]) => pt(cx, cz, y)) : [],
