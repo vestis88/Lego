@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pictures of the official sets without steps (app/rb-index.json): Rebrickable's set photos, shrunk to 240 x 180 WebP
-and packed 500 sets to a file, app/rb-thumbs-N.json ({set number: data URL}), in the order of rb-index.json.
+and packed 100 sets to a file (about 600 KB: a phone fetches only the files of the cards it shows), app/rb-thumbs-N.json ({set number: data URL}), in the order of rb-index.json.
 The published app can't load images from other sites, so the pictures go with it like sets-thumbs-N.json.
 Usage: python3 tools/rb-thumbs.py   (downloads the photos into tests/.cache/rb-img, about 5 GB; delete it afterwards)"""
 import base64, io, json, os, sys, urllib.request
@@ -9,7 +9,7 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 APP, CACHE = os.path.join(ROOT, 'app'), os.path.join(ROOT, 'tests', '.cache', 'rb-img')
-PER, W, H = 500, 240, 180
+PER, W, H = 100, 240, 180
 os.makedirs(CACHE, exist_ok=True)
 sets = json.load(open(os.path.join(APP, 'rb-index.json')))['sets']
 
