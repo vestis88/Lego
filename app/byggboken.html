@@ -2312,11 +2312,31 @@ async function setThumb(th) {
   const src = (await loadThumbs(Number(th.dataset.chunk)))[th.dataset.key];
   if (src) { const img = new Image(); img.alt = ""; img.src = src; th.append(img); }
 }
-/** A set picture from Rebrickable's image server, if the page may load it. */
+/** A set picture from Rebrickable's image server where the page may load it; otherwise (or meanwhile) its own pieces. */
 function setImage(th, e) {
+  partsPicture(th, e);
   if (!e.img) return;
   const img = new Image(); img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-  img.onerror = () => img.remove(); img.src = "https://cdn.rebrickable.com/media/sets/" + e.img; th.append(img);
+  img.onload = () => { th.textContent = ""; th.append(img); };
+  img.src = "https://cdn.rebrickable.com/media/sets/" + e.img;
+}
+/** The set's six most used pieces, in their colors, from the library's pictures. */
+async function partsPicture(th, e) {
+  const top = e.need.slice().sort((a, b) => b[2] - a[2]).slice(0, 6);
+  // Common pieces are drawn in 3D (their shapes load at start); the library's pictures cover the rest.
+  const pics = await Promise.all(top.map(([id, c]) => { if (CAT[id] && !CAT[id].auto) return Snap.icon({ id, c }); const k = libKey(id); return k ? libIcon(k, c) : null; }));
+  const urls = pics.filter(Boolean);
+  if (!urls.length || th.querySelector("img")) return;
+  const W = 240, H = 180, cols = urls.length > 4 ? 3 : 2, rows = Math.ceil(urls.length / cols), cell = Math.min(W / cols, H / rows);
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  await Promise.all(urls.map((u, i) => new Promise((done) => {
+    const im = new Image();
+    im.onload = () => { const x = (W - cols * cell) / 2 + (i % cols) * cell, y = (H - rows * cell) / 2 + Math.floor(i / cols) * cell; g.drawImage(im, x + 4, y + 4, cell - 8, cell - 8); done(); };
+    im.onerror = done; im.src = u;
+  })));
+  if (th.querySelector("img")) return;
+  const img = new Image(); img.alt = ""; img.src = c.toDataURL("image/png"); th.append(img);
 }
 /** A set the app has no steps for: what the child has, what is missing, and LEGO's own instructions. */
 function rbSheet(e) {

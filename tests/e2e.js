@@ -33,6 +33,8 @@ fs.writeFileSync(S + '/harness.html', html);
     const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type()==='error') errs.push(m.text()); });
     await page.route('**/three.min.js', r => r.fulfill({ path: S + '/.cache/three.min.js', contentType: 'application/javascript' }));
     await page.route('**/fonts.googleapis.com/**', r => r.abort());
+    // Like in the published app, Rebrickable's set pictures can't be loaded.
+    await page.route('**/cdn.rebrickable.com/**', r => r.abort());
     // Served from a made-up http origin so the app can fetch parts.json next to it.
     // parts.json, the real sets and their shapes are files next to the app.
     // The library files come slowly, like on a phone: nothing may be drawn before the pieces' shapes are in.
@@ -124,6 +126,12 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.click('#v-find [data-back]'); await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
     await page.click('#v-sets [data-back]'); await page.click('#t-inv'); await page.click('#inv-sets'); await page.waitForSelector('#s-list .build-card .have');
     console.log(name, 'can build', JSON.stringify(await page.$$eval('#s-list .build-card', (c) => c.slice(0, 3).map((x) => x.querySelector('b').textContent + ': ' + x.querySelector('.have').textContent))));
+    // a set without steps (Rebrickable parts list) has a picture even when Rebrickable's images can't load: its pieces
+    await page.waitForTimeout(2500);
+    const rbPics = await page.$$eval('#s-list .build-card', (c) => c.filter((x) => /bitlista/.test(x.textContent)).slice(0, 4).map((x) => !!x.querySelector('.thumb img')));
+    console.log(name, 'parts-list set pictures', JSON.stringify(rbPics));
+    if (!rbPics.length || rbPics.some((p) => !p)) process.exitCode = 1;
+    await page.screenshot({ path: `${S}/shots/${name}-can-build.png` });
     // a set without steps (Rebrickable parts list): the sheet shows what is missing and LEGO's own instructions
     const rbCards = await page.$$('#s-list .build-card >> text=bitlista');
     if (rbCards.length) {
