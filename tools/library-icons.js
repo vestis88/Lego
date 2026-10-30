@@ -33,7 +33,7 @@ function shapesFile(list) {
     const icons = await p.evaluate(async (list) => {
       SETS.shapes = await fetchJson('library-shapes.json?' + Math.random());
       const out = {};
-      for (const [key, file] of list) if (SETS.shapes.parts[file]) out[key] = Snap.shoot(buildPart({ id: file, c: 'white' }, true), 80, 80, { pad: 1.0, type: 'image/webp', quality: 0.7 });
+      for (const [key, file] of list) if (SETS.shapes.parts[file]) out[key] = Snap.shoot(buildPart({ id: file, c: 'white', x: 0, y: 0, z: 0, r: 0 }, true), 80, 80, { pad: 1.0, type: 'image/webp', quality: 0.7 });
       LD.cache.clear(); LD.prims.clear(); SETS.shapes = null;
       return out;
     }, list);

@@ -99,7 +99,7 @@ fs.writeFileSync(S + '/harness.html', html);
     else {
     await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
     const total = await page.$$eval('#s-list .build-card', (c) => c.length);
-    await page.fill('#s-q', '6611'); await page.waitForTimeout(500);
+    await page.fill('#s-q', '6611'); await page.waitForFunction(() => /Fire Chief/.test(document.querySelector('#s-list .build-card b')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
     const found = await page.$$eval('#s-list .build-card b', (c) => c.map((x) => x.textContent));
     await page.waitForTimeout(800); await page.screenshot({ path: `${S}/shots/${name}-sets.png`, fullPage: true });
     await page.click('#s-list .build-card'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 15000 });
@@ -153,6 +153,23 @@ fs.writeFileSync(S + '/harness.html', html);
       await page.click('#sheet', { position: { x: 5, y: 5 } });
     } else { console.log(name, 'no sets without steps listed'); process.exitCode = 1; }
     await page.click('#v-sets [data-back]');
+    }
+    // A sub-assembly is built apart (only its parts shown), then put on the model in one step.
+    if (fs.existsSync(S + '/../app/sets-index.json')) {
+      await page.click('#t-sets'); await page.waitForSelector('#s-list .build-card');
+      await page.fill('#s-q', '7736'); await page.waitForFunction(() => /Quad Bike/.test(document.querySelector('#s-list .build-card b')?.textContent || ''), null, { timeout: 15000 });
+      await page.click('#s-list .build-card'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 20000 });
+      const sub = await page.evaluate(() => {
+        const si = B.steps.findIndex((s) => s.sub), ai = B.steps.findIndex((s) => s.attach);
+        setStep(si, false); const apart = Stage.parts.filter((g) => g.visible).every((g) => g.userData.sub === B.steps[si].sub);
+        const n = Stage.parts.filter((g) => g.visible).length;
+        setStep(ai, false); const all = Stage.parts.filter((g) => g.visible).length;
+        const slides = B.steps.flatMap((s) => s.parts).filter((p) => p.dir).length;
+        return [si, ai, apart, n, all, $('#v-text').textContent, slides];
+      });
+      console.log(name, 'sub-assembly', JSON.stringify(sub));
+      if (sub[0] < 0 || sub[1] < sub[0] || !sub[2] || !(sub[4] > sub[3]) || !sub[6]) process.exitCode = 1;
+      await page.click('#v-close'); await page.click('#v-sets [data-back]');
     }
     // A failed build keeps its message on the create screen; a reload mid-build comes back to the request and says why.
     await page.evaluate(() => { window.__realSample = AI.sample; AI.sample = Object.assign(() => {}, AI.sample, { json: async () => { throw { code: 'upstream_error' }; } }); });

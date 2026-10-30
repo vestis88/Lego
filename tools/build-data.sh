@@ -8,6 +8,7 @@ node tools/omr-build.js
 node tools/library-build.js
 node tools/library-icons.js
 node tools/library-connect.js
+node tools/composite-connect.js
 node tools/omr-build.js
 node tools/omr-thumbs.js
 node tools/rb-build.js

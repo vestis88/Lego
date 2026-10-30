@@ -59,6 +59,7 @@ const catalogOf = {};
 for (const [id, r] of Object.entries(ref)) { catalogOf[norm(id)] = id; catalogOf[norm(r.file)] = id; }
 for (const [a, id] of Object.entries(aliases)) if (ref[id]) catalogOf[norm(a)] = id;
 const svOf = {}; // Swedish names the app's catalog already has are built in the app; library names are for the others.
+const SV_NAMES = JSON.parse(fs.readFileSync(path.join(__dirname, 'sv-names.json'), 'utf8'));
 
 /* ---------------------------------------------------- Swedish names */
 // Leading words of a part name, longest first, in Swedish; the size and a few features follow.
@@ -153,8 +154,10 @@ for (const [child, par] of Object.entries(parent)) { const k = alias[plain(par).
 
 /* -------------------------------------------------------------- write */
 const parts = {};
-for (const e of [...lib.values()].sort((a, b) => b.pop - a.pop)) {
-  const sv = ref[e.key] ? null : swedish(e.en);
+// Most used first; ties by key, so the order (which the picture files follow) is the same every run.
+for (const e of [...lib.values()].sort((a, b) => b.pop - a.pop || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))) {
+  // Hand-translated names (tools/sv-names.json) where the rules give none.
+  const sv = ref[e.key] ? null : swedish(e.en) || SV_NAMES[e.key] || null;
   parts[e.key] = [e.file, sv, e.en, e.group, ...e.size, e.pop, (e.figure ? 1 : 0) | (ref[e.key] ? 2 : 0)];
 }
 fs.writeFileSync(path.join(APP, 'library.json'), JSON.stringify({ fields: ['ldraw', 'sv', 'en', 'group', 'w', 'd', 'h', 'sets', 'flags (1 minifig part, 2 builder can connect it)'], parts, alias }));

@@ -4,8 +4,8 @@
 //   studs   [cx, cz, y]       an upward stud on the grid, its base y plates above the bottom
 //   holds   [cx, cz, y]       a spot underneath that grips a stud coming from below, y plates above the bottom
 //   o       [x, y, z]         where grid cell (0, 0, 0) starts, in the part's own LDraw units (app axes)
-// A piece fits when its studs sit on the grid; pieces with studs off the grid (jumpers), and pieces that can't connect
-// at all, are left out. Writes app/library-connect.json, and the shapes, raw in LDraw axes like the set parts:
+// A piece fits when its studs sit on the grid or half a stud off it (jumpers: a stud at x + 0.5); pieces that can't
+// connect at all are left out. Writes app/library-connect.json, and the shapes, raw in LDraw axes like the set parts:
 // lib-shapes-core.json for the common pieces, lib-shapes-N.json for the rest (k in each entry says which file), and t,
 // the turn (degrees) that makes a common piece face the way the app describes it.
 // Usage: node tools/library-connect.js [part ...]   (with parts: print their data only)
@@ -108,8 +108,6 @@ const mod = (v, m) => ((v % m) + m) % m;
 
 /** Connection data of one LDraw part, or a reason it doesn't fit the grid. */
 function connect(file, name = '', turn = 0) {
-  // Jumpers: their studs sit half a stud off the body's grid, which the stud grid can't show.
-  if (/jumper|cent(re|er) stud|offset/i.test(name)) return { why: 'studs off the grid' };
   const text = load(file + '.dat', ['parts/']);
   if (!text) return { why: 'no model' };
   const { tris, studs } = geometry(text, turn);
@@ -124,15 +122,20 @@ function connect(file, name = '', turn = 0) {
   let ox, oz, oy;
   if (up.length) {
     ox = mod(up[0].o[0] - 10, 20); oz = mod(up[0].o[2] - 10, 20);
-    for (const s of up) if (!near(s.o[0] - 10 - ox, 20, 0.6) || !near(s.o[2] - 10 - oz, 20, 0.6)) return { why: 'studs off the grid' };
+    // Studs that don't all share one grid (some half a stud off): the body and its grips set the grid.
+    if (up.some((s) => !near(s.o[0] - 10 - ox, 20, 0.6) || !near(s.o[2] - 10 - oz, 20, 0.6))) {
+      if (up.some((s) => !near(s.o[0] - ox, 10, 0.6) || !near(s.o[2] - oz, 10, 0.6))) return { why: 'studs off the grid' };
+      const s0 = up[0].o[1];
+      return bestGrid(tris, up, mn, mx, s0 - 8 * Math.ceil((s0 - mn[1] - 1) / 8));
+    }
     // Grid lines at or just inside the body's edges.
     ox += 20 * Math.floor((mn[0] + 2 - ox) / 20); oz += 20 * Math.floor((mn[2] + 2 - oz) / 20);
     const s0 = up[0].o[1];
     for (const s of up) if (!near(s.o[1] - s0, 8, 0.6)) return { why: 'studs between plate heights' };
     // The lowest plate level at or below the body's bottom, so nothing hangs below level 0.
     oy = s0 - 8 * Math.ceil((s0 - mn[1] - 1) / 8);
-    // Studs half a stud off the body (a seat, a jumper not named so): neither edge of the body is on the studs' grid in
-    // some direction. Then the body and its grips set the grid, and studs between grid positions don't count.
+    // Studs half a stud off the body (a jumper, a seat): neither edge of the body is on the studs' grid in some
+    // direction. Then the body and its grips set the grid, and those studs sit at half positions.
     const onGrid = (k, o) => near(mn[k] - o, 20, 1.5) || near(mx[k] - o, 20, 1.5);
     if (onGrid(0, ox) && onGrid(2, oz)) return layout(tris, up, mn, mx, ox, oy, oz);
     return bestGrid(tris, up, mn, mx, oy);
@@ -174,8 +177,10 @@ function layout(tris, up, mn, mx, ox, oy, oz) {
   }
   if (!cells.length) return { why: 'no space filled' };
   // Studs on the grid.
-  const st = up.filter((s) => near(s.o[0] - ox - 10, 20, 0.6) && near(s.o[2] - oz - 10, 20, 0.6))
-    .map((s) => [Math.round((s.o[0] - ox - 10) / 20), Math.round((s.o[2] - oz - 10) / 20), Math.round((s.o[1] - oy) / 8)]);
+  // Studs on cell centres, or half a stud off (x.5): a jumper's stud, where a piece on it sits half a stud over.
+  const half = (v) => Math.round(v * 2) / 2;
+  const st = up.filter((s) => near(s.o[0] - ox - 10, 10, 0.6) && near(s.o[2] - oz - 10, 10, 0.6))
+    .map((s) => [half((s.o[0] - ox - 10) / 20), half((s.o[2] - oz - 10) / 20), Math.round((s.o[1] - oy) / 8)]);
   // Underneath: at the bottom of each column, a stud fits (nothing within 5 units of the center for the stud's height)
   // and something grips it: material 5 to 9 units out (the walls of a brick, the tubes, the thin pins of 1-wide parts).
   const holds = [];
@@ -200,7 +205,7 @@ function layout(tris, up, mn, mx, ox, oy, oz) {
   return { w: W, d: D, h: H, cells, studs: st, holds, o: [ox, oy, oz].map((v) => Math.round(v * 100) / 100) };
 }
 
-module.exports = { connect };
+module.exports = { connect, layout };
 if (require.main === module) {
   const lib = JSON.parse(fs.readFileSync(path.join(APP, 'library.json'), 'utf8'));
   const only = process.argv.slice(2);

@@ -101,7 +101,9 @@ function steps(text) {
   }
   const out = [[]], author = (text.match(/^0\s+Author:\s*(.+)$/m) || [])[1]?.replace(/\s*\[.*\]\s*$/, '').trim();
   const missing = new Set();
-  (function go(name, M, color, depth) {
+  let subs = 0;
+  // sub: which sub-model of the main model a part comes from (0: the main model itself); nested ones count as their parent.
+  (function go(name, M, color, depth, sub) {
     if (depth > 30) return;
     for (const line of files[name] || []) {
       const a = line.trim().split(/\s+/);
@@ -110,11 +112,11 @@ function steps(text) {
       const n = a.slice(2, 14).map(Number), r = a.slice(14).join(' ').toLowerCase().replace(/\\/g, '/');
       const M2 = mul(M, [n[3], n[4], n[5], n[0], n[6], n[7], n[8], n[1], n[9], n[10], n[11], n[2]]);
       const code = a[1] === '16' ? color : a[1];
-      if (files[r]) { go(r, M2, code, depth + 1); continue; }
+      if (files[r]) { go(r, M2, code, depth + 1, depth === 0 ? ++subs : sub); continue; }
       const file = resolve(r);
-      if (file) out.at(-1).push({ file, code, M: M2 }); else missing.add(r);
+      if (file) out.at(-1).push({ file, code, M: M2, sub }); else missing.add(r);
     }
-  })(first, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], '16', 0);
+  })(first, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], '16', 0, 0);
   return { steps: out.filter((s) => s.length), author, missing: [...missing] };
 }
 /**
@@ -238,16 +240,24 @@ models.forEach((m, i) => {
   const place = (p) => {
     if (!fileIdx.has(p.file)) { fileIdx.set(p.file, files.length); files.push(p.file); used.add(p.file); (usedIn[k] ||= new Set()).add(p.file); }
     const M = p.M, D = [1, -1, -1];
-    return [fileIdx.get(p.file), appColor(p.code), ...[0, 1, 2].flatMap((row) => [r4(D[row] * M[row * 4]), r4(D[row] * M[row * 4 + 1]), r4(D[row] * M[row * 4 + 2])]), ...[0, 1, 2].map((row) => r3(D[row] * M[row * 4 + 3] / 20))];
+    // Last, when not 0: the side the part goes on from (tools/set-order.js).
+    return [fileIdx.get(p.file), appColor(p.code), ...[0, 1, 2].flatMap((row) => [r4(D[row] * M[row * 4]), r4(D[row] * M[row * 4 + 1]), r4(D[row] * M[row * 4 + 2])]), ...[0, 1, 2].map((row) => r3(D[row] * M[row * 4 + 3] / 20)), ...(p.dir ? [p.dir] : [])];
   };
   // The model's own steps, reordered so no part comes before what holds it (see tools/set-order.js).
-  const before = kidSteps(m.st.steps), ordered = orderSteps(m.st.steps);
+  const before = kidSteps(m.st.steps);
   // Floating parts before and after, measured against the same bases (the model's first step and each separate model's start).
   const flat0 = m.st.steps.flat(), P0 = placeParts(flat0), B0 = bases(m.st.steps, P0, links(P0));
-  const fl = (st) => { const f = st.flat(), Q = placeParts(f); return floating(st, Q, links(Q), new Set(f.map((p, i) => (B0.has(flat0.indexOf(p)) ? i : -1)))).length; };
+  // A sub-assembly's parts count from the step that puts it on, not while it is built apart.
+  const asBuilt = (st) => st.filter((s) => !s.sub).map((s) => (s.attach ? st.filter((t) => t.sub === s.attach).flat() : s)).filter((s) => s.length);
+  const fl = (st) => { st = asBuilt(st); const f = st.flat(), Q = placeParts(f); return floating(st, Q, links(Q), new Set(f.map((p, i) => (B0.has(flat0.indexOf(p)) ? i : -1)))).length; };
+  // Sub-assemblies built apart where that leaves nothing more hanging in the air than building everything in place.
+  const inPlace = orderSteps(m.st.steps, { subs: false }), withSubs = orderSteps(m.st.steps);
+  const ordered = fl(withSubs) <= fl(inPlace) ? withSubs : inPlace;
   stats.push([key, fl(before), fl(ordered)]);
   const st = ordered.map((s) => s.map(place));
-  (chunks[k] ||= {})[key] = { files, steps: st };
+  // meta, per step: 0, or S while building sub-assembly S apart, or [-S, side] where it goes on (left out when all 0).
+  const meta = ordered.map((s) => (s.sub ? s.sub : s.attach ? [-s.attach, s.dir || 0] : 0));
+  (chunks[k] ||= {})[key] = { files, steps: st, ...(meta.some(Boolean) ? { meta } : {}) };
   // What the set needs from "Mina bitar": library pieces by color; pieces the library lacks counted apart.
   const need = new Map(); let other = 0, figs = 0;
   for (const p of m.parts) {
@@ -283,7 +293,7 @@ chunks.forEach((c, k) => {
 fs.writeFileSync(path.join(APP, 'sets-index.json'), JSON.stringify(index));
 const sum = (k) => stats.reduce((a, s) => a + s[k], 0);
 console.log(`floating parts: ${sum(1)} in ${stats.filter((s) => s[1]).length} sets with the model's own order, ${sum(2)} in ${stats.filter((s) => s[2]).length} sets after reordering`);
-if (process.env.FLOATING) console.log(stats.filter((s) => s[2]).sort((a, b) => b[2] - a[2]).slice(0, 30).map((s) => s.join(' ')).join('\n'));
+if (process.env.FLOATING) console.log(stats.filter((s) => s[2]).sort((a, b) => b[2] - a[2]).slice(0, 12).map((s) => s.join(' ')).join('\n'));
 const size = (f) => (fs.statSync(path.join(APP, f)).size / 1024 / 1024).toFixed(1) + ' MB';
 console.log(`${index.length} sets in ${chunks.length} chunks; ${used.size} different parts packed in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 const mb = (pre) => chunks.map((_, k) => fs.statSync(path.join(APP, `${pre}-${k}.json`)).size / 1024 / 1024);

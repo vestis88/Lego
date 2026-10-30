@@ -157,6 +157,15 @@ The sets with steps used the models' own order. LDraw authors often build a sub-
 
 LDraw turned rim 30027a by 90° in 2012. Models made before that, or copied from them, still place it the old way, with the hub facing sideways; set 7601 is one. Every rim sits inside a tire whose axle is right, so `tools/omr-build.js` turns a rim whose axle doesn't match its tire a quarter turn. It faces the rim out the way the same rim faces in the models that place it right (the hub away from the model). 16 rims in the 913 sets were turned.
 
+### Parts placed for an older LDraw model
+
+Besides the rims (above), a scan of all 913 sets turned every part that connects nothing as placed by 90°, 180° and 270° to see if it would then connect. 60 placements in 33 models would: pieces held by clips or side studs, which the stud check can't see, not parts placed for an older orientation (the turned catalog pieces match as placed, for example all 483 corner plates 2420). They are left as the models have them.
+
+### Jumpers and pieces that come with others (2026-10-30)
+
+- **Jumpers:** pieces whose studs sit half a stud off their body are no longer left out: their studs are measured at half positions, like (0, 0.5) for the 1 × 2 jumper, and placement and the checker work in half studs.
+- **Pieces that come with others:** wheel holders, windows, the door frame and the flower stem are measured as the app draws them, with their wheels, glass, door or flowers (`tools/composite-connect.js`). In that drawing the 122c01 wheel plate sits one plate higher than the old hand rules assumed: its studs are 2 plates above its own position.
+
 ## Lessons: rules for adding parts
 
 00. **Look at the real part.** Compare the render side by side with a photo of the real part, from your own pieces or BrickLink, from at least two angles, before adding it. Then add it to `PHOTO_CHECKED`. Check which way it faces, where every feature sits and how big it is next to a stud, not just its overall size. Never "fix" a part from a number alone without checking what the number measures.

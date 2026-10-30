@@ -126,9 +126,11 @@ function floating(steps, P, E, B = bases(steps, P, E)) {
 /**
  * New steps (lists of the same part objects): each part moves to the first step at or after its own where it is held.
  * Steps of up to 8 parts stay as the model has them; bigger ones (and models without steps) are built one separate model
- * at a time, in layers from the bottom up, each part as soon as something holds it.
+ * at a time, in layers from the bottom up, each part as soon as something holds it. A sub-model that holds together on
+ * its own and isn't joined to the model when it starts is built apart (steps with .sub) and put on in one step (.attach,
+ * with .dir). Each part gets .dir: the side it goes on from (see code below).
  */
-function orderSteps(steps) {
+function orderSteps(steps, { subs = true } = {}) {
   const flat = steps.flat(), P = place(flat), E = links(P);
   const stepOf = []; steps.forEach((s, si) => s.forEach(() => stepOf.push(si)));
   const B = bases(steps, P, E), base = (i) => B.has(i);
@@ -144,16 +146,52 @@ function orderSteps(steps) {
     c++;
   }
   const size = []; comp.forEach((c) => (size[c] = (size[c] || 0) + 1)); // the biggest model first
-  const out = [], built = new Set();
+  // Sub-assemblies: a sub-model of the LDraw file that holds together on its own and isn't joined to anything built
+  // before it starts (wheels on an axle, a cockpit). It is built apart, then put on in one step.
+  const subParts = new Map();
+  flat.forEach((p, i) => { if (p.sub) (subParts.get(p.sub) || subParts.set(p.sub, []).get(p.sub)).push(i); });
+  const apart = new Map(); // sub -> its part indices
+  for (const [S, ids] of subs ? subParts : []) {
+    if (ids.length < 2) continue;
+    const first = Math.min(...ids.map((i) => stepOf[i])), own = new Set(ids);
+    if (ids.some((i) => [...E[i]].some((j) => !own.has(j) && stepOf[j] <= first))) continue;
+    const seen = new Set([ids[0]]), st = [ids[0]];
+    while (st.length) { const a = st.pop(); for (const b of E[a]) if (own.has(b) && !seen.has(b)) { seen.add(b); st.push(b); } }
+    if (seen.size === ids.length) apart.set(S, ids);
+  }
+  const inSub = new Map(); for (const [S, ids] of apart) for (const i of ids) inSub.set(i, S);
+  const out = [], built = new Set(), done = new Set(), pending = [];
   let waiting = [], cur = -1;
   const addable = () => waiting.filter((i) => !built.has(i) && (!reach.has(i) || base(i) || [...E[i]].some((j) => built.has(j) && reach.has(j))));
+  // A sub-assembly goes on once one of its parts touches the model built so far.
+  const attach = (force) => {
+    for (const S of [...pending]) {
+      const ids = apart.get(S);
+      if (!force && !ids.some((i) => [...E[i]].some((j) => built.has(j) && !ids.includes(j)))) continue;
+      ids.forEach((i) => built.add(i)); pending.splice(pending.indexOf(S), 1);
+      out.push(Object.assign([], { attach: S }));
+    }
+  };
   for (let si = 0; si < steps.length; si++) {
-    waiting.push(...flat.map((_, i) => i).filter((i) => stepOf[i] === si));
+    // Sub-assemblies starting here: built apart, in the model's own order, at most 8 parts a step.
+    for (const [S, ids] of [...apart]) {
+      if (done.has(S) || Math.min(...ids.map((i) => stepOf[i])) !== si) continue;
+      done.add(S);
+      // Nothing built yet: this sub-model is the model itself (or its base), built in place.
+      if (!built.size) { apart.delete(S); ids.forEach((i) => inSub.delete(i)); continue; }
+      const bySteps = [...new Set(ids.map((i) => stepOf[i]))].sort((a, b) => a - b);
+      for (const k of bySteps) {
+        const group = ids.filter((i) => stepOf[i] === k).sort((a, b) => P[b].hi[1] - P[a].hi[1] || a - b);
+        for (let j = 0; j < group.length; j += 8) out.push(Object.assign(group.slice(j, j + 8).map((i) => flat[i]), { sub: S }));
+      }
+      pending.push(S); attach(false);
+    }
+    waiting.push(...flat.map((_, i) => i).filter((i) => stepOf[i] === si && !inSub.has(i)));
     for (;;) {
       let can = addable();
       if (!can.length) break;
       // A step of the model's own that fits a child's step stays as it is.
-      if (steps.length >= 3 && can.length <= 8 && can.every((i) => stepOf[i] === si)) { can.forEach((i) => built.add(i)); out.push(can.map((i) => flat[i])); cur = comp[can[0]]; continue; }
+      if (steps.length >= 3 && can.length <= 8 && can.every((i) => stepOf[i] === si)) { can.forEach((i) => built.add(i)); out.push(can.map((i) => flat[i])); cur = comp[can[0]]; attach(false); continue; }
       // Otherwise: the current separate model first, then its lowest layer that can go on now, at most 8 parts.
       if (can.some((i) => comp[i] === cur)) can = can.filter((i) => comp[i] === cur);
       else { cur = can.map((i) => comp[i]).sort((a, b) => size[b] - size[a] || a - b)[0]; can = can.filter((i) => comp[i] === cur); }
@@ -164,10 +202,45 @@ function orderSteps(steps) {
       const prev = out.at(-1);
       if (prev?.made && prev.comp === cur && prev.length + pick.length <= 6) prev.push(...pick.map((i) => flat[i]));
       else out.push(Object.assign(pick.map((i) => flat[i]), { made: true, comp: cur }));
+      attach(false);
     }
     waiting = waiting.filter((i) => !built.has(i));
   }
-  if (waiting.length) out.push(waiting.map((i) => flat[i]));
-  return out.map((st) => [...st]);
+  if (waiting.length) { waiting.forEach((i) => built.add(i)); out.push(waiting.map((i) => flat[i])); }
+  attach(true);
+  // Which way each part goes on: along the stud it goes onto (or the stud it pushes in), else away from what it touches.
+  const at = new Map(flat.map((p, i) => [p, i])), before = new Set();
+  const centre = (i) => P[i].lo.map((v, k) => (v + P[i].hi[k]) / 2);
+  const from = (ids, others) => {
+    for (const i of ids) for (const j of others) {
+      for (const s of P[j].studs) if (P[i].holds.some((h) => Math.hypot(h[0] - s.p[0], h[1] - s.p[1], h[2] - s.p[2]) < 1.5)) return s.d;
+      for (const s of P[i].studs) if (P[j].holds.some((h) => Math.hypot(h[0] - s.p[0], h[1] - s.p[1], h[2] - s.p[2]) < 1.5)) return s.d.map((v) => -v);
+    }
+    for (const i of ids) for (const j of others) if (E[i].has(j)) return centre(i).map((v, k) => v - centre(j)[k]);
+    return null;
+  };
+  // As a code for the app: 0 from above (the usual), 1 from below, 2/3 from +x/-x, 4/5 from +z/-z (app axes: y up, z toward the viewer).
+  const code = (d) => {
+    if (!d) return 0;
+    const a = [d[0], -d[1], -d[2]], k = [0, 1, 2].reduce((m, q) => (Math.abs(a[q]) > Math.abs(a[m]) ? q : m), 1);
+    if (Math.abs(a[k]) < 1e-6) return 0;
+    return k === 1 ? (a[1] > 0 ? 0 : 1) : k === 0 ? (a[0] > 0 ? 2 : 3) : a[2] > 0 ? 4 : 5;
+  };
+  for (const st of out) {
+    if (st.attach) {
+      const ids = apart.get(st.attach);
+      st.dir = code(from(ids, [...before].filter((j) => !ids.includes(j))));
+      ids.forEach((i) => before.add(i));
+      continue;
+    }
+    const ids = st.map((p) => at.get(p));
+    // Within a sub-assembly only its own parts count; in the model, everything already on it.
+    for (const i of ids) {
+      const pool = [...before].filter((j) => (inSub.get(j) || 0) === (st.sub || 0) || !st.sub);
+      flat[i].dir = code(from([i], pool));
+    }
+    ids.forEach((i) => before.add(i));
+  }
+  return out.map((st) => Object.assign([...st], st.sub ? { sub: st.sub } : {}, st.attach ? { attach: st.attach, dir: st.dir } : {}));
 }
 module.exports = { orderSteps, floating, bases, place, links };

@@ -88,8 +88,10 @@ window.__unit = () => {
   ok(analyze(bp.steps).floats.length === 1, "nothing attaches under a baseplate");
   const tt = info({ id: "3403c01", x: 0, y: 0, z: 0, r: 0 });
   ok(tt.studs.length === 12, "turntable studs " + tt.studs.length);
-  const rw = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -1, z: 0 }] }, { parts: [{ id: "2456", x: 1, y: 1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 4, z: 0 }] }] });
-  ok(analyze(rw.steps).overlaps.length === 0, "122c01 wheels clear at y+3 and above");
+  // 122c01 as drawn (measured): its studs are 2 plates above its y, so it goes 2 plates under the chassis.
+  const rwStud = CAT["122c01"].conn.studs[0][2];
+  const rw = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -rwStud, z: 0 }] }, { parts: [{ id: "2456", x: 1, y: 1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 4, z: 0 }] }] });
+  ok(analyze(rw.steps).overlaps.length === 0 && analyze(rw.steps).floats.length === 0, "122c01 held under the chassis, wheels clear above " + JSON.stringify(analyze(rw.steps).overlaps));
   const rw2 = normBuild({ steps: [{ parts: [{ id: "3795", x: 1, y: 0, z: 0 }] }, { parts: [{ id: "122c01", x: 1, y: -1, z: 0 }] }, { parts: [{ id: "3032", x: 0, y: 0, z: 0 }] }] });
   ok(analyze(rw2.steps).overlaps.length > 0, "122c01 wheels block a low plate");
   ok(JSON.stringify(groupParts([{ id: "3853", c: "white" }, { id: "3741", c: "green", c2: "yellow" }]).map((g) => g.n + "x" + g.p.id + ":" + g.p.c).sort()) === JSON.stringify(["1x3741:green", "1x3853:white", "1x3855:transparent", "3x3742:yellow"]), "window glass + flowers listed");
@@ -148,7 +150,7 @@ window.__unitAuto = async () => {
   ok(CONN.shapes.has("core") && CONN.shapes.size === 1, "only the common pieces' shape file loaded at start: " + [...CONN.shapes.keys()]);
   // The common pieces (drawn from parts.json, checked with measured data: both must agree) and the first shape files.
   // The common pieces' shapes were loaded at start, before anything was drawn.
-  ok(CONN.shapes.has("core") && Object.values(CAT).filter((C) => C.conn && !C.auto).every((C) => SETS.shapes.parts[C.file]), "common pieces' shapes loaded at start");
+  ok(CONN.shapes.has("core") && Object.values(CAT).filter((C) => C.conn && !C.auto && !C.conn.comp).every((C) => SETS.shapes.parts[C.file]), "common pieces' shapes loaded at start");
   const auto = Object.values(CAT).filter((C) => C.conn && (!C.auto || C.conn.k < 3));
   ok(auto.length > 250, "measured pieces loaded: " + auto.length);
   await ensureParts(auto.map((C) => ({ id: C.id })));
@@ -173,5 +175,12 @@ window.__unitAuto = async () => {
   const [hx, hz] = studded.conn.holds.find(([, , y]) => y === 0);
   ok(analyze([{ parts: [{ id: "3958", x: -2, y: -1, z: -2, c: "green" }] }, { parts: [base] }]).floats.length === 0, `${studded.id} held by its grip at (${hx},${hz})`);
   ok(pieceSpec(studded).startsWith(studded.id + ": "), "measured piece described for Claude");
+  // Jumpers: the stud sits half a stud over, and a piece on it does too; a piece beside it at a whole position floats.
+  const J = CAT["3794"].conn;
+  ok(J && J.studs.length === 1 && J.studs[0][0] === 0 && J.studs[0][1] === 0.5, "3794 stud at (0,0.5): " + JSON.stringify(J?.studs));
+  const jump = (z) => analyze(normBuild({ steps: [{ parts: [{ id: "3020", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3794", x: 0, y: 1, z: 1, r: 0 }] }, { parts: [{ id: "3005", x: 0, y: 2, z }] }] }).steps);
+  ok(jump(1.5).floats.length === 0 && jump(1.5).overlaps.length === 0, "brick on the jumper's stud holds");
+  ok(jump(1).floats.length === 1, "brick on the jumper at a whole position floats");
+  ok(analyze(normBuild({ steps: [{ parts: [{ id: "3020", x: 0, y: 0, z: 0 }] }, { parts: [{ id: "3005", x: 0.5, y: 1, z: 0 }, { id: "3005", x: 1, y: 1, z: 0 }] }] }).steps).overlaps.length === 1, "half-stud overlap found");
   return out;
 };

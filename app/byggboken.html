@@ -703,8 +703,8 @@ def("2432", { en: "Tile 1 x 2 with Bar Handle (the handle rises 3 plates above t
 def("2450", { en: "Wedge Plate 3 x 3 Cut Corner (at r=0 the cut corner is front-right; studs on the 6 cells with x+z <= 2)", noun: "wedge", group: "vehicle", shape: "cutcorner", w: 3, d: 3, h: 1,
   mask: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2]], studs: "list", bottom: "list", studList: [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [0, 2]], dir: true });
 /* The most common parts in today's sets (Brick Architect's ranking), plus their 1990s equivalents. */
-def("15573", { en: "Plate 1 x 2 with 1 Stud in the center (jumper; its single stud sits between grid positions, so treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
-def("3794", { en: "Plate 1 x 2 with 1 Stud in the center (classic 1990s jumper; treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
+def("15573", { en: "Plate 1 x 2 with 1 Stud in the center (jumper: its stud is at the half position (0,0.5), so a piece on it sits half a stud over)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
+def("3794", { en: "Plate 1 x 2 with 1 Stud in the center (classic 1990s jumper: its stud is at the half position (0,0.5), so a piece on it sits half a stud over)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 1, d: 2, h: 1, studs: "none" });
 def("11212", { en: "Plate 3 x 3", noun: "plate", group: "plate", shape: "box", w: 3, d: 3, h: 1 });
 def("14716", { en: "Brick 1 x 1 x 3", noun: "brick", group: "brick", shape: "box", w: 1, d: 1, h: 9, size: "1×1×3" });
 def("22886", { en: "Brick 1 x 2 x 3", noun: "brick", group: "brick", shape: "box", w: 1, d: 2, h: 9, size: "1×2×3" });
@@ -725,7 +725,7 @@ def("3065", { en: "Brick 1 x 2 without Bottom Tube (often transparent, for windo
 def("30136", { en: "Brick 1 x 2 Log / Palisade (log-cabin walls)", noun: "log", group: "brick", shape: "box", deco: "log", w: 1, d: 2, h: 3 });
 def("30414", { en: "Brick 1 x 4 with 4 Studs on 1 Side (side studs toward +z are decoration only)", noun: "sbrick", group: "brick", shape: "box", deco: "side1", w: 4, d: 1, h: 3, dir: true, size: "1×4" });
 def("14719", { en: "Tile 2 x 2 Corner (L-shape like 2420; smooth)", noun: "ctile", group: "tile", shape: "box", w: 2, d: 2, h: 1, mask: [[0, 0], [1, 0], [0, 1]], studs: "none", size: "2×2" });
-def("87580", { en: "Plate 2 x 2 with 1 Stud in the center (jumper; treat it as a smooth top)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 2, d: 2, h: 1, studs: "none" });
+def("87580", { en: "Plate 2 x 2 with 1 Stud in the center (jumper: its stud is at the half position (0.5,0.5), so a piece on it sits half a stud over in both directions)", noun: "jumper", group: "plate", shape: "box", deco: "jumper", w: 2, d: 2, h: 1, studs: "none" });
 def("35480", { en: "Plate 1 x 2 with Rounded Ends", noun: "rounded", group: "plate", shape: "roundedplate", w: 1, d: 2, h: 1 });
 def("32028", { en: "Plate 1 x 2 with Door Rail", noun: "rail", group: "plate", shape: "box", deco: "rail", w: 1, d: 2, h: 1 });
 def("60474", { en: "Plate Round 4 x 4 with Pin Hole (12 studs: every cell except the 4 corners; the pin hole sits between the 4 middle studs)", noun: "rplate", group: "round", shape: "cyl", w: 4, d: 4, h: 1, mask: "round", studs: "round", bottom: "round" });
@@ -891,7 +891,9 @@ function normPart(p) {
   const id = String(p.id || "").trim();
   const C = CAT[id];
   if (!C || C.child) return null;
-  const out = { id, x: clampInt(p.x, -60, 60, 0), y: clampInt(p.y, -60, 300, 0), z: clampInt(p.z, -60, 60, 0), r: ROTS.includes(int(p.r)) ? int(p.r) : 0, c: COLORS[p.c] ? p.c : "lightgray" };
+  // x and z in half studs (a piece on a jumper's stud sits half a stud over), y in whole plates.
+  const half = (v) => Math.round(Math.min(60, Math.max(-60, Number(v) || 0)) * 2) / 2;
+  const out = { id, x: half(p.x), y: clampInt(p.y, -60, 300, 0), z: half(p.z), r: ROTS.includes(int(p.r)) ? int(p.r) : 0, c: COLORS[p.c] ? p.c : "lightgray" };
   if (COLORS[p.c2]) out.c2 = p.c2;
   return out;
 }
@@ -977,7 +979,7 @@ function rotMatrix(C, r, p) {
   else if (r === 180) m.set(-1, 0, 0, W, 0, 1, 0, 0, 0, 0, -1, D, 0, 0, 0, 1);
   else if (r === 90) m.set(0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, W, 0, 0, 0, 1);
   else m.set(0, 0, -1, D, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1);
-  return new THREE.Matrix4().makeTranslation(p.x, p.y * PH, p.z).multiply(m);
+  return new THREE.Matrix4().makeTranslation(p.x || 0, (p.y || 0) * PH, p.z || 0).multiply(m);
 }
 function mergeGeoms(list, withNormals = true) {
   const arrs = list.map((g) => (g.index ? g.toNonIndexed() : g));
@@ -1125,9 +1127,10 @@ function loadConnect() {
     for (const [id, K] of Object.entries(data)) {
       const e = LIB.parts?.[id], C = CAT[id];
       // The common pieces are measured and drawn from CAD like every other piece; CAT only adds their Swedish names
-      // and facing. Pieces that come with other pieces keep their own rules and drawing: wheel holders (the wheels need
-      // their space), the flower stem (its flowers), windows (their glass) and the door frame (its door).
-      if (C) { if (!composite(C)) Object.assign(C, { conn: K, w: K.w, d: K.d, h: K.h, file: e?.[LIB_FIELDS.file] || C.id }); continue; }
+      // and facing. Pieces that come with other pieces (wheel holders, the flower stem, windows, the door frame) keep
+      // their drawing from parts.json, with the wheels, flowers, glass or door.
+      // Pieces that come with others (comp) are measured as the app draws them, in their own grid (tools/composite-connect.js).
+      if (C) { if (K.comp) Object.assign(C, { conn: K, h: K.h }); else if (!composite(C)) Object.assign(C, { conn: K, w: K.w, d: K.d, h: K.h, file: e?.[LIB_FIELDS.file] || C.id }); continue; }
       if (!e) continue;
       CAT[id] = { id, auto: true, en: e[LIB_FIELDS.en], group: GROUPS[e[LIB_FIELDS.group]] ? e[LIB_FIELDS.group] : "special", shape: "ld",
         file: e[LIB_FIELDS.file], w: K.w, d: K.d, h: K.h, conn: K, size: `${K.w}×${K.d}` };
@@ -1242,12 +1245,12 @@ function buildPart(p, solo = false) {
   let m = set ? setMatrix(p) : rotMatrix(C, p.r || 0, p);
   // A piece measured from CAD: its raw shape (LDraw axes), turned to the app's facing and moved so grid cell (0, 0, 0)
   // starts at the origin.
-  if (C?.conn && !p.m) {
+  if (C?.conn && !C.conn.comp && !p.m) {
     const [ox, oy, oz] = C.conn.o;
     m = m.multiply(new THREE.Matrix4().makeTranslation(-ox / 20, -oy / 20, -oz / 20)).multiply(new THREE.Matrix4().makeRotationY((-(C.conn.t || 0) * Math.PI) / 180)).multiply(FLIP);
   }
   g.userData.mats = [];
-  for (const layer of C?.conn && !p.m ? setLayers({ id: C.file, c: p.c, c2: C.c2part && p.c2 }) : set ? setLayers(p) : shapeLayers(C, p, solo)) {
+  for (const layer of C?.conn && !C.conn.comp && !p.m ? setLayers({ id: C.file, c: p.c, c2: C.c2part && p.c2 }) : set ? setLayers(p) : shapeLayers(C, p, solo)) {
     // A layer has an app color name, or a fixed LDraw color (hex, alpha) for parts molded in a second color.
     const colr = layer.color ? COLORS[layer.color] : { hex: layer.hex, alpha: layer.alpha < 1 ? layer.alpha : 0 };
     const geo = mergeGeoms(layer.geos).applyMatrix4(m);
@@ -1312,15 +1315,21 @@ function groupParts(list) {
  * at the height of the first part, so separate pillars for an arch are fine),
  * trapped (a new piece that would have to be squeezed in between pieces already placed above and below it).
  */
+/** The space of cells as half-stud squares, so a piece half a stud over (on a jumper) is checked exactly. */
+function subcells(occ) {
+  const out = [];
+  for (const [x, y, z] of occ) for (const dx of [0, 1]) for (const dz of [0, 1]) out.push(`${2 * x + dx},${y},${2 * z + dz}`);
+  return out;
+}
 function analyze(steps) {
   const parts = [];
   steps.forEach((s, si) => s.parts.forEach((p, pi) => parts.push({ ...p, step: si, pi, I: info(p) })));
   const occ = new Map(), overlaps = [], bad = new Set();
   parts.forEach((p, i) => {
     let hit = -1;
-    for (const [x, y, z] of p.I.occ) { const k = `${x},${y},${z}`; if (occ.has(k)) { hit = occ.get(k); break; } }
+    for (const k of subcells(p.I.occ)) if (occ.has(k)) { hit = occ.get(k); break; }
     if (hit >= 0) { overlaps.push({ i, j: hit }); bad.add(i); return; }
-    for (const [x, y, z] of p.I.occ) occ.set(`${x},${y},${z}`, i);
+    for (const k of subcells(p.I.occ)) occ.set(k, i);
   });
   const tops = new Map();
   parts.forEach((p, i) => { if (bad.has(i)) return; for (const [x, z, y] of p.I.studs) { const k = `${x},${y},${z}`; (tops.get(k) || tops.set(k, []).get(k)).push(i); } });
@@ -1435,6 +1444,8 @@ const Snap = {
 };
 
 /* ===================================================== main 3D viewer */
+/** The side a part comes in from: 0 above, 1 below, 2/3 from +x/-x, 4/5 from +z/-z. */
+const SIDES = [[0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]].map((v) => new THREE.Vector3(...v));
 const Stage = {
   ready: false,
   init() {
@@ -1480,15 +1491,17 @@ const Stage = {
   },
   setModel(steps) {
     while (this.root.children.length) { const c = this.root.children[0]; this.root.remove(c); disposeTree(c); }
-    this.parts = [];
+    this.parts = []; this.steps = steps;
     this.root.position.set(0, 0, 0);
+    // Where each sub-assembly built apart goes on (sets): its parts are shown alone until then.
+    const attachAt = {}; steps.forEach((s, si) => { if (s.attach) attachAt[s.attach] = si; });
     steps.forEach((s, si) => s.parts.forEach((p) => {
-      const g = buildPart(p); g.userData.step = si; g.userData.baseY = g.position.y;
+      const g = buildPart(p); Object.assign(g.userData, { step: si, base: g.position.clone(), dir: p.dir || 0, sub: s.sub || 0, attachAt: attachAt[s.sub] ?? Infinity });
       this.root.add(g); this.parts.push(g);
     }));
     const sph = new THREE.Box3().setFromObject(this.root).getBoundingSphere(new THREE.Sphere());
     this.root.position.set(-sph.center.x, -sph.center.y, -sph.center.z);
-    this.radius = Math.max(1.5, sph.radius);
+    this.radius = this.fullRadius = Math.max(1.5, sph.radius);
     this.resetView();
   },
   resetView() { this.az = 0.68; this.el = 0.52; this.zoom = 1; this.kick(); },
@@ -1496,17 +1509,27 @@ const Stage = {
     const now = performance.now();
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     this.anims = [];
+    // Building a sub-assembly apart: only its parts, framed on their own. Putting it on: it all comes in as one.
+    const cur = step != null ? this.steps?.[step] : null, apart = cur?.sub || 0, putOn = cur?.attach || 0;
     let k = 0;
+    const box = new THREE.Box3();
     for (const g of this.parts) {
-      const s = g.userData.step;
-      g.visible = step == null || s <= step;
-      g.position.y = g.userData.baseY;
+      const u = g.userData, s = u.step;
+      g.visible = step == null || (apart ? u.sub === apart && s <= step : s <= step && (!u.sub || u.attachAt <= step));
+      g.position.copy(u.base);
       for (const m of g.userData.mats) m.emissive.setHex(0x000000);
-      if (step != null && s === step) {
-        if (animate && !reduce) { this.anims.push({ g, t0: now + k * 110, kind: "drop" }); k++; }
+      if (g.visible && apart) box.expandByObject(g);
+      const isNew = step != null && (putOn ? u.sub === putOn : s === step);
+      if (isNew) {
+        const dir = putOn ? cur.dir : u.dir;
+        if (animate && !reduce) { this.anims.push({ g, t0: now + (putOn ? 0 : k * 110), kind: "drop", from: SIDES[dir] || SIDES[0] }); if (!putOn) k++; }
         this.anims.push({ g, t0: now + (animate && !reduce ? k * 110 + 450 : 0), kind: "glow" });
       }
     }
+    if (apart && !box.isEmpty()) {
+      const sph = box.getBoundingSphere(new THREE.Sphere());
+      this.target.copy(sph.center); this.radius = Math.max(1, sph.radius); // the box is in world space already
+    } else if (this.radius !== this.fullRadius) { this.target.set(0, this.target.y, 0); this.radius = this.fullRadius; }
     this.kick();
   },
   kick() { if (!this.raf) this.raf = requestAnimationFrame((t) => this.frame(t)); },
@@ -1518,8 +1541,9 @@ const Stage = {
       const u = (t - a.t0) / (a.kind === "drop" ? 520 : 1600);
       if (u < 1) more = true;
       if (a.kind === "drop") {
+        // Slides in from its side (from above unless it goes on sideways or from below).
         const c = Math.min(1, Math.max(0, u)); const e = 1 - Math.pow(1 - c, 3);
-        a.g.position.y = a.g.userData.baseY + (1 - e) * 3.2;
+        a.g.position.copy(a.g.userData.base).addScaledVector(a.from, (1 - e) * 3.2);
         a.g.visible = u >= 0;
       } else {
         const c = Math.min(1, Math.max(0, u));
@@ -1814,9 +1838,9 @@ MORE PIECES (same rules):
 ${extras.map((id) => pieceSpec(CAT[id])).join("\n")}
 Only the ids in these two lists exist.
 ` : ""}
-COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative.
+COORDINATES: a stud grid. x goes right, z goes toward the viewer (front), y goes up. x and z are counted in studs, y is counted in PLATES (a brick is h3, a plate h1). A part's x,y,z is its minimum corner (lowest x, lowest z, bottom y). y may be negative. x and z are whole numbers, except for a piece standing on a stud at a half position (a jumper's centre stud, listed like (0,0.5)): it sits half a stud over, so its x or z ends in .5.
 ROTATION "r" (degrees, 0/90/180/270, turning seen from above): at r=0 the part covers w studs along x and d studs along z, and a directional part faces (or slopes down toward) +z. r=90: covers d along x and w along z, faces +x. r=180: like r=0 but faces -z. r=270: like r=90 but faces -x. For plain bricks and plates r=90 just swaps the long direction.
-WHEELS: the wheels come with their plate. Attach the wheel plate UNDER a chassis plate or brick (its studs go into the part above it); nothing attaches under it. At r=0 the wheels stick out on the left and right. Nothing else may be in the wheel space:
+WHEELS: the wheels come with their plate. Attach the wheel plate UNDER a chassis plate or brick (its studs go into the part above it). At r=0 the wheels stick out on the left and right. Nothing else may be in the wheel space:
 ${wheelRules()}
 Use r=90 to turn a wheel plate so the wheels point front and back instead.
 VEHICLE TIPS: a car is usually a chassis plate (4 or 6 wide) with two wheel plates under it, a seat 4079 with a steering stand 3829c01 in front, a windscreen 3823, a grille tile 2412b or brick 2877 at the front, trans-yellow headlights (4070, 3070b, 4073) and trans-red taillights. Bumpers: tiles 2432. Noses and wing tips: 2450.
@@ -2129,6 +2153,7 @@ function setStep(s, animate = true) {
       b.append(img, em); b.addEventListener("click", () => partSheet(g.p));
       co.append(b);
     }
+    co.hidden = !co.children.length; // putting a sub-assembly on needs no new pieces
     Stage.show(step, animate);
   }
   if (speakOn() && animate !== false) speakStep();
@@ -2407,7 +2432,13 @@ function rbSheet(e) {
     const cr = document.createElement("p"); cr.className = "credit"; cr.textContent = "Bitlista från Rebrickable."; body.append(cr);
   });
 }
-const setSteps = (d) => d.steps.map((s) => ({ text: "", parts: s.map(([fi, c, ...m]) => ({ id: d.files[fi], c, m })) }));
+// A set's steps (tools/omr-build.js). meta per step: S while building sub-assembly S apart, [-S, side] where it goes on.
+// A part's 13th number, when there, is the side it goes on from (0 above, 1 below, 2/3 +x/-x, 4/5 +z/-z).
+const setSteps = (d) => d.steps.map((s, si) => {
+  const m = d.meta?.[si] || 0, sub = typeof m === "number" && m > 0 ? m : 0, attach = Array.isArray(m) ? -m[0] : 0;
+  return { text: sub ? "Bygg den här delen för sig." : attach ? "Sätt den på plats." : "", sub, attach, dir: attach ? m[1] : 0,
+    parts: s.map(([fi, c, ...m]) => ({ id: d.files[fi], c, m: m.slice(0, 12), ...(m[12] ? { dir: m[12] } : {}) })) };
+});
 async function openSet(e) {
   const st = $("#s-status"); st.hidden = false; st.textContent = `Hämtar ${e.name}…`;
   try {
