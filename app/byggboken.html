@@ -237,6 +237,10 @@ input[type="range"] { width: 100%; height: 44px; accent-color: #e0a800; }
 .inv-row img { width: 56px; height: 56px; flex: none; }
 .inv-row .nm { flex: 1; min-width: 0; font-weight: 700; line-height: 1.2; }
 .inv-row .nm small { display: block; color: var(--ink-soft); font-weight: 600; }
+.inv-row.unsure { border: 2px dashed var(--line); border-bottom: none; border-radius: 14px 14px 0 0; }
+.inv-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: var(--page); border: 2px dashed var(--line); border-top: none; border-radius: 0 0 14px 14px; padding: 4px 10px 10px; margin-top: -6px; }
+.inv-ask span { font-weight: 700; margin-right: 4px; }
+.inv-ask .chip { background: var(--card); box-shadow: 0 2px 0 var(--line); }
 .stepper { display: flex; align-items: center; gap: 4px; }
 .stepper button { width: 40px; height: 40px; border-radius: 12px; background: var(--card); font-weight: 800; font-size: 1.3rem; }
 .stepper output { min-width: 2.2em; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -1702,7 +1706,14 @@ function upgradeBuild(b) {
 }
 function cleanInventory(list) {
   // Any piece in the library (or the builder's catalog), by its library key.
-  return (Array.isArray(list) ? list : []).map((p) => { const k = buildable(p.id) ? p.id : libKey(p.id); return k ? { id: k, c: COLORS[p.c] ? p.c : "lightgray", n: clampInt(p.n, 1, 500, 1) } : null; }).filter(Boolean);
+  // q: Claude wasn't sure of the piece (alt: what else it may be); the list asks the child to check.
+  const key = (id) => (buildable(id) ? id : libKey(id));
+  return (Array.isArray(list) ? list : []).map((p) => {
+    const k = key(p.id); if (!k) return null;
+    const out = { id: k, c: COLORS[p.c] ? p.c : "lightgray", n: clampInt(p.n, 1, 500, 1) };
+    if (p.q || p.sure === false) { out.q = true; const a = p.alt && key(p.alt); if (a && a !== k) out.alt = a; }
+    return out;
+  }).filter(Boolean);
 }
 
 /* ============================================================= Claude */
@@ -2205,7 +2216,28 @@ function renderInventory() {
     const plus = document.createElement("button"); plus.textContent = "+"; plus.setAttribute("aria-label", "En till");
     minus.addEventListener("click", () => changeInv(i, -1)); plus.addEventListener("click", () => changeInv(i, 1));
     st.append(minus, out, plus); row.append(img, nm, st); list.append(row);
+    // A piece Claude wasn't sure of: ask, with what else it may be.
+    if (p.q) {
+      row.classList.add("unsure");
+      const ask = document.createElement("div"); ask.className = "inv-ask";
+      const t = document.createElement("span"); t.textContent = "Stämmer det?"; ask.append(t);
+      const btn = (label, fn) => { const b = document.createElement("button"); b.className = "chip"; b.textContent = label; b.addEventListener("click", fn); ask.append(b); };
+      btn("Ja", () => fixInv(i, (q) => { delete q.q; delete q.alt; }));
+      if (p.alt) btn(`Nej, ${partName({ id: p.alt, c: p.c }).toLowerCase()}`, () => fixInv(i, (q) => { q.id = p.alt; delete q.q; delete q.alt; }));
+      btn("Ta bort", () => fixInv(i, (q) => { q.n = 0; }));
+      list.append(ask);
+    }
   });
+}
+/** Changes one row of the piece list (answering a question about it) and saves. */
+function fixInv(i, fn) {
+  const inv = Store.inventory.map((p) => ({ ...p }));
+  fn(inv[i]);
+  // Same piece and color twice after a swap: one row.
+  const out = [];
+  for (const p of inv.filter((p) => p.n > 0)) { const m = out.find((q) => q.id === p.id && q.c === p.c && !q.q && !p.q); if (m) m.n += p.n; else out.push(p); }
+  Store.inventory = out; renderInventory(); updateInvToggle();
+  clearTimeout(invSaveTimer); invSaveTimer = setTimeout(() => Store.saveInventory(Store.inventory).catch(() => toast("Kunde inte spara listan.")), 700);
 }
 let invSaveTimer = null;
 function changeInv(i, delta) {
@@ -2236,16 +2268,19 @@ Name every piece by its LEGO design number: the number molded on the part, as Br
 COMMON PIECES (id: name):
 ${list}
 Colors, exact names only: ${Object.keys(COLORS).map((k) => `${k} (${COLORS[k].en})`).join(", ")}.
-Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3}],"unsure":"one short Swedish sentence about pieces you could not identify, or empty"}`, { images: files, modelTier: "complex", cache: false });
+For every entry say whether you are sure of the piece. When you are not ("sure":false), give in "alt" the design number it most likely is instead (another piece that looks alike), or "" if none.
+Reply with ONLY JSON: {"parts":[{"id":"3001","c":"red","n":3,"sure":true},{"id":"3010","c":"blue","n":1,"sure":false,"alt":"3009"}],"unsure":"one short Swedish sentence about pieces you could not identify, or empty"}`, { images: files, modelTier: "complex", cache: false });
     // Numbers the library doesn't know are left out, and counted for the child.
     const found = cleanInventory(res?.parts), unknown = (Array.isArray(res?.parts) ? res.parts : []).filter((p) => !buildable(p.id) && !libKey(p.id)).length;
     const merged = Store.inventory.map((p) => ({ ...p }));
-    for (const p of found) { const m = merged.find((q) => q.id === p.id && q.c === p.c); if (m) m.n += p.n; else merged.push(p); }
+    for (const p of found) { const m = merged.find((q) => q.id === p.id && q.c === p.c); if (m) { m.n += p.n; if (p.q) Object.assign(m, { q: true, alt: p.alt }); } else merged.push(p); }
     const groupOf = (id) => CAT[id]?.group || libEntry(id)?.[LIB_FIELDS.group] || "special";
     merged.sort((a, b) => groupOf(a.id).localeCompare(groupOf(b.id)) || a.id.localeCompare(b.id) || a.c.localeCompare(b.c));
     await Store.saveInventory(merged);
     const n = found.reduce((a, p) => a + p.n, 0);
+    const unsureN = found.filter((p) => p.q).length;
     st.innerHTML = n ? `<b>${n} bitar hittade</b> och tillagda. Rätta antalet med plus och minus om något blev fel.` : "<b>Hittade inga bitar.</b> Prova att lägga dem glest på ett ljust bord.";
+    if (unsureN) { const u = document.createElement("div"); u.textContent = `Claude var osäker på ${unsureN} ${unsureN === 1 ? "bit" : "bitar"}: titta på de markerade raderna.`; st.append(u); }
     if (n && res?.unsure) { const u = document.createElement("div"); u.textContent = String(res.unsure).slice(0, 200); st.append(u); }
     if (unknown) { const u = document.createElement("div"); u.textContent = `${unknown} ${unknown === 1 ? "bit" : "bitar"} kände appen inte igen och hoppade över.`; st.append(u); }
     if (n && files.length === 1 && AI.maxImages > 1) { const t = document.createElement("div"); t.textContent = "Tips: ett foto till snett från sidan gör räkningen säkrare nästa gång."; st.append(t); }

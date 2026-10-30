@@ -16,7 +16,7 @@ window.claude = { use: async (n) => {
   if (n === 'sample') { const f = async () => ({text:"x"}); f.limits = async () => ({maxPromptBytes:262144, images:{maxCount:5,maxInputBytes:2e7,mediaTypes:["image/jpeg","image/png"]}});
     f.json = async (p, o) => { window.__calls.push(p.slice(0,80)); if (p.startsWith('You are')) window.__buildImages = (o.images||[]).length; window.__lastPrompt = p; await new Promise(r=>setTimeout(r,200));
       if (p.includes('checker found problems')) return BUILD2;
-      if (p.includes('Identify every')) { window.__invImages = (o.images||[]).length; window.__invMulti = p.includes('2 photos of the SAME pile'); } if (p.includes('Identify every')) return {parts:[{id:"3001",c:"red",n:3},{id:"3022",c:"blue",n:2},{id:"3039",c:"white",n:1},{id:"nope",c:"red",n:1}]};
+      if (p.includes('Identify every')) { window.__invImages = (o.images||[]).length; window.__invMulti = p.includes('2 photos of the SAME pile'); } if (p.includes('Identify every')) return {parts:[{id:"3001",c:"red",n:3},{id:"3022",c:"blue",n:2},{id:"3039",c:"white",n:1,sure:false,alt:"3040"},{id:"nope",c:"red",n:1}]};
       if (p.includes('pile of LEGO')) { window.__lastImages = (o.images||[]).length; return p.includes('2 photos of the SAME') ? {found:true,spots:[{photo:1,x:0.3,y:0.6,r:0.08,sure:true},{photo:2,x:0.5,y:0.4,r:0.07,sure:true}],hint:"Nere till vänster!"} : {found:false,spots:[],hint:"Fota från ett annat håll."}; }
       o.onText && o.onText({text:'{"id": "a" "id": "b"', delta:''});
       return BUILD1; };
@@ -68,6 +68,12 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.click('#inv-scan'); await page.waitForTimeout(900);
     console.log(name, 'inventory images', await page.evaluate(() => [window.__invImages, window.__invMulti, Store.inventory.length, document.querySelector('#inv-tray').hidden]));
     await page.screenshot({ path: `${S}/shots/${name}-inv.png`, fullPage: true });
+    // A piece Claude wasn't sure of is asked about; answering with the alternative swaps it.
+    const asks = await page.$$eval('.inv-ask', (a) => a.map((x) => x.textContent));
+    await page.click('.inv-ask .chip:nth-of-type(2)');
+    const swapped = await page.evaluate(() => [Store.inventory.some((p) => p.id === '3040' && p.c === 'white' && !p.q), document.querySelectorAll('.inv-ask').length]);
+    console.log(name, 'unsure pieces', JSON.stringify(asks), JSON.stringify(swapped));
+    if (asks.length !== 1 || !swapped[0] || swapped[1] !== 0) process.exitCode = 1;
     await page.click('#v-inv [data-back]');
     // finder: one photo (not found), then another angle (found in both)
     await page.click('#t-find'); await page.waitForTimeout(200);
