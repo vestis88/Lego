@@ -78,10 +78,10 @@ fs.writeFileSync(S + '/harness.html', html);
     // finder: one photo (not found), then another angle (found in both)
     await page.click('#t-find'); await page.waitForTimeout(200);
     [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#f-shoot')]);
-    await fc.setFiles(S + '/shots/' + name + '-home.png'); await page.waitForTimeout(800);
+    await fc.setFiles(S + '/shots/' + name + '-home.png'); await page.waitForFunction(() => window.__lastImages === 2 && !/Letar/.test(document.querySelector('#f-hint').textContent), null, { timeout: 8000 }).catch(() => {});
     console.log(name, 'finder 1', await page.evaluate(() => [window.__lastImages, document.querySelector('#f-hint').textContent, document.querySelectorAll('.ring').length]));
     [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#f-more')]);
-    await fc.setFiles(S + '/shots/' + name + '-cover.png'); await page.waitForTimeout(900);
+    await fc.setFiles(S + '/shots/' + name + '-cover.png'); await page.waitForFunction(() => window.__lastImages === 3 && document.querySelectorAll('#f-photo .ring').length >= 2, null, { timeout: 8000 }).catch(() => {});
     console.log(name, 'finder 2', await page.evaluate(() => [window.__lastImages, document.querySelectorAll('.finder-photo').length, [...document.querySelectorAll('.finder-photo')].map((f) => f.querySelectorAll('.ring').length), document.querySelector('#f-more').hidden]));
     await page.screenshot({ path: `${S}/shots/${name}-find.png`, fullPage: true });
     await page.click('#v-find [data-back]');
@@ -99,6 +99,30 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.click('#go'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 5000 });
     console.log(name, 'photo build images', await page.evaluate(() => [window.__buildImages, window.__lastPrompt.includes('SAME thing from different sides') || window.__calls.length]));
     await page.click('#v-close');
+    // several photos in one pick: the chooser allows many, the tray keeps the first 3 in order, a big photo is made smaller
+    {
+      const big = Buffer.from((await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 3200; c.height = 2400; const g = c.getContext('2d'); g.fillStyle = '#c33'; g.fillRect(0, 0, 3200, 2400); return c.toDataURL('image/png'); })).split(',')[1], 'base64');
+      const shots = ['cover', 'home', 'step1'].map((k) => ({ name: name + '-' + k + '.png', mimeType: 'image/png', buffer: fs.readFileSync(S + '/shots/' + name + '-' + k + '.png') }));
+      let [mc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#t-photo')]);
+      const multi = mc.isMultiple();
+      await mc.setFiles([{ name: 'big.png', mimeType: 'image/png', buffer: big }, ...shots]); await page.waitForTimeout(600);
+      const tray = () => page.evaluate(async () => [(await buildTray.ready()).map((f) => f.name), [...document.querySelectorAll('#c-tray figcaption')].map((c) => c.textContent), !!document.querySelector('#c-tray .add')]);
+      const full = await tray();
+      const bigSize = await page.evaluate(async () => { const [f] = await buildTray.ready(); return new Promise((ok) => { const i = new Image(); i.onload = () => ok([i.naturalWidth, i.naturalHeight]); i.src = URL.createObjectURL(f); }); });
+      await page.click('#c-tray figure:nth-child(2) .rm');
+      const less = await tray();
+      [mc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#c-tray .add')]);
+      const multi1 = mc.isMultiple();
+      await mc.setFiles(shots[0]); await page.waitForTimeout(400);
+      const refill = await tray();
+      await page.click('#go'); await page.waitForSelector('#v-view:not([hidden])', { timeout: 5000 });
+      const sent = await page.evaluate(() => window.__buildImages);
+      console.log(name, 'multi photos', JSON.stringify({ multi, full, bigSize, less, multi1, refill, sent }));
+      const ok = multi && !multi1 && full[0].length === 3 && full[0][0] === 'big.jpg' && !full[2] && Math.max(...bigSize) === 1600
+        && less[0].length === 2 && less[1].join() === 'Huvudfoto,Från sidan' && less[2] && refill[0].length === 3 && refill[0][2].startsWith(name + '-cover.') && sent === 3;
+      if (!ok) { console.log(name, 'MULTI PHOTO FAIL'); process.exitCode = 1; }
+      await page.click('#v-close');
+    }
     // real sets: search by number, open, build a few steps; then the sets the inventory can build
     if (!fs.existsSync(S + '/../app/sets-index.json')) console.log(name, 'sets SKIPPED: run node tools/omr-build.js && node tools/omr-thumbs.js first');
     else {
