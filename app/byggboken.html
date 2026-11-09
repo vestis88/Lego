@@ -1894,7 +1894,8 @@ Return the full corrected model. ${FORMAT}`;
 
 /** A row of photos of the same pile or object, with an "add another angle" tile. */
 class PhotoTray {
-  constructor(el, labels, onChange, { show = true } = {}) { this.el = el; this.labels = labels; this.onChange = onChange; this.show = show; this.files = []; this.render(); }
+  // first: a label for an add button shown while there are no photos (else the tray stays hidden until there is one).
+  constructor(el, labels, onChange, { show = true, first = "" } = {}) { this.el = el; this.labels = labels; this.onChange = onChange; this.show = show; this.first = first; this.files = []; this.render(); }
   get max() { return Math.min(AI.maxImages, this.labels.length); }
   add(f) { if (this.files.length < this.max) { this.files.push(f); this.render(); } }
   clear() { this.files = []; this.render(); }
@@ -1908,13 +1909,13 @@ class PhotoTray {
       rm.addEventListener("click", () => { this.files.splice(i, 1); this.render(); });
       fig.append(img, cap, rm); this.el.append(fig);
     });
-    if (this.files.length && this.files.length < this.max) {
+    if ((this.files.length || this.first) && this.files.length < this.max) {
       const add = document.createElement("button"); add.className = "add";
-      add.innerHTML = `<b>+</b>${this.labels[this.files.length]}`;
+      add.innerHTML = `<b>+</b>${this.files.length ? this.labels[this.files.length] : this.first}`;
       add.addEventListener("click", () => pickPhoto((f) => this.add(f)));
       this.el.append(add);
     }
-    this.el.hidden = !this.show || !this.files.length;
+    this.el.hidden = !this.show || !(this.files.length || this.first);
     this.onChange?.(this.files);
   }
 }
@@ -1951,7 +1952,7 @@ function exampleThumb(b) { return (exThumbs[b.id] ||= Snap.model(b.steps)); }
 
 /* create */
 let createMode = "text", invStrict = true, useInv = false;
-const buildTray = new PhotoTray($("#c-tray"), ["Huvudfoto", "Från sidan", "Från ett tredje håll"]);
+const buildTray = new PhotoTray($("#c-tray"), ["Huvudfoto", "Från sidan", "Från ett tredje håll"], null, { first: "Lägg till foto" });
 function openCreate(mode) {
   createMode = mode; buildTray.clear();
   $("#c-text").hidden = mode !== "text"; $("#c-photo").hidden = mode !== "photo"; $("#c-random").hidden = mode !== "random";

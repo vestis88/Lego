@@ -86,7 +86,12 @@ fs.writeFileSync(S + '/harness.html', html);
     await page.screenshot({ path: `${S}/shots/${name}-find.png`, fullPage: true });
     await page.click('#v-find [data-back]');
     // build from two photos
-    [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#t-photo')]);
+    // The picker opens by itself; closed without a photo, the page still has a button to add one.
+    await Promise.all([page.waitForEvent('filechooser'), page.click('#t-photo')]);
+    const addFirst = await page.$eval('#c-tray .add', (b) => [b.textContent, !b.closest('#c-tray').hidden]).catch(() => null);
+    console.log(name, 'photo add button', JSON.stringify(addFirst));
+    if (!addFirst || !/Lägg till foto/.test(addFirst[0]) || !addFirst[1]) process.exitCode = 1;
+    [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#c-tray .add')]);
     await fc.setFiles(S + '/shots/' + name + '-cover.png'); await page.waitForTimeout(200);
     [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#c-tray .add')]);
     await fc.setFiles(S + '/shots/' + name + '-home.png'); await page.waitForTimeout(200);
